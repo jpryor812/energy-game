@@ -23,7 +23,7 @@ python -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"
 ```bash
 pytest -q                                   # tests
 ruff check . && ruff format --check .       # lint
-python -m sim.runner run --country IND --bot noop --seed 1 --out runs/ind_noop_1
+python -m sim.runner run --country IND --bot balanced --seed 1 --out runs/ind_balanced_1
 python -m sim.runner batch --config scripts/batch_default.yaml
 python -m sim.report bau                    # business-as-usual calibration tables
 ```
@@ -38,7 +38,9 @@ Same seed and inputs always produce byte-identical output.
 
 - **M0 (scaffold):** done. Config loader, seeded RNG, serializable state, CLI.
 - **M1 (world model):** done. 16 nations start from 2024-2025 data; energy dispatch, fossil
-  trade, GDP growth, FX, approval, climate and learning curves run for 100 quarters with a
-  business-as-usual builder. See `docs/CALIBRATION.md`.
-- **M2 onward** (actions, bots, scoring, AI nations, deals): not built. Only the `noop` bot
-  exists.
+  trade, GDP growth, FX, approval, climate and learning curves run for 100 quarters.
+  See `docs/CALIBRATION.md`.
+- **M2 (actions, bots, scoring):** done. 12 actions with slots and political capital, a
+  cost-responsive market builder, four bots (`all_fossil`, `all_clean`, `balanced`,
+  `deal_maker`) plus `noop`, the Nation Index, World Multiplier, bonuses and endings.
+- **M3 onward** (AI nations, trust, tariffs, deals, stocktake, balance report): not built.

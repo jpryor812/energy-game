@@ -5,7 +5,7 @@ Global CO2 each step = the modelled nations' energy CO2 + rest of world energy C
 
 Warming = warming at the start of 2025 + TCRE x (1 + non-CO2 multiplier) x cumulative CO2 since
 2025. Damage, as a drag on annual GDP growth, = vulnerability x coefficient x (warming rise since
-2025)^2, because baseline growth already reflects 2025 damages.
+2025)^2, because baseline growth already reflects 2025 damages; adaptation spending reduces it.
 
 Units: MtCO2/yr and MtCO2; TCRE is stated in degC per 1000 GtCO2.
 """
@@ -13,7 +13,7 @@ Units: MtCO2/yr and MtCO2; TCRE is stated in degC per 1000 GtCO2.
 from __future__ import annotations
 
 from sim.config import Config
-from sim.state import World
+from sim.state import Nation, World
 
 MT_PER_1000_GT = 1e6
 
@@ -46,5 +46,13 @@ def apply(world: World, cfg: Config, dt: int) -> None:
     world.global_cumulative_emissions += total * dt / 4
     world.warming = warming_from(cfg, world.global_cumulative_emissions)
     for nid in sorted(world.nations):
+        n = world.nations[nid]
         vuln = cfg.nat(nid, "climate.vulnerability")
-        world.nations[nid].climate_damage = damage(cfg, vuln, world.warming)
+        n.climate_damage = damage(cfg, vuln, world.warming) * adaptation_factor(cfg, n)
+
+
+def adaptation_factor(cfg: Config, n: Nation) -> float:
+    """Share of damage left after adaptation: falls toward 1 - adaptation_max as the adaptation
+    stock grows relative to GDP."""
+    half = cfg.tune("climate.adaptation_half_spend") * n.gdp
+    return 1 - cfg.tune("climate.adaptation_max") * n.adaptation / (n.adaptation + half)

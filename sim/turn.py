@@ -4,8 +4,8 @@
 world. `t` counts quarters; `dt` is the number of quarters one call covers (1 now; 4 for the
 planned annual mode), so annual mode can reuse the same rules.
 
-M1 runs income, construction (with the BAU builder for every nation), dispatch and trade,
-economy, climate, technology and the snapshot. Actions, diplomacy and stocktake arrive later.
+Income, actions, construction (with the market builder for every nation), dispatch and trade,
+economy, climate, technology and the snapshot all run. Diplomacy and stocktake arrive in M4.
 """
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
+from sim import actions as acts
 from sim import climate as climate_model
 from sim import construction as build
 from sim import economy as econ
@@ -30,7 +31,7 @@ class TurnContext:
     dt: int
     actions: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
     stocktake: bool = False
-    bau_nations: set[str] = field(default_factory=set)
+    results: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
     completed: dict[str, float] = field(default_factory=dict)
 
 
@@ -50,7 +51,7 @@ def stocktake_due(t: int, dt: int, interval: int) -> bool:
 
 
 def income_and_slots(world: World, cfg: Config, ctx: TurnContext) -> None:
-    """Capital from GDP and fossil exports minus debt service. Slot banking arrives in M2."""
+    """Capital, political capital and action slots for the quarter."""
     econ.apply_income(world, cfg, ctx.dt)
 
 
@@ -59,21 +60,24 @@ def collect_actions(world: World, cfg: Config, ctx: TurnContext) -> None:
 
 
 def resolve_actions(world: World, cfg: Config, ctx: TurnContext) -> None:
-    """M2: validate and apply actions; queue construction and research."""
-    submitted = {nid: acts for nid, acts in ctx.actions.items() if acts}
-    if submitted:
-        raise NotImplementedError(f"actions are not implemented until M2: {sorted(submitted)}")
+    """Validate and apply each nation's actions; rejected actions are logged, not raised."""
+    for nid in sorted(ctx.actions):
+        if nid not in world.nations:
+            raise ValueError(f"actions submitted for unknown nation '{nid}'")
+        ctx.results[nid] = acts.resolve(cfg, world, nid, ctx.actions[nid])
 
 
 def construction(world: World, cfg: Config, ctx: TurnContext) -> None:
-    """Retire plants, bring finished capacity online, run the BAU builder."""
-    ctx.completed = build.apply(world, cfg, ctx.dt, ctx.bau_nations)
+    """Retire plants, bring finished capacity online, run the market builder."""
+    ctx.completed = build.apply(world, cfg, ctx.dt)
 
 
 def energy_dispatch(world: World, cfg: Config, ctx: TurnContext) -> None:
     """Dispatch (shortfall, curtailment, emissions), then fossil trade."""
     energy.apply_dispatch(world, cfg, ctx.dt)
     energy.apply_trade(world, cfg)
+    for nid in sorted(world.nations):
+        world.nations[nid].energy_price = tech.delivered_price(cfg, world, world.nations[nid])
 
 
 def economy(world: World, cfg: Config, ctx: TurnContext) -> None:
@@ -111,13 +115,22 @@ def scoring_snapshot(world: World, cfg: Config, ctx: TurnContext) -> None:
             "global_emissions": world.global_emissions,
             "global_cumulative_emissions": world.global_cumulative_emissions,
             "warming": world.warming,
-            "nations": {nid: _nation_record(n) for nid, n in sorted(world.nations.items())},
+            "nations": {
+                nid: _nation_record(n, ctx.results.get(nid, []))
+                for nid, n in sorted(world.nations.items())
+            },
         }
     )
 
 
-def _nation_record(n) -> dict[str, Any]:
+def _nation_record(n, results: list[dict[str, Any]]) -> dict[str, Any]:
     return {
+        "actions": results,
+        "political_capital": n.political_capital,
+        "influence": n.influence,
+        "carbon_price": n.carbon_price,
+        "import_dependence": n.import_dependence,
+        "clean_built": n.clean_built,
         "gdp": n.gdp,
         "population": n.population,
         "growth": n.growth,
@@ -161,7 +174,6 @@ def step(
     cfg: Config,
     actions: dict[str, list[dict[str, Any]]] | None = None,
     dt: int = 1,
-    bau_nations: set[str] | None = None,
 ) -> World:
     """Advance the world by `dt` quarters and return the new world. The input is not modified."""
     if dt < 1:
@@ -172,7 +184,6 @@ def step(
         dt=dt,
         actions=copy.deepcopy(actions or {}),
         stocktake=stocktake_due(new.t, dt, interval),
-        bau_nations=set(new.nations) if bau_nations is None else set(bau_nations),
     )
     for _name, stage in STAGES:
         stage(new, cfg, ctx)

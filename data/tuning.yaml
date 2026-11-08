@@ -27,6 +27,14 @@ energy:
     value: 0.25
     status: placeholder
     note: Share of total primary demand wind and solar can supply before grid or storage is needed.
+  vre_max_share_start:
+    value: 0.4
+    status: placeholder
+    note: Most of primary demand wind and solar can serve in 2025 (the electrifiable share).
+  vre_max_share_end:
+    value: 0.7
+    status: placeholder
+    note: Same, by the final turn, as electrification spreads.
   fuel_price:
     coal:
       value: 4.2
@@ -78,12 +86,32 @@ economy:
     value: 0.25
     status: placeholder
     note: Share of the change in fossil trade balance since 2025 that moves FX reserves; the exchange rate absorbs the rest.
+  stranded_drag:
+    value: 0.5
+    status: placeholder
+    note: Share of written-off book value that is lost from GDP (one-off).
+  rebate_price_relief:
+    value: 0.8
+    status: placeholder
+    note: Share of the energy-price drag a full rebate removes.
   debt_drag:
     value: 0.05
     status: placeholder
     note: Growth lost per unit rise in hard-currency debt / GDP above the 2025 ratio.
 
 politics:
+  political_capital_start:
+    value: 10.0
+    status: placeholder
+    note: Same for every nation in M2.
+  pc_income_base:
+    value: 4.0
+    status: placeholder
+    note: Political capital earned per year at baseline approval.
+  pc_income_approval:
+    value: 20.0
+    status: placeholder
+    note: Extra political capital per year per unit of approval above baseline (negative below).
   approval_start:
     value: 0.55
     status: placeholder
@@ -155,6 +183,14 @@ climate:
     value: -0.01
     status: placeholder
     note: Annual change in global land-use CO2.
+  adaptation_max:
+    value: 0.5
+    status: placeholder
+    note: Most adaptation can cut climate damage.
+  adaptation_half_spend:
+    value: 0.02
+    status: placeholder
+    note: Adaptation stock, as a share of GDP, that gives half of adaptation_max.
   other_fossil_co2:
     value: 2312.9
     unit: MtCO2/yr
@@ -162,8 +198,190 @@ climate:
     source: gcb
     note: Cement, flaring and other industry CO2, 2024. Held constant.
 
-bau:
+slots:
+  domestic_per_quarter:
+    value: 2
+    status: placeholder
+    note: Build doc placeholder (design doc suggests 3). Unused slots bank with no cap.
+  diplomatic_per_quarter:
+    value: 1
+    status: placeholder
+    note: Build doc placeholder (design doc suggests 2).
+
+market:
+  cost_weight:
+    value: 0.5
+    status: placeholder
+    note: Weight of levelized cost (vs the 2019-2024 trend mix) in what the market builds.
+  cost_temperature:
+    value: 3.0
+    unit: $/GJ
+    status: placeholder
+    note: Logit spread; a source this much dearer than the cheapest gets e^-1 of its weight.
+  discount_rate:
+    value: 0.07
+    status: placeholder
+    note: Real discount rate for levelized cost. Unsourced approximate.
   reserve_margin:
     value: 0.0
     status: placeholder
-    note: BAU plans normal output this far above projected demand, to cover the seasonal peak.
+    note: Market plans normal output this far above projected demand. Zero, because fossil headroom already covers the seasonal peak (docs/CALIBRATION.md).
+
+research:
+  max_cost_cut:
+    value: 0.3
+    status: placeholder
+    note: Most a nation's own research can cut its unit cost for one technology.
+  half_effect_spend:
+    value: 0.05
+    unit: T$
+    status: placeholder
+    note: Cumulative research spend that gives half of max_cost_cut.
+  points_per_trillion:
+    value: 1000
+    status: placeholder
+    note: Tech points per T$ of research (an index for reporting).
+  productivity:
+    value: 0.1
+    status: placeholder
+    note: Growth gain per unit of cumulative research spend / GDP.
+  productivity_cap:
+    value: 0.005
+    status: placeholder
+    note: Most research can add to annual growth.
+
+actions:
+  carbon_price_max:
+    value: 300
+    unit: $/tCO2
+    status: placeholder
+    note: Highest carbon price an action can set.
+  carbon_pc_per_dollar:
+    value: 0.1
+    status: placeholder
+    note: Political capital per $/t of carbon-price increase.
+  retire_pc_per_ej:
+    value: 2.0
+    status: placeholder
+    note: Political capital per EJ/yr of capacity retired early.
+  retire_coal_multiplier:
+    value: 1.5
+    status: placeholder
+    note: Coal closures cost this much more political capital (jobs and regions).
+  retire_approval_hit:
+    value: 0.5
+    status: placeholder
+    note: Approval lost per unit of fossil capacity retired as a share of demand.
+  stranded_value_share:
+    value: 0.5
+    status: placeholder
+    note: Share of replacement cost written off when capacity is retired early (no plant-age data).
+  max_subsidy:
+    value: 0.9
+    status: placeholder
+    note: Highest share of a source's build cost the government can subsidise.
+  efficiency_max_gain:
+    value: 0.2
+    status: placeholder
+    note: Most one efficiency investment can cut energy intensity.
+  efficiency_scale:
+    value: 0.02
+    status: placeholder
+    note: Spend, as a share of GDP, that gives ~63% of efficiency_max_gain.
+  influence_per_trillion:
+    value: 100
+    status: placeholder
+    note: Influence points per T$.
+  activity_cap_max:
+    value: 0.3
+    status: placeholder
+    note: Highest activity cap (share of energy demand removed).
+  activity_pc_cost:
+    value: 100
+    status: placeholder
+    note: Political capital per unit of activity-cap increase (0.1 -> 10).
+  activity_gdp_ratio:
+    value: 0.5
+    status: placeholder
+    note: GDP lost per unit of demand removed by the activity cap (energy-intensive output is half as GDP-intensive).
+  activity_approval_hit:
+    value: 0.5
+    status: placeholder
+    note: Approval lost per year per unit of activity cap in force.
+
+scoring:
+  weight_income:
+    value: 0.25
+    status: placeholder
+    note: Nation Index weight. Equal weights to start.
+  weight_security:
+    value: 0.25
+    status: placeholder
+    note: Nation Index weight.
+  weight_welfare:
+    value: 0.25
+    status: placeholder
+    note: Nation Index weight.
+  weight_clean:
+    value: 0.25
+    status: placeholder
+    note: Nation Index weight.
+  income_scale:
+    value: 0.1
+    status: placeholder
+    note: log(actual / baseline-expected income per person) that moves the income score from 0.5 to 0.73.
+  shortfall_zero:
+    value: 0.05
+    status: placeholder
+    note: Average shortfall share that scores zero on supply security.
+  import_scale:
+    value: 0.1
+    status: placeholder
+    note: Change in import dependence that moves the import score from 0.5 to 0.27 or 0.73.
+  price_scale:
+    value: 0.3
+    status: placeholder
+    note: log(end price / start price) that moves the price score from 0.5 to 0.27 or 0.73.
+  clean_scale:
+    value: 1.0
+    status: placeholder
+    note: log(clean-build share / GDP share) that moves the clean score from 0.5 to 0.73.
+  world_good:
+    value: 1.6
+    unit: degC
+    status: placeholder
+    note: World multiplier is 1.0 at or below this warming.
+  world_bad:
+    value: 2.6
+    unit: degC
+    status: placeholder
+    note: World multiplier reaches its floor at this warming.
+  world_floor:
+    value: 0.1
+    status: placeholder
+    note: Lowest world multiplier.
+  good_world_warming:
+    value: 2.0
+    unit: degC
+    status: placeholder
+    note: Final warming at or below this counts as a good world outcome for endings.
+  top_rank:
+    value: 4
+    status: placeholder
+    note: Rank on the Nation Index (out of 16) that counts as a top finish for endings.
+  fallen_stability:
+    value: 0.1
+    status: placeholder
+    note: Stability below this ends the game early (Fallen Government).
+  net_zero_share:
+    value: 0.05
+    status: placeholder
+    note: Emissions at or below this share of 2025 count as net zero.
+  bonus_first_net_zero:
+    value: 5.0
+    status: placeholder
+    note: Flat bonus points.
+  bonus_largest_reduction:
+    value: 5.0
+    status: placeholder
+    note: Flat bonus points.

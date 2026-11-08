@@ -8,7 +8,7 @@ as the reference point for the growth drags.
 
 from __future__ import annotations
 
-from sim import construction, energy
+from sim import construction, energy, tech
 from sim.config import FUELS, Config
 from sim.state import Nation, World
 
@@ -41,6 +41,7 @@ def new_nation(cfg: Config, nid: str) -> Nation:
         debt_local=cfg.nat(nid, "start.debt_local"),
         approval=approval,
         stability=approval,
+        political_capital=cfg.tune("politics.political_capital_start"),
         energy_intensity=total / gdp,
         demand=total,
         capacity=capacity,
@@ -64,11 +65,12 @@ def new_world(cfg: Config, seed: int) -> World:
         d = energy.dispatch(cfg, n, energy.base_demand(n))
         n.supply, n.energy_price, n.emissions = d.supply, d.price, d.emissions
     for nid in sorted(nations):
-        construction.seed_pipeline(cfg, nid, nations[nid])
+        construction.seed_pipeline(cfg, world, nid, nations[nid])
     world.base = {f"fuel_use_{f}": v for f, v in energy.global_fuel_use(world).items()}
     energy.apply_trade(world, cfg)
     for nid in sorted(nations):
         n = nations[nid]
+        n.energy_price = tech.delivered_price(cfg, world, n)
         n.base.update(
             {
                 "energy_price": n.energy_price,
@@ -78,6 +80,9 @@ def new_world(cfg: Config, seed: int) -> World:
                 "debt_local": n.debt_local,
                 "debt_hard_ratio": n.debt_hard / n.gdp,
                 "emissions": n.emissions,
+                "carbon_price": n.carbon_price,
+                "import_dependence": n.import_dependence,
+                "income_per_person": n.gdp / n.population,
                 "gdp": n.gdp,
                 "population": n.population,
             }

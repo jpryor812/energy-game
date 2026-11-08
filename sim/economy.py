@@ -3,10 +3,12 @@
 Annual GDP growth:  g = g0 + I + P + T - S - E - R - D - C
 
 - g0: baseline, interpolated from `trend.g0_start` (2025) to `trend.g0_end` (final turn).
-- I, P, R: zero until actions exist (M2).
+- I: zero; investment is already in g0, and public builds act through energy supply.
+- P: productivity from cumulative research spending / GDP, capped.
+- R: stranded-asset write-offs from early retirements, a one-off loss in the step after.
 - T: trade, the change in fossil export value since 2025 as a share of GDP x elasticity.
 - S: energy shortfall share x `shortfall_drag`.
-- E: energy price rise above the 2025 level x `price_drag`.
+- E: energy price rise above the 2025 level x `price_drag`, softened by carbon-revenue rebates.
 - D: rise in hard-currency debt / GDP above the 2025 ratio x `debt_drag`.
 - C: climate damage from warming since 2025 (computed by sim.climate the step before).
 
@@ -29,28 +31,45 @@ def baseline_growth(cfg: Config, nid: str, t: int) -> float:
     return start + (end - start) * frac
 
 
-def growth_terms(cfg: Config, nid: str, n: Nation, t: int) -> dict[str, float]:
+def growth_terms(cfg: Config, nid: str, n: Nation, t: int, dt: int = 1) -> dict[str, float]:
     share_short = n.shortfall / n.demand if n.demand > 0 else 0.0
     base_price = n.base.get("energy_price", 0.0)
     price_rise = max(0.0, n.energy_price / base_price - 1.0) if base_price > 0 else 0.0
+    relief = 1 - n.rebate * cfg.tune("economy.rebate_price_relief")
     export_change = (n.export_revenue - n.base.get("export_revenue", 0.0)) / n.gdp
     debt_rise = max(0.0, n.debt_hard / n.gdp - n.base.get("debt_hard_ratio", 0.0))
+    research = sum(n.research.values()) / n.gdp
     return {
         "g0": baseline_growth(cfg, nid, t),
+        "P": min(
+            cfg.tune("research.productivity_cap"), cfg.tune("research.productivity") * research
+        ),
         "T": cfg.tune("economy.trade_elasticity") * export_change,
         "S": cfg.tune("economy.shortfall_drag") * share_short,
-        "E": cfg.tune("economy.price_drag") * price_rise,
+        "E": cfg.tune("economy.price_drag") * price_rise * relief,
+        # A one-off level loss spread over this step, expressed as an annual rate.
+        "R": cfg.tune("economy.stranded_drag") * n.pending_writeoff / n.gdp * 4 / dt,
         "D": cfg.tune("economy.debt_drag") * debt_rise,
         "C": n.climate_damage,
     }
 
 
 def annual_growth(terms: dict[str, float]) -> float:
-    return terms["g0"] + terms["T"] - terms["S"] - terms["E"] - terms["D"] - terms["C"]
+    gains = terms["g0"] + terms["P"] + terms["T"]
+    return gains - terms["S"] - terms["E"] - terms["R"] - terms["D"] - terms["C"]
+
+
+def carbon_revenue(n: Nation) -> float:
+    """Discretionary carbon revenue, T$/yr: only the price above its 2025 level counts (2025
+    revenue is already in the ordinary budget), minus the share rebated to households."""
+    extra = max(0.0, n.carbon_price - n.base.get("carbon_price", 0.0))
+    return extra * n.emissions * 1e-6 * (1 - n.rebate)
 
 
 def apply_income(world: World, cfg: Config, dt: int) -> None:
-    """Capital += discretionary share of GDP + government take on fossil exports - debt service.
+    """Capital += discretionary share of GDP + government take on fossil exports + carbon
+    revenue - interest on debt taken on during the game. Political capital and action slots
+    accrue too.
 
     Debt service counts only debt above the 2025 level: servicing pre-existing public debt is
     part of the ordinary budget, not the discretionary capital the player spends.
@@ -59,12 +78,23 @@ def apply_income(world: World, cfg: Config, dt: int) -> None:
     take = cfg.tune("economy.fossil_revenue_take")
     r_hard = cfg.tune("economy.interest_rate_hard")
     r_local = cfg.tune("economy.interest_rate_local")
+    years = dt / 4
     for nid in sorted(world.nations):
         n = world.nations[nid]
         new_hard = max(0.0, n.debt_hard - n.base.get("debt_hard", 0.0))
         new_local = max(0.0, n.debt_local - n.base.get("debt_local", 0.0))
-        income = share * n.gdp + take * n.export_revenue - r_hard * new_hard - r_local * new_local
-        n.capital += income * dt / 4
+        n.carbon_revenue = carbon_revenue(n)
+        income = share * n.gdp + take * n.export_revenue + n.carbon_revenue
+        income -= r_hard * new_hard + r_local * new_local
+        n.capital += income * years
+
+        pc = cfg.tune("politics.pc_income_base") + cfg.tune("politics.pc_income_approval") * (
+            n.approval - cfg.tune("politics.approval_baseline")
+        )
+        n.political_capital = max(0.0, n.political_capital + pc * years)
+        for slot in ("domestic", "diplomatic"):
+            per_quarter = cfg.tune(f"slots.{slot}_per_quarter")
+            n.slots_banked[slot] = n.slots_banked.get(slot, 0) + per_quarter * dt
 
 
 def apply_growth(world: World, cfg: Config, dt: int) -> None:
@@ -73,9 +103,10 @@ def apply_growth(world: World, cfg: Config, dt: int) -> None:
     baseline = cfg.tune(pol + "approval_baseline")
     for nid in sorted(world.nations):
         n = world.nations[nid]
-        terms = growth_terms(cfg, nid, n, world.t)
+        terms = growth_terms(cfg, nid, n, world.t, dt)
         g = annual_growth(terms)
         n.growth = g
+        n.pending_writeoff = 0.0
         years = dt / 4
         n.gdp *= (1 + g) ** years
         n.population *= (1 + cfg.nat(nid, "trend.population_growth")) ** years
@@ -95,6 +126,7 @@ def apply_growth(world: World, cfg: Config, dt: int) -> None:
             cfg.tune(pol + "approval_shortfall_hit") * terms["S"]
             + cfg.tune(pol + "approval_price_hit") * terms["E"]
             + cfg.tune(pol + "approval_damage_hit") * terms["C"]
+            + cfg.tune("actions.activity_approval_hit") * n.activity_cap
         )
         pull = 1 - (1 - reversion) ** years
         n.approval = min(1.0, max(0.0, n.approval + pull * (baseline - n.approval) - hit * years))

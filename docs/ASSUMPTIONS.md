@@ -28,11 +28,11 @@ with the reason for each. Newest milestone last.
 8. **`step` is pure.** It deep-copies the world and returns a new one. Simple and safe at 16
    nations; revisit only if profiling says so.
 9. **Country IDs.** ISO 3166-1 alpha-3 codes; the EU uses the World Bank aggregate code `EUU`.
-10. **Only the `noop` bot exists in M0.** The CLI example `--bot balanced` works from M2. Submitting
-    any action before M2 raises `NotImplementedError` instead of being silently ignored.
+10. **Only the `noop` bot exists in M0.** (Superseded in M2: four playing bots exist, and
+    invalid actions are rejected and logged.)
 11. **`new_world` lives in `sim/scenario.py`** (moved from `sim/state.py` in M1 so `state.py`
     stays plain data). Not listed in the build doc's layout.
-12. **Action slots are not banked yet.** Slot accrual belongs with actions in M2.
+12. **Action slots are not banked yet.** (Superseded in M2: slots bank every quarter.)
 
 ## M1: world model, business as usual
 
@@ -61,7 +61,7 @@ with the reason for each. Newest milestone last.
     emissions match the Global Carbon Budget exactly; Nigeria uses world factors.
 17. **Retirement.** Constant rate 1/lifespan (no plant-age data), or the observed 2019-2024
     decline in use where faster (e.g. EU and US coal).
-18. **BAU builder (M1 decision 2).** Orders are placed to meet projected demand at the slowest
+18. **BAU builder (M1 decision 2; replaced by the market builder in M2, item 29).** Orders are placed to meet projected demand at the slowest
     build time in the nation's mix, split by the nation's 2019-2024 change in use, and all
     delivered on that date. The pipeline is seeded at t=0 with what would already be under way.
     It builds grid to absorb new wind and solar. BAU builds cost no capital. Two simpler
@@ -97,14 +97,73 @@ with the reason for each. Newest milestone last.
 28. **Six then sixteen.** The build doc says to do the 6 playable nations first, then all 16.
     The same extraction script covers all 16 at once, so they were added together.
 
+## M2: actions, bots, scoring, endings
+
+29. **Market builder (M2 decision 1).** The M1 BAU builder becomes a private market that runs
+    for every nation, the player's included. New capacity = (1 - w) x the 2019-2024 trend mix +
+    w x a logit over levelized cost (w = `market.cost_weight` = 0.5, temperature $3/GJ).
+    Nuclear and hydro are policy-driven and appear only through the trend mix; the market picks
+    coal on cost only where the nation already burns it. Public builds from actions sit in the
+    same pipeline, so the market builds less when the player builds more. The market pays
+    nothing itself; subsidies are paid from capital when the market orders, and borrowed
+    locally if capital runs out.
+30. **Levelized cost.** Capital cost annualized at a 7% real discount rate over the lifespan,
+    per GJ of normal output, plus variable and carbon cost; wind and solar add a system cost of
+    the grid charge x (share / base absorb share)^2.
+31. **Electrifiable share.** Wind and solar can serve at most a share of primary demand that
+    rises from 40% (2025) to 70% (2050), placeholders standing in for electrification. Without
+    it, solar replaced all oil, including transport. Grid is not built beyond it.
+32. **Energy price includes capital costs.** The reported price is the average of capital
+    charge (at today's unit costs) + fuel + carbon over the sources dispatched, plus grid and
+    storage charges. Variable cost alone fell to zero as solar grew. Merit order still uses
+    variable cost only.
+33. **Slots (M2 decision 2).** 2 domestic + 1 diplomatic per quarter, banked with no cap. Every
+    action uses one slot of its type. `buy_influence` is domestic, as listed in the build doc.
+34. **Rejected, not raised.** A malformed or unaffordable action is rejected with a reason in
+    the history and costs nothing. Actions for an unknown nation are a programming error and
+    raise.
+35. **Political capital.** Starts at 10; earned at 4/yr plus 20 x (approval - 0.55)/yr, never
+    below zero. Spent on carbon-price increases (0.1 per $/t), early retirements (2 per EJ/yr,
+    x1.5 for coal) and activity caps.
+36. **Carbon revenue.** Only the price above its 2025 level adds to discretionary capital (2025
+    revenue is already in the ordinary budget), minus the rebated share. A rebate also removes
+    up to 80% of the energy-price growth drag.
+37. **Early retirement.** Writes off half of today's replacement cost (no plant-age data); half
+    of that is a one-off GDP loss in the next step (the R term). Fossil retirements also cut
+    approval.
+38. **Research.** Cumulative research spend on a technology cuts the nation's own unit cost for
+    it (up to 30%, half at $50bn), and research / GDP adds up to 0.5 pp/yr productivity (the P
+    term). Global learning curves are unaffected. The investment term I stays zero: baseline
+    growth already includes normal investment.
+39. **Efficiency, adaptation, activity cap.** Efficiency spending cuts energy intensity with
+    diminishing returns relative to GDP. Adaptation is a stock that removes up to 50% of
+    climate damage. The activity cap removes a share of demand and half as large a share of GDP,
+    and costs approval while in force.
+40. **Pledges** are recorded (target as a share of 2025 emissions, and a year) but have no
+    effect until trust and stocktakes arrive in M4.
+41. **Scoring.** Nation Index components are measured against each nation's own start: income
+    per person vs. its baseline-growth path; security from shortfall and import dependence;
+    welfare from average approval and the energy price change; clean competitiveness from its
+    share of clean capacity built vs. its share of 2025 GDP. Each maps to 0..1 through a
+    logistic or a linear ramp; sub-scores are averaged equally. Weights are equal. Running
+    scores are not stored per turn; the inputs are in the history and the score is computed at
+    the end.
+42. **World multiplier.** 1.0 up to 1.6 degC, falling quadratically to 0.1 at 2.6 degC.
+43. **Endings.** "Top rank" means rank 4 or better of 16 on N; a "good world" is final warming at
+    or below 2.0 degC. Fallen Government: the run stops as soon as the player's stability is
+    below 0.1.
+44. **Bonuses.** First net zero (at or below 5% of 2025 emissions, ties broken by nation id) and
+    largest percentage cut, 5 points each. Breakthrough technology and most impactful deal
+    wait for M4-M5.
+45. **Bots** plan with this quarter's slots and spend shares of current capital; the shares
+    and steps are bot behaviour and live in `sim/bots.py`, not in `data/`. `deal_maker` is
+    `balanced` plus a pledge and influence buying until deals exist.
+46. **Non-player nations take no actions in M2**; only the market runs for them. M3 adds AI.
+
 ## Open questions
 
-- **BAU builder vs. player builds (for M2).** When the player acts, should the BAU builder
-  still run for the player's nation (a private market that responds to prices and subsidies),
-  or should all building come from player actions?
-- **Frozen-trend BAU.** BAU emissions sit ~10% above the IEA Current Policies Scenario by 2049
-  because the builder ignores falling clean-energy costs (docs/CALIBRATION.md). Making it
-  cost-responsive would close the gap; AI nations in M3 may make this moot.
-- **Slots per quarter.** The design doc suggests 3 domestic + 2 diplomatic; the build doc says
-  2 domestic + 1 diplomatic (placeholder). M2 will use the build doc's numbers unless told
-  otherwise.
+- **Difficulty ordering (for M5).** Early bot runs score the US below India and Vietnam on the
+  same bot, the reverse of the design intent, because each Nation Index component is relative
+  to the nation's own start. Tune in the balance pass.
+- **Resolved in M2:** BAU builder vs. player builds (market runs for everyone), frozen-trend
+  BAU (market follows cost), and slots (2 + 1).

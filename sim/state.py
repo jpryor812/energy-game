@@ -108,16 +108,27 @@ class Nation:
     growth: float = 0.0
     climate_damage: float = 0.0
     base: dict[str, float] = field(default_factory=dict)
+    # M2 policy state and action effects.
+    research: dict[str, float] = field(default_factory=dict)
+    rebate: float = 0.0
+    activity_cap: float = 0.0
+    adaptation: float = 0.0
+    pending_writeoff: float = 0.0
+    carbon_revenue: float = 0.0
+    clean_built: float = 0.0
+    import_dependence: float = 0.0
 
     _FLOATS = (
         "gdp", "population", "capital", "political_capital", "influence", "tech_points",
         "fx_reserves", "debt_hard", "debt_local", "approval", "stability", "energy_intensity",
         "demand", "carbon_price", "emissions", "cumulative_emissions", "fair_share_budget",
         "shortfall", "curtailment", "energy_price", "export_revenue", "growth", "climate_damage",
+        "rebate", "activity_cap", "adaptation", "pending_writeoff", "carbon_revenue", "clean_built",
+        "import_dependence",
     )  # fmt: skip
     _FLOAT_MAPS = (
         "capacity", "subsidies", "tariffs", "supply", "fossil_production", "fossil_exports",
-        "fossil_imports", "base",
+        "fossil_imports", "base", "research",
     )  # fmt: skip
 
     @classmethod

@@ -36,9 +36,17 @@ def test_step_dt(cfg):
         turn.step(w, cfg, dt=0)
 
 
-def test_actions_not_yet_supported(cfg):
-    with pytest.raises(NotImplementedError):
-        turn.step(new_world(cfg, seed=1), cfg, actions={"AAA": [{"type": "build_capacity"}]})
+def test_actions_are_resolved_and_logged(cfg):
+    acts = [{"type": "rebate", "share": 0.5}, {"type": "no_such_action"}]
+    w = turn.step(new_world(cfg, seed=1), cfg, actions={"AAA": acts})
+    log = w.history[-1]["nations"]["AAA"]["actions"]
+    assert [r["ok"] for r in log] == [True, False]
+    assert w.nations["AAA"].rebate == 0.5
+
+
+def test_actions_for_unknown_nation_raise(cfg):
+    with pytest.raises(ValueError):
+        turn.step(new_world(cfg, seed=1), cfg, actions={"ZZZ": []})
 
 
 def test_stage_order_matches_build_doc():

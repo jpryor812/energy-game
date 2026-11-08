@@ -18,12 +18,12 @@ from typing import Any
 
 import yaml
 
-from sim import bots, canonical, config, turn
+from sim import bots, canonical, config, scoring, turn
 from sim.config import Config
 from sim.scenario import new_world
 from sim.state import World
 
-MILESTONE = "M1"
+MILESTONE = "M2"
 
 
 def play(
@@ -36,20 +36,25 @@ def play(
     world: World | None = None,
     until: int | None = None,
 ) -> World:
-    """Play from `world` (or a fresh world) until quarter `until` (default: the last turn)."""
+    """Play from `world` (or a fresh world) until quarter `until` (default: the last turn), or
+    until the player's government falls."""
     if country not in cfg.playable_ids:
         raise ValueError(f"'{country}' is not playable; choose from {cfg.playable_ids}")
     bot = bots.get(bot_name)
     if world is None:
         world = new_world(cfg, seed)
     end = cfg.value("tuning", "time.turns") if until is None else until
-    while world.t < end:
-        world = turn.step(world, cfg, actions={country: bot(world, country)}, dt=dt)
+    while world.t < end and not scoring.is_fallen(cfg, world, country):
+        world = turn.step(world, cfg, actions={country: bot(cfg, world, country)}, dt=dt)
     return world
 
 
 def summarize(cfg: Config, world: World, country: str, bot_name: str, dt: int) -> dict[str, Any]:
     start_year = cfg.value("tuning", "time.start_year")
+    result = scoring.score(cfg, world, country, fallen=scoring.is_fallen(cfg, world, country))
+    rejected = sum(
+        1 for h in world.history for r in h["nations"][country]["actions"] if not r["ok"]
+    )
     return {
         "milestone": MILESTONE,
         "seed": world.seed,
@@ -60,9 +65,16 @@ def summarize(cfg: Config, world: World, country: str, bot_name: str, dt: int) -
         "final_quarter": turn.quarter_label(world.t - 1, start_year) if world.t else None,
         "config_hash": cfg.hash,
         "state_hash": world.hash(),
-        "score": None,
-        "ending": None,
-        "bonuses": [],
+        "score": result["score"],
+        "ending": result["ending"],
+        "rank": result["rank"],
+        "nation_index": result["nation_index"],
+        "components": result["components"],
+        "world_multiplier": result["world_multiplier"],
+        "warming": result["warming"],
+        "bonuses": result["bonuses"],
+        "all_nations": result["all_nations"],
+        "actions_rejected": rejected,
     }
 
 
@@ -103,7 +115,20 @@ def run_batch(cfg: Config, batch_path: Path) -> Path:
     return out_dir
 
 
-AGGREGATE_COLUMNS = ["country", "bot", "seed", "turns_played", "score", "ending", "state_hash"]
+AGGREGATE_COLUMNS = [
+    "country",
+    "bot",
+    "seed",
+    "turns_played",
+    "score",
+    "nation_index",
+    "rank",
+    "world_multiplier",
+    "warming",
+    "ending",
+    "actions_rejected",
+    "state_hash",
+]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -125,7 +150,10 @@ def main(argv: list[str] | None = None) -> int:
         cfg = config.load(args.data_dir)
         if args.command == "run":
             summary = run_one(cfg, args.seed, args.country, args.bot, args.out)
-            print(f"wrote {args.out} (state {summary['state_hash'][:12]})")
+            print(
+                f"wrote {args.out}: score {summary['score']:.1f}, rank {summary['rank']}, "
+                f"{summary['ending']} (state {summary['state_hash'][:12]})"
+            )
         else:
             out_dir = run_batch(cfg, args.config)
             print(f"wrote {out_dir / 'aggregate.csv'}")

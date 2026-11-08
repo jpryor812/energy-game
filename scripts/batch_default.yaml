@@ -1,7 +1,6 @@
 # Default batch: every playable nation x every bot x a few seeds.
-# M0 has only the noop bot; M2 adds all_fossil, all_clean, balanced, deal_maker.
 
 out_dir: runs/batch_default
 countries: [USA, IND, EUU, CHN, VNM, RUS]
-bots: [noop]
+bots: [all_clean, all_fossil, balanced, deal_maker]
 seeds: [1, 2, 3]

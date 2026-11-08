@@ -108,12 +108,39 @@ def test_completion_on_schedule(cfg, world):
     assert n.capacity["solar"] == pytest.approx(before + 1.0)
 
 
-def test_bau_builder_follows_mix(cfg, world):
+def test_market_mix_sums_to_one_and_respects_candidates(cfg, world):
     n = world.nations["AAA"]
-    construction.bau_build(cfg, "AAA", n, t=0)
-    built = {c.source for c in n.pipeline}
-    assert built <= {"coal", "solar", "wind", "grid"}
-    assert {"coal", "solar", "wind"} <= built
+    mix = construction.market_mix(cfg, world, "AAA", n)
+    assert sum(mix.values()) == pytest.approx(1.0)
+    assert set(mix) == set(construction.market_sources(cfg, "AAA"))
+    assert "nuclear" not in mix  # policy-driven, and not in AAA's trend mix
+
+
+def test_carbon_price_shifts_market_away_from_coal(cfg, world):
+    n = world.nations["AAA"]
+    before = construction.market_mix(cfg, world, "AAA", n)["coal"]
+    n.carbon_price = 150.0
+    assert construction.market_mix(cfg, world, "AAA", n)["coal"] < before
+
+
+def test_subsidy_shifts_market_and_costs_capital(cfg, world):
+    n = world.nations["AAA"]
+    before = construction.market_mix(cfg, world, "AAA", n)["gas"]
+    n.subsidies["gas"] = 0.9
+    assert construction.market_mix(cfg, world, "AAA", n)["gas"] > before
+    n.capital = 100.0
+    n.energy_intensity *= 1.5  # force a large gap so the market orders now
+    construction.market_build(cfg, world, "AAA", n)
+    assert n.capital < 100.0
+
+
+def test_market_orders_arrive_together(cfg, world):
+    n = world.nations["AAA"]
+    n.pipeline = []
+    n.energy_intensity *= 1.2
+    construction.market_build(cfg, world, "AAA", n)
+    due = {c.complete_turn for c in n.pipeline}
+    assert due == {construction.horizon_quarters(cfg, "AAA")}
 
 
 # --- climate and tech ----------------------------------------------------------------------------

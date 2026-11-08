@@ -8,11 +8,15 @@ Dispatch, per nation per step:
 1. Demand = GDP x energy intensity x the seasonal factor for the quarter(s) covered.
 2. Wind and solar run first. Output beyond what the grid can absorb (a base share of demand
    plus grid and storage capacity) is curtailed.
+   Wind and solar can never serve more than the electrifiable share of demand.
 3. Every other source has a *normal* output, capacity / headroom, which reproduces the
    2025 data mix at t=0. If normal output exceeds the remaining demand, the most expensive
    sources are cut first. If it falls short, headroom is used cheapest first. What is still
    unmet is shortfall. "Expensive" includes the carbon price, so carbon pricing shifts
    dispatch at the margin.
+
+The `price` here is the variable (fuel + carbon) cost used for merit order; the nation's
+reported energy price also includes capital costs (sim.tech.delivered_price).
 """
 
 from __future__ import annotations
@@ -54,20 +58,31 @@ def marginal_cost(cfg: Config, nid: str, source: str, carbon_price: float) -> fl
     return cfg.src(source, "variable_cost") + carbon_price * ef / 1e3
 
 
-def vre_absorb_limit(cfg: Config, nation: Nation, demand: float) -> float:
-    """EJ/yr of wind and solar the system can take without curtailment."""
+def vre_max_share(cfg: Config, t: int) -> float:
+    """Most of primary demand wind and solar can serve at turn t: the electrifiable share,
+    rising linearly from 2025 to the final turn."""
+    start = cfg.tune("energy.vre_max_share_start")
+    end = cfg.tune("energy.vre_max_share_end")
+    frac = min(1.0, max(0.0, t / max(1, cfg.tune("time.turns") - 1)))
+    return start + (end - start) * frac
+
+
+def vre_absorb_limit(cfg: Config, nation: Nation, demand: float, t: int = 0) -> float:
+    """EJ/yr of wind and solar the system can take without curtailment: a base share of demand
+    plus grid and storage, never more than the electrifiable share."""
     enablers = [s for s in cfg.source_ids if cfg.category(s) == "enabler"]
-    return cfg.tune("energy.vre_base_absorb_share") * demand + sum(
+    limit = cfg.tune("energy.vre_base_absorb_share") * demand + sum(
         nation.capacity.get(s, 0.0) for s in enablers
     )
+    return min(limit, vre_max_share(cfg, t) * demand)
 
 
-def dispatch(cfg: Config, nation: Nation, demand: float) -> Dispatch:
+def dispatch(cfg: Config, nation: Nation, demand: float, t: int = 0) -> Dispatch:
     supply = {s: 0.0 for s in cfg.energy_source_ids}
 
     vre = cfg.vre_ids
     vre_avail = sum(nation.capacity.get(s, 0.0) for s in vre)
-    vre_used = min(vre_avail, vre_absorb_limit(cfg, nation, demand), demand)
+    vre_used = min(vre_avail, vre_absorb_limit(cfg, nation, demand, t), demand)
     if vre_avail > 0:
         for s in vre:
             supply[s] = nation.capacity.get(s, 0.0) * vre_used / vre_avail
@@ -120,7 +135,7 @@ def apply_dispatch(world: World, cfg: Config, dt: int) -> None:
     factor = season_factor(cfg, world.t, dt)
     for nid in sorted(world.nations):
         n = world.nations[nid]
-        d = dispatch(cfg, n, base_demand(n) * factor)
+        d = dispatch(cfg, n, base_demand(n) * factor, world.t)
         n.demand = d.demand
         n.supply = d.supply
         n.shortfall = d.shortfall
@@ -163,6 +178,7 @@ def apply_trade(world: World, cfg: Config) -> None:
                 n.fossil_imports[f] = consumed - production
             revenue += n.fossil_exports[f] * cfg.tune(f"energy.fuel_price.{f}")
         n.export_revenue = revenue * GJ_PER_EJ / DOLLARS_PER_TRILLION
+        n.import_dependence = import_dependence(n)
 
 
 def trade_balance(cfg: Config, nation: Nation) -> float:
