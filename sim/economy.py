@@ -1,6 +1,6 @@
 """GDP, income, population, energy intensity, FX, approval and stability.
 
-Annual GDP growth:  g = g0 + I + P + T - S - E - R - D - C
+Annual GDP growth:  g = g0 + I + P + T - S - E - R - D - C - F
 
 - g0: baseline, interpolated from `trend.g0_start` (2025) to `trend.g0_end` (final turn).
 - I: zero; investment is already in g0, and public builds act through energy supply.
@@ -11,6 +11,7 @@ Annual GDP growth:  g = g0 + I + P + T - S - E - R - D - C
 - S: energy shortfall share x `shortfall_drag`.
 - E: energy price rise above the 2025 level x `price_drag`, softened by carbon-revenue rebates.
 - D: rise in hard-currency debt / GDP above the 2025 ratio x `debt_drag`.
+- F: discretionary tax change x `tax.growth_drag` (negative when taxes are cut).
 - C: climate damage from warming since 2025 (computed by sim.climate the step before).
 
 Every drag is measured against the nation's own 2025 state, because the baseline growth rate
@@ -53,13 +54,15 @@ def growth_terms(cfg: Config, nid: str, n: Nation, t: int, dt: int = 1) -> dict[
         # A one-off level loss spread over this step, expressed as an annual rate.
         "R": cfg.tune("economy.stranded_drag") * n.pending_writeoff / n.gdp * 4 / dt,
         "D": cfg.tune("economy.debt_drag") * debt_rise,
+        # Fiscal: discretionary tax above (or below) 2025 slows (or speeds) growth.
+        "F": cfg.tune("tax.growth_drag") * n.tax_change,
         "C": n.climate_damage,
     }
 
 
 def annual_growth(terms: dict[str, float]) -> float:
     gains = terms["g0"] + terms["P"] + terms["T"]
-    return gains - terms["S"] - terms["E"] - terms["R"] - terms["D"] - terms["C"]
+    return gains - terms["S"] - terms["E"] - terms["R"] - terms["D"] - terms["C"] - terms["F"]
 
 
 def carbon_revenue(n: Nation) -> float:
@@ -67,6 +70,19 @@ def carbon_revenue(n: Nation) -> float:
     revenue is already in the ordinary budget), minus the share rebated to households."""
     extra = max(0.0, n.carbon_price - n.base.get("carbon_price", 0.0))
     return extra * n.emissions * 1e-6 * (1 - n.rebate)
+
+
+def tax_credit_cost(n: Nation) -> float:
+    """Revenue given up to tax credits, T$/yr: production credits ($/GJ x output) plus
+    manufacturing credits (share x factory sales)."""
+    cost = 0.0
+    for key, rate in n.tax_credits.items():
+        kind, tech = key.split(":", 1)
+        if kind == "generation":
+            cost += rate * n.supply.get(tech, 0.0) * 1e-3
+        else:
+            cost += rate * n.factory_sales.get(tech, 0.0)
+    return cost
 
 
 def apply_income(world: World, cfg: Config, dt: int) -> None:
@@ -88,6 +104,7 @@ def apply_income(world: World, cfg: Config, dt: int) -> None:
         new_local = max(0.0, n.debt_local - n.base.get("debt_local", 0.0))
         n.carbon_revenue = carbon_revenue(n)
         income = share * n.gdp + take * n.export_revenue + n.carbon_revenue + n.tariff_revenue
+        income += n.tax_change * n.gdp - tax_credit_cost(n)
         income -= r_hard * new_hard + r_local * new_local
         n.capital += income * years
 

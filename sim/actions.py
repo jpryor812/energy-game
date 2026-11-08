@@ -8,6 +8,8 @@ run. Every action uses one slot of its type; unused slots are banked with no cap
 
 Units: amounts of capacity in EJ/yr, money in T$, carbon price in $/tCO2, shares in 0..1.
 Diplomatic actions (M4): talks, tariffs, the carbon club, deals, and carbon credit orders.
+Domestic economy (M4b): taxes, tax credits, factories, domestic content, retraining, and
+electrification programmes.
 """
 
 from __future__ import annotations
@@ -19,7 +21,7 @@ from typing import Any
 
 from sim import construction, credits, deals, diplomacy, tech, trade
 from sim.config import Config
-from sim.state import Nation, Pledge, World
+from sim.state import Construction, Nation, Pledge, World
 
 DOMESTIC, DIPLOMATIC = "domestic", "diplomatic"
 RESOURCES = ("capital", "political_capital", "influence")
@@ -416,6 +418,71 @@ def _sell_apply(cfg, world, n, act):
     )
 
 
+# --- domestic economy (M4b) ----------------------------------------------------------------------
+
+
+def _tax_check(cfg, world, n, act):
+    level = _num(act, "level", cfg.tune("tax.min_change"), cfg.tune("tax.max_change"))
+    raised = max(0.0, level - n.tax_change)
+    return {"political_capital": cfg.tune("tax.pc_per_point") * raised * 100}
+
+
+def _tax_apply(cfg, world, n, act):
+    raised = max(0.0, act["level"] - n.tax_change)
+    n.approval = max(0.0, n.approval - cfg.tune("tax.approval_hit") * raised)
+    n.tax_change = float(act["level"])
+
+
+def _credit_check(cfg, world, n, act):
+    kind = _choice(act, "kind", ["generation", "manufacturing"])
+    if kind == "generation":
+        _choice(act, "tech", cfg.energy_source_ids)
+        _num(act, "rate", 0.0, cfg.tune("tax.generation_credit_max"))
+    else:
+        _choice(act, "tech", list(trade.EQUIPMENT))
+        _num(act, "rate", 0.0, cfg.tune("tax.manufacturing_credit_max"))
+    return {}
+
+
+def _credit_apply(cfg, world, n, act):
+    key = f"{act['kind']}:{act['tech']}"
+    if act["rate"] > 0:
+        n.tax_credits[key] = float(act["rate"])
+    else:
+        n.tax_credits.pop(key, None)
+
+
+def _factory_check(cfg, world, n, act):
+    _choice(act, "tech", list(trade.EQUIPMENT))
+    return {"capital": cfg.tune("industry.factory_capital_cost") * _positive(act)}
+
+
+def _factory_apply(cfg, world, n, act):
+    done = world.t + int(cfg.tune("industry.factory_build_time"))
+    n.pipeline.append(Construction(construction.FACTORY + act["tech"], float(act["amount"]), done))
+
+
+def _content_check(cfg, world, n, act):
+    _choice(act, "tech", list(trade.EQUIPMENT))
+    _num(act, "share", 0.0, 1.0)
+    return {}
+
+
+def _content_apply(cfg, world, n, act):
+    if act["share"] > 0:
+        n.domestic_content[act["tech"]] = float(act["share"])
+    else:
+        n.domestic_content.pop(act["tech"], None)
+
+
+def _retraining_apply(cfg, world, n, act):
+    n.retraining += act["amount"]
+
+
+def _electrification_apply(cfg, world, n, act):
+    n.electrification += act["amount"]
+
+
 SPECS: dict[str, Spec] = {
     "build_capacity": Spec(DOMESTIC, _build_check, _build_apply),
     "retire_capacity": Spec(DOMESTIC, _retire_check, _retire_apply),
@@ -428,6 +495,12 @@ SPECS: dict[str, Spec] = {
     "set_activity_cap": Spec(DOMESTIC, _cap_check, _cap_apply),
     "adaptation_spend": Spec(DOMESTIC, _spend_check, _adaptation_apply),
     "rebate": Spec(DOMESTIC, _rebate_check, _rebate_apply),
+    "set_tax_rate": Spec(DOMESTIC, _tax_check, _tax_apply),
+    "set_tax_credit": Spec(DOMESTIC, _credit_check, _credit_apply),
+    "build_factory": Spec(DOMESTIC, _factory_check, _factory_apply),
+    "set_domestic_content": Spec(DOMESTIC, _content_check, _content_apply),
+    "fund_retraining": Spec(DOMESTIC, _spend_check, _retraining_apply),
+    "electrification_program": Spec(DOMESTIC, _spend_check, _electrification_apply),
     "make_pledge": Spec(DIPLOMATIC, _pledge_check, _pledge_apply),
     "open_talks": Spec(DIPLOMATIC, _talks_check, _talks_apply),
     "set_tariff": Spec(DIPLOMATIC, _tariff_check, _tariff_apply),

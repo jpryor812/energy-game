@@ -281,6 +281,47 @@ Decisions made with the user on 2026-11-08 are recorded in docs/DESIGN.md ("Deci
     the financier's capital may be gone before its own actions resolve; those actions are
     rejected and logged.
 
+## M4b part 1: domestic economy and elections
+
+74. **Taxes.** A discretionary tax change of -1 to +3 points of GDP (decided 2026-11-08) adds
+    that share of GDP to capital each year, drags growth by 0.15 pp per point (a cut boosts it),
+    costs 0.02 approval per point raised (once) and 3 political capital per point raised.
+75. **Tax credits** are paid as foregone revenue each quarter, not from capital up front:
+    production credits ($/GJ of a source's output) lower its dispatch cost, its levelized cost
+    and the delivered energy price; manufacturing credits (share of factory sales) raise a
+    nation's world market share as capacity x (1 + credit)^2.
+76. **Factories.** Each nation has solar, wind and battery factory capacity (T$/yr of output),
+    starting from 2025 manufacturing shares x an approximate world capacity (0.15, 0.10, 0.10
+    T$/yr). Market shares follow capacity; the rest of the world keeps its 2025 capacity.
+    Factories cost 0.5 T$ per T$/yr, take 8 quarters, and do not retire (simplification).
+    World equipment demand comes from completed builds, so nobody runs short of supply.
+77. **Domestic content** forces a nation's own share of its equipment purchases up to the rule;
+    if its factories cannot make that much, builds cost up to 0.5 x the shortfall more.
+78. **Jobs** (millions): fossil supply = 0.0359/EJ of fossil production (IEA World Energy
+    Employment 2025: 18.4 million fossil supply jobs in 2024); clean operations 0.08/EJ of
+    non-fossil supply; construction 0.43 per EJ/yr completed per year and manufacturing 36 per
+    T$/yr of factory sales, both set so each is ~10 million jobs in the model's 2025 world.
+    Build rate and factory sales are smoothed (half the gap each quarter) so job counts do not
+    jump with lumpy deliveries; the first year is seeded from projects already under way.
+79. **Jobs move approval** each quarter by 3 x the weighted change as a share of the workforce
+    (half the population); fossil losses count double, softened by up to 70% by retraining
+    (half at a stock of 0.5% of GDP).
+80. **Electrification programmes** raise a nation's wind/solar and clean ceilings by up to 20
+    points (half at 2% of GDP spent).
+81. **Elections** (decided 2026-11-08): the player's nation votes at the end of 2028, 2032, 2036,
+    2040, 2044 and 2048. The vote is purely economic: 0.53 incumbency + 0.03 per pp/yr of
+    growth above baseline over the term + 2 x weighted job change / workforce - 0.1 x energy
+    price rise - 2 x tax raised + a seeded normal swing (sd 0.02). Win at 50%. Losing hands the
+    nation to the AI (its default personality) for one term; the player returns at the next
+    election date without a vote. Approval is not in the vote.
+82. **Opposition terms** keep everything the AI does: carbon prices, subsidies, taxes and deals
+    carry over when the player returns.
+83. **AI and the new levers.** AI nations consider factories (valued by extra export growth) and
+    electrification (when within 5 points of their clean ceiling). Taxes, tax credits, domestic
+    content and retraining are player levers for now: AI leaders face no elections.
+84. **Stage order.** An "elections" stage runs after the stocktake and before the scoring
+    snapshot (the build doc's pipeline had no election stage).
+
 ## Open questions
 
 - **Difficulty ordering (for M5).** Early bot runs score the US below India and Vietnam on the
@@ -289,6 +330,9 @@ Decisions made with the user on 2026-11-08 are recorded in docs/DESIGN.md ("Deci
 - **AI overshoot (for M5).** Cheap clean energy leads several low-ambition nations to cut far
   past their target paths, and the US and China drop sharply in the late 2040s
   (docs/CALIBRATION.md, "AI world").
+- **Construction jobs swing with build waves (for M5).** Big late-game build-outs (the US in
+  the 2040s) create and then shed millions of construction jobs, which can swing an election
+  by 20+ points; consider tying construction jobs to a smoother measure.
 - **Resolved in M4:** all-or-nothing fair share (now a 1.5 degC pathway on each nation's own
   emissions).
 - **Resolved in M2:** BAU builder vs. player builds (market runs for everyone), frozen-trend

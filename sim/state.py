@@ -128,6 +128,17 @@ class Nation:
     period_emissions: float = 0.0
     exported_cut_rate: float = 0.0
     climate_credit: dict[str, float] = field(default_factory=dict)
+    # M4b domestic economy.
+    tax_change: float = 0.0
+    tax_credits: dict[str, float] = field(default_factory=dict)
+    factory_capacity: dict[str, float] = field(default_factory=dict)
+    factory_sales: dict[str, float] = field(default_factory=dict)
+    equipment_demand: dict[str, float] = field(default_factory=dict)
+    domestic_content: dict[str, float] = field(default_factory=dict)
+    jobs: dict[str, float] = field(default_factory=dict)
+    build_rate: float = 0.0
+    retraining: float = 0.0
+    electrification: float = 0.0
 
     _FLOATS = (
         "gdp", "population", "capital", "political_capital", "influence", "tech_points",
@@ -137,11 +148,13 @@ class Nation:
         "rebate", "activity_cap", "adaptation", "efficiency_spent", "pending_writeoff",
         "carbon_revenue", "clean_built", "import_dependence", "goods_exports",
         "cleantech_exports", "tariff_revenue", "trade_drag", "credit_balance", "credits_bought",
-        "period_emissions", "exported_cut_rate",
+        "period_emissions", "exported_cut_rate", "tax_change", "build_rate", "retraining",
+        "electrification",
     )  # fmt: skip
     _FLOAT_MAPS = (
         "capacity", "subsidies", "tariffs", "supply", "fossil_production", "fossil_exports",
-        "fossil_imports", "base", "research", "climate_credit",
+        "fossil_imports", "base", "research", "climate_credit", "tax_credits",
+        "factory_capacity", "factory_sales", "equipment_demand", "domestic_content", "jobs",
     )  # fmt: skip
 
     @classmethod
@@ -177,6 +190,12 @@ class World:
     coalition_tariffs: dict[str, float] = field(default_factory=dict)
     credit_price: float = 0.0
     credit_orders: list[dict[str, Any]] = field(default_factory=list)
+    # M4b: the player's nation, elections, and an opposition term (through turn
+    # `opposition_until` the AI governs the player's nation).
+    player: str | None = None
+    opposition_until: int = -1
+    term_start: dict[str, float] = field(default_factory=dict)
+    elections: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
@@ -203,6 +222,10 @@ class World:
             coalition_tariffs={k: float(v) for k, v in d["coalition_tariffs"].items()},
             credit_price=float(d["credit_price"]),
             credit_orders=[dict(o) for o in d["credit_orders"]],
+            player=d["player"],
+            opposition_until=int(d["opposition_until"]),
+            term_start={k: float(v) for k, v in d["term_start"].items()},
+            elections=[dict(e) for e in d["elections"]],
         )
 
     def to_json(self, *, indent: int | None = 2) -> str:

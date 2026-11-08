@@ -8,7 +8,7 @@ as the reference point for the growth drags.
 
 from __future__ import annotations
 
-from sim import construction, diplomacy, energy, tech
+from sim import construction, diplomacy, energy, jobs, tech, trade
 from sim.config import FUELS, Config
 from sim.state import Nation, World
 
@@ -95,6 +95,8 @@ def new_world(cfg: Config, seed: int) -> World:
     gdp_16 = sum(n.gdp for n in nations.values())
     world.base["gdp_16"] = gdp_16
     world.base["row_gdp"] = max(0.0, cfg.tune("trade.world_gdp_2025") - gdp_16)
+    trade.init_factories(cfg, world)
+    init_jobs(cfg, world)
     diplomacy.init_trust(world, cfg)
     diplomacy.init_club(world, cfg, FOUNDERS)
     world.credit_price = cfg.tune("credits.start_price")
@@ -103,3 +105,22 @@ def new_world(cfg: Config, seed: int) -> World:
 
 
 FOUNDERS = ["EUU"]  # the carbon club's founder (decided 2026-11-08)
+
+
+def init_jobs(cfg: Config, world: World) -> None:
+    """Starting build rates, factory sales and jobs, from the projects already under way in the
+    first year, so job counts do not jump in the first quarter."""
+    first_year: dict[str, dict[str, float]] = {}
+    for nid, n in world.nations.items():
+        done: dict[str, float] = {}
+        for c in n.pipeline:
+            if c.complete_turn <= 4 and not c.source.startswith(construction.FACTORY):
+                done[c.source] = done.get(c.source, 0.0) + c.amount
+        first_year[nid] = done
+        n.build_rate = sum(done.values())
+    costs = {s: tech.unit_cost(cfg, world, s) for s in trade.EQUIPMENT}
+    trade.apply_equipment(cfg, world, first_year, costs, 4)
+    for n in world.nations.values():
+        n.exported_cut_rate = 0.0
+        n.jobs = jobs.count(cfg, n)
+        n.base["fossil_jobs"] = n.jobs["fossil"]

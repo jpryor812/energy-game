@@ -6,7 +6,8 @@ planned annual mode), so annual mode can reuse the same rules.
 
 Income, AI decisions, actions, construction (with the market builder for every nation),
 dispatch and trade, economy (with goods trade), climate, technology, diplomacy (trust, deals,
-credit market), the five-yearly stocktake and the snapshot all run.
+credit market), the five-yearly stocktake, elections for the player's nation (M4b), and the
+snapshot all run.
 """
 
 from __future__ import annotations
@@ -17,7 +18,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from sim import actions as acts
-from sim import ai, credits, deals, energy, events, tech, trade
+from sim import ai, credits, deals, elections, energy, events, jobs, tech, trade
 from sim import climate as climate_model
 from sim import construction as build
 from sim import diplomacy as diplo
@@ -93,6 +94,7 @@ def energy_dispatch(world: World, cfg: Config, ctx: TurnContext) -> None:
 def economy(world: World, cfg: Config, ctx: TurnContext) -> None:
     """GDP growth, population, energy intensity, FX, approval, stability."""
     econ.apply_growth(world, cfg, ctx.dt)
+    jobs.apply(world, cfg)
 
 
 def climate(world: World, cfg: Config, ctx: TurnContext) -> None:
@@ -124,6 +126,11 @@ def stocktake(world: World, cfg: Config, ctx: TurnContext) -> None:
     ctx.logs["stocktake"] = diplo.run_stocktake(cfg, world)
 
 
+def election(world: World, cfg: Config, ctx: TurnContext) -> None:
+    """Every four years the player's nation votes (sim.elections)."""
+    ctx.logs["election"] = elections.run(cfg, world)
+
+
 def scoring_snapshot(world: World, cfg: Config, ctx: TurnContext) -> None:
     start_year = cfg.value("tuning", "time.start_year")
     world.history.append(
@@ -134,6 +141,8 @@ def scoring_snapshot(world: World, cfg: Config, ctx: TurnContext) -> None:
             "credit_market": ctx.logs.get("credit_market"),
             "club": list(trade.club_members(world)),
             "coalition_tariffs": dict(world.coalition_tariffs),
+            "election": ctx.logs.get("election"),
+            "player_in_power": elections.in_power(world) if world.player else None,
             "global_emissions": world.global_emissions,
             "global_cumulative_emissions": world.global_cumulative_emissions,
             "warming": world.warming,
@@ -153,6 +162,10 @@ def _nation_record(n, results: list[dict[str, Any]]) -> dict[str, Any]:
         "carbon_price": n.carbon_price,
         "import_dependence": n.import_dependence,
         "clean_built": n.clean_built,
+        "jobs": dict(n.jobs),
+        "tax_change": n.tax_change,
+        "factory_capacity": dict(n.factory_capacity),
+        "factory_sales": dict(n.factory_sales),
         "tariffs": dict(n.tariffs),
         "goods_exports": n.goods_exports,
         "cleantech_exports": n.cleantech_exports,
@@ -193,6 +206,7 @@ STAGES: tuple[tuple[str, Stage], ...] = (
     ("technology", technology),
     ("diplomacy", diplomacy),
     ("stocktake", stocktake),
+    ("elections", election),
     ("scoring_snapshot", scoring_snapshot),
     ("events", events_hook),
 )

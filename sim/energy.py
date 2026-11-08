@@ -66,16 +66,31 @@ def _ramp(cfg: Config, name: str, t: int) -> float:
     return start + (end - start) * frac
 
 
-def vre_max_share(cfg: Config, t: int) -> float:
+def electrification_bonus(cfg: Config, nation: Nation | None) -> float:
+    """How far a nation's electrification programme has raised its ceilings."""
+    if nation is None or nation.electrification <= 0:
+        return 0.0
+    half = cfg.tune("industrial_policy.electrification_half_spend") * nation.gdp
+    top = cfg.tune("industrial_policy.electrification_max_bonus")
+    return top * nation.electrification / (nation.electrification + half)
+
+
+def vre_max_share(cfg: Config, t: int, nation: Nation | None = None) -> float:
     """Most of primary demand wind and solar can serve at turn t: the electrifiable share,
-    rising linearly from 2025 to the final turn."""
-    return _ramp(cfg, "vre_max_share", t)
+    rising linearly from 2025 to the final turn, plus the nation's electrification bonus."""
+    return min(1.0, _ramp(cfg, "vre_max_share", t) + electrification_bonus(cfg, nation))
 
 
-def clean_max_share(cfg: Config, t: int) -> float:
+def clean_max_share(cfg: Config, t: int, nation: Nation | None = None) -> float:
     """Most of primary demand all non-fossil sources together can serve at turn t, standing in
-    for end-use conversion (vehicles, heating, industry); rises linearly to the final turn."""
-    return _ramp(cfg, "clean_max_share", t)
+    for end-use conversion (vehicles, heating, industry); rises linearly to the final turn, plus
+    the nation's electrification bonus."""
+    return min(1.0, _ramp(cfg, "clean_max_share", t) + electrification_bonus(cfg, nation))
+
+
+def production_credit(nation: Nation, source: str) -> float:
+    """The nation's production tax credit for a source, $/GJ."""
+    return nation.tax_credits.get(f"generation:{source}", 0.0)
 
 
 def is_fossil(cfg: Config, source: str) -> bool:
@@ -89,12 +104,12 @@ def vre_absorb_limit(cfg: Config, nation: Nation, demand: float, t: int = 0) -> 
     limit = cfg.tune("energy.vre_base_absorb_share") * demand + sum(
         nation.capacity.get(s, 0.0) for s in enablers
     )
-    return min(limit, vre_max_share(cfg, t) * demand)
+    return min(limit, vre_max_share(cfg, t, nation) * demand)
 
 
 def dispatch(cfg: Config, nation: Nation, demand: float, t: int = 0) -> Dispatch:
     supply = {s: 0.0 for s in cfg.energy_source_ids}
-    clean_cap = clean_max_share(cfg, t) * demand
+    clean_cap = clean_max_share(cfg, t, nation) * demand
 
     vre = cfg.vre_ids
     vre_avail = sum(nation.capacity.get(s, 0.0) for s in vre)
@@ -106,7 +121,10 @@ def dispatch(cfg: Config, nation: Nation, demand: float, t: int = 0) -> Dispatch
     remaining = demand - vre_used
 
     others = [s for s in cfg.energy_source_ids if s not in vre]
-    cost = {s: marginal_cost(cfg, nation.id, s, nation.carbon_price) for s in others}
+    cost = {
+        s: marginal_cost(cfg, nation.id, s, nation.carbon_price) - production_credit(nation, s)
+        for s in others
+    }
     by_cost = sorted(others, key=lambda s: (cost[s], s))
     normal = {s: nation.capacity.get(s, 0.0) / cfg.src(s, "headroom") for s in others}
     top = {s: nation.capacity.get(s, 0.0) for s in others}

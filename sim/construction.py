@@ -39,16 +39,23 @@ def retire(cfg: Config, nid: str, n: Nation, dt: int) -> None:
         n.capacity[s] *= (1.0 - retire_rate(cfg, nid, s)) ** (dt / 4)
 
 
+FACTORY = "factory_"  # pipeline prefix for clean-tech factories, e.g. "factory_solar"
+
+
 def complete(n: Nation, t: int) -> dict[str, float]:
-    """Bring finished projects online; return capacity completed per source."""
+    """Bring finished projects online; return energy capacity completed per source. Finished
+    factories add to factory capacity instead."""
     done: dict[str, float] = defaultdict(float)
     remaining = []
     for c in n.pipeline:
-        if c.complete_turn <= t:
+        if c.complete_turn > t:
+            remaining.append(c)
+        elif c.source.startswith(FACTORY):
+            tech = c.source[len(FACTORY) :]
+            n.factory_capacity[tech] = n.factory_capacity.get(tech, 0.0) + c.amount
+        else:
             n.capacity[c.source] = n.capacity.get(c.source, 0.0) + c.amount
             done[c.source] += c.amount
-        else:
-            remaining.append(c)
     n.pipeline = remaining
     return dict(done)
 
@@ -123,8 +130,8 @@ def order(cfg: Config, world: World, nid: str, n: Nation, t: int, at: int) -> No
     target *= 1 + cfg.tune("market.reserve_margin")
     future = {s: future_capacity(cfg, nid, n, s, t, at) for s in cfg.energy_source_ids}
     normal = {s: future[s] / cfg.src(s, "headroom") for s in future}
-    vre_cap = energy.vre_max_share(cfg, at) * target
-    clean_cap = energy.clean_max_share(cfg, at) * target
+    vre_cap = energy.vre_max_share(cfg, at, n) * target
+    clean_cap = energy.clean_max_share(cfg, at, n) * target
     enablers = [s for s in cfg.source_ids if cfg.category(s) == "enabler"]
     absorb = cfg.tune("energy.vre_base_absorb_share") * target + sum(
         future_capacity(cfg, nid, n, s, t, at) for s in enablers
@@ -155,7 +162,9 @@ def order(cfg: Config, world: World, nid: str, n: Nation, t: int, at: int) -> No
             future_capacity(cfg, nid, n, s, t, at) for s in enablers
         )
         useful = min(
-            vre, energy.vre_max_share(cfg, at) * target, energy.clean_max_share(cfg, at) * target
+            vre,
+            energy.vre_max_share(cfg, at, n) * target,
+            energy.clean_max_share(cfg, at, n) * target,
         )
         if useful > absorb:
             n.pipeline.append(Construction("grid", useful - absorb, at))
@@ -226,6 +235,8 @@ def apply(world: World, cfg: Config, dt: int) -> dict[str, float]:
         retire(cfg, nid, n, dt)
         done = complete(n, world.t)
         by_nation[nid] = done
+        alpha = 1 - (1 - cfg.tune("jobs.smoothing")) ** dt
+        n.build_rate += alpha * (sum(done.values()) * 4 / dt - n.build_rate)
         for s, amount in done.items():
             completed[s] += amount
             if s in clean:

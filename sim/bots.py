@@ -8,12 +8,12 @@ that is not is rejected and logged by sim.actions like any other action.
 Shares and step sizes below are bot behaviour, not world tuning, so they live here.
 
 - noop:       takes no actions.
-- all_fossil: no carbon price, subsidises and builds the cheapest fossil fuel.
+- all_fossil: no carbon price, cuts taxes, subsidises and builds the cheapest fossil fuel.
 - all_clean:  rising carbon price with a rebate, subsidises solar and wind, builds the cheapest
-              clean source, adds storage when output is curtailed, researches solar, retires
-              coal as political capital allows.
+              clean source, adds storage when output is curtailed, researches solar, builds
+              solar factories, funds electrification, retires coal as political capital allows.
 - balanced:   moderate carbon price, builds gas and the cheapest clean source, invests in
-              efficiency and adaptation.
+              efficiency and adaptation, builds solar factories, retrains fossil workers.
 - deal_maker: balanced at home; abroad it offers equipment-on-credit deals to trusted,
               high-emitting partners once a year, accepts offers it can afford, opens talks,
               joins the carbon club when eligible, and pledges.
@@ -66,6 +66,11 @@ def cheapest_fossil(cfg: Config, world: World, n: Nation) -> str:
     return min(options, key=lambda f: (tech.lcoe(cfg, world, n, f), f))
 
 
+def factory(cfg: Config, n: Nation, tech: str, share: float) -> Action | None:
+    amount = share * n.capital / cfg.tune("industry.factory_capital_cost")
+    return {"type": "build_factory", "tech": tech, "amount": amount} if amount > 0 else None
+
+
 def cheapest_clean(cfg: Config, world: World, n: Nation) -> str:
     """Cheapest clean source by levelized cost; wind and solar include their rising system cost,
     and are skipped once output is already being curtailed."""
@@ -99,6 +104,8 @@ def all_fossil(cfg: Config, world: World, nid: str) -> list[Action]:
         if n.carbon_price > 0:
             wanted.append({"type": "set_carbon_price", "level": 0.0})
         wanted.append({"type": "set_subsidy", "source": fuel, "share": 0.3})
+    if world.t == 1:
+        wanted.append({"type": "set_tax_rate", "level": cfg.tune("tax.min_change")})
     wanted.append(build(cfg, world, n, fuel, 0.4))
     return pick(wanted, slots(cfg, n, "domestic"))
 
@@ -122,6 +129,10 @@ def all_clean(cfg: Config, world: World, nid: str) -> list[Action]:
         wanted.append(research | {"tech": "solar"} if research else None)
     if q == 2:
         wanted.append(raise_carbon(n, 15.0, 150.0))
+    if world.t % 8 == 4:
+        wanted.append(spend("electrification_program", n, 0.1))
+    if world.t % 8 == 0:
+        wanted.append(factory(cfg, n, "solar", 0.1))
     if q == 3:
         per_ej = cfg.tune("actions.retire_pc_per_ej") * cfg.tune("actions.retire_coal_multiplier")
         affordable = 0.5 * n.political_capital / per_ej
@@ -143,6 +154,11 @@ def _balanced_domestic(cfg: Config, world: World, n: Nation) -> list[Action | No
         wanted.append(raise_carbon(n, 5.0, 50.0))
     if q == 3 and n.climate_damage > 0:
         wanted.append(spend("adaptation_spend", n, 0.05))
+    if world.t % 8 == 2:
+        wanted.append(factory(cfg, n, "solar", 0.1))
+    fossil_now = n.jobs.get("fossil", 0.0)
+    if q == 3 and fossil_now < n.base.get("fossil_jobs", fossil_now):
+        wanted.append(spend("fund_retraining", n, 0.05))
     return wanted
 
 

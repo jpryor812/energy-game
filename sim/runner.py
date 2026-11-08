@@ -18,12 +18,12 @@ from typing import Any
 
 import yaml
 
-from sim import bots, canonical, config, scoring, turn
+from sim import bots, canonical, config, elections, scoring, turn
 from sim.config import Config
 from sim.scenario import new_world
 from sim.state import World
 
-MILESTONE = "M4"
+MILESTONE = "M4b"
 
 
 def play(
@@ -38,16 +38,21 @@ def play(
     ai: bool = True,
 ) -> World:
     """Play from `world` (or a fresh world) until quarter `until` (default: the last turn), or
-    until the player's government falls. With bot "ai" the AI plays the player's nation too;
+    until the player's government falls. While the player is out of office after losing an
+    election, the AI governs its nation. With bot "ai" the AI plays the player's nation too;
     with `ai=False` the other nations take no actions (business as usual)."""
     if country not in cfg.playable_ids:
         raise ValueError(f"'{country}' is not playable; choose from {cfg.playable_ids}")
     bot = bots.get(bot_name)
     if world is None:
         world = new_world(cfg, seed)
+    if world.player is None:
+        world.player = country
+        elections.start_term(world)
     end = cfg.value("tuning", "time.turns") if until is None else until
     while world.t < end and not scoring.is_fallen(cfg, world, country):
-        acts = {} if bot_name == "ai" else {country: bot(cfg, world, country)}
+        ai_governs = bot_name == "ai" or not elections.in_power(world)
+        acts = {} if ai_governs else {country: bot(cfg, world, country)}
         world = turn.step(world, cfg, actions=acts, dt=dt, ai=ai)
     return world
 
@@ -78,6 +83,8 @@ def summarize(cfg: Config, world: World, country: str, bot_name: str, dt: int) -
         "bonuses": result["bonuses"],
         "all_nations": result["all_nations"],
         "actions_rejected": rejected,
+        "elections": world.elections,
+        "elections_lost": sum(1 for e in world.elections if e["event"] == "lost"),
     }
 
 
@@ -120,6 +127,7 @@ def run_batch(cfg: Config, batch_path: Path) -> Path:
 
 AGGREGATE_COLUMNS = [
     "country",
+    "elections_lost",
     "bot",
     "seed",
     "turns_played",

@@ -48,8 +48,9 @@ def research_multiplier(cfg: Config, nation: Nation, source: str) -> float:
 
 
 def nation_unit_cost(cfg: Config, world: World, nation: Nation, source: str) -> float:
-    """The nation's build cost: world cost, less its research, plus its own equipment tariffs."""
-    premium = trade.tariff_premium(cfg, world, nation.id, source)
+    """The nation's build cost: world cost, less its research, plus its tariff and content
+    premiums."""
+    premium = trade.cost_premium(cfg, world, nation.id, source)
     return unit_cost(cfg, world, source) * research_multiplier(cfg, nation, source) * (1 + premium)
 
 
@@ -70,6 +71,7 @@ def lcoe(cfg: Config, world: World, nation: Nation, source: str) -> float:
     subsidy = nation.subsidies.get(source, 0.0)
     cost = capital_charge(cfg, world, nation, source) * (1 - subsidy)
     cost += energy.marginal_cost(cfg, nation.id, source, nation.carbon_price)
+    cost -= energy.production_credit(nation, source)
     if cfg.category(source) == "variable_renewable" and "grid" in cfg.source_ids:
         delivered = sum(nation.supply.values())
         vre = sum(nation.supply.get(s, 0.0) for s in cfg.vre_ids)
@@ -81,7 +83,8 @@ def lcoe(cfg: Config, world: World, nation: Nation, source: str) -> float:
 
 def delivered_price(cfg: Config, world: World, nation: Nation) -> float:
     """Average cost of delivered energy, $/GJ: capital charge at today's unit costs plus fuel
-    and carbon for each source dispatched, plus the grid and storage that support them."""
+    and carbon, less production tax credits, for each source dispatched, plus the grid and
+    storage that support them."""
     delivered = sum(nation.supply.values())
     if delivered <= 0:
         return 0.0
@@ -90,6 +93,7 @@ def delivered_price(cfg: Config, world: World, nation: Nation) -> float:
         * (
             capital_charge(cfg, world, nation, s)
             + energy.marginal_cost(cfg, nation.id, s, nation.carbon_price)
+            - energy.production_credit(nation, s)
         )
         for s, q in nation.supply.items()
     )

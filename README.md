@@ -50,4 +50,8 @@ Same seed and inputs always produce byte-identical output.
 - **M4 (trade and diplomacy):** done. Clean-slate trust, goods and clean-tech trade with
   tariffs, the carbon club, equipment-on-credit and energy-as-a-service deals, a carbon credit
   market priced by supply and demand, and stocktakes against a 1.5 degC budget.
-- **M4b** (domestic economy, elections, carbon removal) and **M5** (balance report): not built.
+- **M4b part 1 (domestic economy and elections):** done. Taxes, tax credits, factories and
+  domestic content, energy jobs and retraining, electrification programmes, and four-yearly
+  economic elections where losing hands the nation to the AI for one term.
+- **M4b part 2** (short-lived warming, carbon removal, forests, responsive rest of world) and
+  **M5** (balance report): not built.

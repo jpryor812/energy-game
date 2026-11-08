@@ -7,8 +7,10 @@ exports against their no-tariff level; the imposer pays the tariff on its import
 and collects it as revenue. Trade relations start from a clean slate: no real-world restrictions.
 
 Clean-tech equipment (solar, wind, batteries): every completed build buys `equipment_share` of its
-cost from manufacturers in proportion to their world share (data/countries.yaml), shifted away
-from suppliers the buyer has tariffed. A tariff also raises the buyer's cost of that technology.
+cost from manufacturers in proportion to their factory capacity (starting from 2025 world shares
+in data/countries.yaml; nations add factories with actions, and manufacturing tax credits make
+theirs more competitive), shifted away from suppliers the buyer has tariffed and toward its own
+factories under a domestic-content rule. Tariffs and unmet content rules raise the buyer's cost.
 Sales abroad are clean-tech exports; the supplier also earns credit for the emissions its
 equipment displaces abroad (scored at `credits.weight_exported`).
 
@@ -86,7 +88,7 @@ def cleantech_effect(cfg: Config, n: Nation) -> float:
 
 
 def base_shares(cfg: Config, tech: str) -> dict[str, float]:
-    """World manufacturing shares for one technology, the rest of the world taking the rest."""
+    """2025 world manufacturing shares from the data, the rest of the world taking the rest."""
     shares = {}
     for nid in cfg.nation_ids:
         spec = cfg.nat_spec(nid)["start"].get("manufacturing_share") or {}
@@ -96,24 +98,69 @@ def base_shares(cfg: Config, tech: str) -> dict[str, float]:
     return shares
 
 
+def init_factories(cfg: Config, world: World) -> None:
+    """2025 factory capacity (T$/yr of output) from world capacity x manufacturing shares."""
+    for tech in EQUIPMENT:
+        total = cfg.tune(f"industry.world_capacity_{tech}")
+        shares = base_shares(cfg, tech)
+        for nid, n in world.nations.items():
+            n.factory_capacity[tech] = shares.get(nid, 0.0) * total
+        world.base[f"row_capacity_{tech}"] = shares[ROW] * total
+
+
+def capacity_shares(cfg: Config, world: World, tech: str) -> dict[str, float]:
+    """World market shares: factory capacity, boosted by manufacturing tax credits. The rest of
+    the world keeps its 2025 capacity."""
+    k = cfg.tune("industry.credit_competitiveness")
+    raw = {
+        nid: n.factory_capacity.get(tech, 0.0)
+        * (1 + n.tax_credits.get(f"manufacturing:{tech}", 0.0)) ** k
+        for nid, n in world.nations.items()
+    }
+    raw[ROW] = world.base.get(f"row_capacity_{tech}", 0.0)
+    total = sum(raw.values())
+    return {k_: v / total for k_, v in raw.items()} if total > 0 else raw
+
+
 def supplier_weights(cfg: Config, world: World, buyer: str, tech: str) -> dict[str, float]:
-    """Where `buyer` sources equipment: base shares shifted away from suppliers it tariffs."""
+    """Where `buyer` sources equipment: market shares, shifted away from suppliers it tariffs,
+    and toward its own factories if it sets a domestic-content rule."""
     switching = cfg.tune("trade.supplier_switching")
     raw = {}
-    for supplier, share in base_shares(cfg, tech).items():
+    for supplier, share in capacity_shares(cfg, world, tech).items():
         rate = 0.0 if supplier in (buyer, ROW) else tariff(world, buyer, supplier)
         raw[supplier] = share * (1 + rate) ** -switching
     total = sum(raw.values())
-    return {k: v / total for k, v in raw.items()} if total > 0 else raw
+    weights = {k: v / total for k, v in raw.items()} if total > 0 else raw
+    required = world.nations[buyer].domestic_content.get(tech, 0.0)
+    own = weights.get(buyer, 0.0)
+    if required > own and own < 1:
+        scale = (1 - required) / (1 - own)
+        weights = {k: (required if k == buyer else v * scale) for k, v in weights.items()}
+        weights.setdefault(buyer, required)
+    return weights
 
 
-def tariff_premium(cfg: Config, world: World, buyer: str, tech: str) -> float:
-    """Extra share of build cost `buyer` pays because of its own tariffs on equipment."""
+def content_premium(cfg: Config, world: World, buyer: str, tech: str) -> float:
+    """Extra share of build cost when a domestic-content rule asks for more than the nation's
+    own factories can make."""
+    n = world.nations[buyer]
+    required = n.domestic_content.get(tech, 0.0)
+    if required <= 0:
+        return 0.0
+    demand = n.equipment_demand.get(tech, 0.0)
+    can_make = 1.0 if demand <= 0 else min(1.0, n.factory_capacity.get(tech, 0.0) / demand)
+    return cfg.tune("industry.domestic_content_penalty") * max(0.0, required - can_make)
+
+
+def cost_premium(cfg: Config, world: World, buyer: str, tech: str) -> float:
+    """Extra share of build cost from the buyer's own equipment tariffs and content rules."""
     if tech not in EQUIPMENT:
         return 0.0
     weights = supplier_weights(cfg, world, buyer, tech)
     paid = sum(w * tariff(world, buyer, s) for s, w in weights.items() if s not in (buyer, ROW))
-    return cfg.src(tech, "equipment_share") * paid
+    tariffs = cfg.src(tech, "equipment_share") * paid
+    return tariffs + content_premium(cfg, world, buyer, tech)
 
 
 def displaced_ef(cfg: Config, n: Nation) -> float:
@@ -135,28 +182,41 @@ def apply_equipment(
     """Record clean-tech sales from this step's completed builds.
 
     `completed` is capacity finished per nation per source; `unit_cost` the world unit cost
-    per source. Sets each nation's clean-tech export rate (T$/yr), its no-tariff baseline, and
-    adds to suppliers' exported-cut rate (Mt/yr displaced abroad by their equipment).
+    per source. Sets each nation's factory sales and equipment demand per technology, its
+    clean-tech export rate (T$/yr) and no-tariff baseline (its 2025 share of others' purchases),
+    and adds to suppliers' exported-cut rate (Mt/yr displaced abroad by their equipment).
     """
-    sales = {nid: 0.0 for nid in world.nations}
+    per_year = 4 / dt
+    exports = {nid: 0.0 for nid in world.nations}
     expected = {nid: 0.0 for nid in world.nations}
+    sales = {nid: {t: 0.0 for t in EQUIPMENT} for nid in world.nations}
+    demand = {nid: {t: 0.0 for t in EQUIPMENT} for nid in world.nations}
     for buyer in sorted(completed):
         b = world.nations[buyer]
         for tech, amount in sorted(completed[buyer].items()):
             if tech not in EQUIPMENT or amount <= 0:
                 continue
             value = cfg.src(tech, "equipment_share") * unit_cost[tech] * amount
+            demand[buyer][tech] += value
             cut = 0.0
             if tech in cfg.vre_ids:
                 cut = amount / cfg.src(tech, "headroom") * displaced_ef(cfg, b)
             weights = supplier_weights(cfg, world, buyer, tech)
             base = base_shares(cfg, tech)
             for supplier in sorted(weights):
-                if supplier in (buyer, ROW):
+                if supplier == ROW:
                     continue
-                sales[supplier] += weights[supplier] * value
-                expected[supplier] += base[supplier] * value
+                sales[supplier][tech] += weights[supplier] * value
+                if supplier == buyer:
+                    continue
+                exports[supplier] += weights[supplier] * value
+                expected[supplier] += base.get(supplier, 0.0) * value
                 world.nations[supplier].exported_cut_rate += weights[supplier] * cut
     for nid, n in world.nations.items():
-        n.cleantech_exports = sales[nid] * 4 / dt
-        n.base["cleantech_expected"] = expected[nid] * 4 / dt
+        n.cleantech_exports = exports[nid] * per_year
+        n.base["cleantech_expected"] = expected[nid] * per_year
+        alpha = 1 - (1 - cfg.tune("jobs.smoothing")) ** dt
+        for t, v in sales[nid].items():
+            old = n.factory_sales.get(t, v * per_year)
+            n.factory_sales[t] = old + alpha * (v * per_year - old)
+        n.equipment_demand = {t: v * per_year for t, v in demand[nid].items()}

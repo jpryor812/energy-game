@@ -488,6 +488,9 @@ ai:
   credit_cover_share: {value: 0.2, status: placeholder, note: "Share of expected overshoot an AI buys in credits per order."}
   club_affinity: {value: 0.5, status: placeholder, note: "Utility for joining the carbon club, scaled by w_trust."}
   max_payment_share: {value: 0.5, status: placeholder, note: "Most of its yearly capital income an AI host will commit to one deal's payments; AI financiers size loans to fit."}
+  factory_share: {value: 0.1, status: placeholder, note: "Share of capital an AI considers putting into one clean-tech factory."}
+  electrification_share: {value: 0.1, status: placeholder, note: "Share of capital an AI considers for an electrification programme."}
+  ceiling_margin: {value: 0.05, status: placeholder, note: "An AI considers electrification once its clean share is within this of its clean ceiling."}
 
 trade:
   world_gdp_2025: {value: 118.485, status: calibrated, note: "IMF WEO world GDP 2025, T$ (source imf_weo). The rest of the world is this minus the 16 nations."}
@@ -537,3 +540,49 @@ stocktake:
   coalition_tariff_per_overshoot: {value: 0.1, status: placeholder, note: "Coalition tariff per unit of overshoot share, applied by club members to non-members."}
   coalition_tariff_max: {value: 0.15, status: placeholder, note: "Highest coalition tariff."}
   pledge_trust: {value: 0.05, status: placeholder, note: "Trust gained for being on a pledge path, or lost for being off it, at a stocktake."}
+
+tax:
+  min_change: {value: -0.01, status: placeholder, note: "Lowest discretionary tax change, share of GDP (decided 2026-11-08)."}
+  max_change: {value: 0.03, status: placeholder, note: "Highest discretionary tax change, share of GDP (decided 2026-11-08)."}
+  growth_drag: {value: 0.15, status: placeholder, note: "Growth lost per unit of tax raised (1 point of GDP -> -0.15 pp/yr); a cut adds the same."}
+  approval_hit: {value: 2.0, status: placeholder, note: "Approval lost per unit of tax raised, once (1 point -> -0.02)."}
+  pc_per_point: {value: 3.0, status: placeholder, note: "Political capital per percentage point of tax raised."}
+  generation_credit_max: {value: 5.0, status: placeholder, note: "Highest production tax credit, $/GJ of output."}
+  manufacturing_credit_max: {value: 0.5, status: placeholder, note: "Highest manufacturing tax credit, share of factory sales."}
+
+industry:
+  world_capacity_solar: {value: 0.15, status: placeholder, note: "World solar equipment factory capacity 2025, T$/yr of output. Unsourced approximate."}
+  world_capacity_wind: {value: 0.1, status: placeholder, note: "World wind equipment factory capacity 2025, T$/yr. Unsourced approximate."}
+  world_capacity_storage: {value: 0.1, status: placeholder, note: "World grid-battery factory capacity 2025, T$/yr. Unsourced approximate."}
+  factory_capital_cost: {value: 0.5, status: placeholder, note: "T$ to build 1 T$/yr of factory output capacity. Unsourced approximate."}
+  factory_build_time: {value: 8, status: placeholder, note: "Quarters to build a factory."}
+  factory_lifespan: {value: 20, status: placeholder, note: "Years a factory lasts."}
+  credit_competitiveness: {value: 2.0, status: placeholder, note: "Market share ~ capacity x (1 + manufacturing credit)^x."}
+  domestic_content_penalty: {value: 0.5, status: placeholder, note: "Extra build cost per unit of domestic-content shortfall (required share not met by own factories)."}
+
+jobs:
+  fossil_per_ej: {value: 0.0359, status: calibrated, source: iea_wee2025, note: "Million fossil supply jobs per EJ/yr of fossil production: IEA World Energy Employment 2025 (18.4 million, 2024) / world fossil production ~513 EJ."}
+  clean_ops_per_ej: {value: 0.08, status: placeholder, note: "Million jobs per EJ/yr of non-fossil supply (operations). Unsourced approximate."}
+  construction_per_ej: {value: 0.43, status: placeholder, note: "Million jobs per EJ/yr of capacity completed per year: ~10 million construction jobs over the model's 2025 build rate of ~23 EJ/yr. Unsourced approximate."}
+  manufacturing_per_trillion: {value: 36.0, status: placeholder, note: "Million jobs per T$/yr of clean-tech factory sales: ~10 million over the model's 2025 sales of ~0.28 T$/yr. Unsourced approximate."}
+  smoothing: {value: 0.5, status: placeholder, note: "Share of the gap to this quarter's build rate and factory sales closed each quarter (smooths job counts)."}
+  workforce_share: {value: 0.5, status: placeholder, note: "Workforce as a share of population."}
+  fossil_loss_weight: {value: 2.0, status: placeholder, note: "Fossil job losses count this many times more than other job changes (concentrated in regions)."}
+  approval_per_workforce: {value: 3.0, status: placeholder, note: "Approval change per unit of weighted job change as a share of the workforce."}
+  retraining_max: {value: 0.7, status: placeholder, note: "Most of the fossil-loss penalty retraining can remove."}
+  retraining_half_spend: {value: 0.005, status: placeholder, note: "Retraining stock, as a share of GDP, that removes half of retraining_max."}
+
+industrial_policy:
+  electrification_max_bonus: {value: 0.2, status: placeholder, note: "Most an electrification programme can raise a nation's clean and wind/solar ceilings."}
+  electrification_half_spend: {value: 0.02, status: placeholder, note: "Programme stock, as a share of GDP, that gives half the bonus."}
+
+elections:
+  first_turn: {value: 15, status: placeholder, note: "First election at the end of 2028 (t=15); then every interval."}
+  interval: {value: 16, status: placeholder, note: "Quarters between elections (four years)."}
+  incumbency: {value: 0.53, status: placeholder, note: "Vote share of an incumbent whose economy matched expectations."}
+  growth_weight: {value: 0.03, status: placeholder, note: "Vote share per pp/yr of growth above baseline over the term."}
+  jobs_weight: {value: 2.0, status: placeholder, note: "Vote share per unit of weighted energy-job change as a share of the workforce."}
+  price_weight: {value: 0.1, status: placeholder, note: "Vote share lost per unit rise in the energy price over the term (+20% -> -0.02)."}
+  tax_weight: {value: 2.0, status: placeholder, note: "Vote share lost per unit of tax raised over the term (1 point -> -0.02)."}
+  swing_sd: {value: 0.02, status: placeholder, note: "Standard deviation of the seeded vote swing."}
+  threshold: {value: 0.5, status: placeholder, note: "Vote share needed to win."}

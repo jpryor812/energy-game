@@ -17,7 +17,7 @@ import hashlib
 import json
 import random
 
-STREAMS = frozenset({"events", "shocks"})
+STREAMS = frozenset({"events", "shocks", "elections"})
 
 
 def derive_seed(master_seed: int, name: str, *keys: int | str) -> int:

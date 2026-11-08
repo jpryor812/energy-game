@@ -166,6 +166,22 @@ def candidates(cfg: Config, world: World, nid: str, personality: str) -> list[Ac
             }
         )
     out.append({"type": "invest_efficiency", "amount": _ai(cfg, "efficiency_share") * n.capital})
+    for t in trade.EQUIPMENT:
+        cost = cfg.tune("industry.factory_capital_cost")
+        out.append(
+            {
+                "type": "build_factory",
+                "tech": t,
+                "amount": _ai(cfg, "factory_share") * n.capital / cost,
+            }
+        )
+    if ctx_clean_room_tight(cfg, world, nid):
+        out.append(
+            {
+                "type": "electrification_program",
+                "amount": _ai(cfg, "electrification_share") * n.capital,
+            }
+        )
     if n.climate_damage > 0:
         out.append({"type": "adaptation_spend", "amount": _ai(cfg, "adaptation_share") * n.capital})
     if n.carbon_price > n.base.get("carbon_price", 0.0) and n.rebate < _ai(cfg, "rebate_share"):
@@ -180,6 +196,14 @@ def candidates(cfg: Config, world: World, nid: str, personality: str) -> list[Ac
             }
         )
     return [a for a in out if all(v > 0 for k, v in a.items() if k in ("amount",))]
+
+
+def ctx_clean_room_tight(cfg: Config, world: World, nid: str) -> bool:
+    """Whether the nation's clean ceiling is nearly reached (electrification would pay)."""
+    n = world.nations[nid]
+    demand = max(sum(n.supply.values()), 1e-9)
+    clean = sum(v for s, v in n.supply.items() if not energy.is_fossil(cfg, s))
+    return clean / demand > energy.clean_max_share(cfg, world.t, n) - _ai(cfg, "ceiling_margin")
 
 
 # --- estimates -----------------------------------------------------------------------------------
@@ -266,6 +290,25 @@ def estimate(cfg: Config, world: World, nid: str, act: Action, ctx: Context) -> 
         gain = actions.efficiency_gain(cfg, n, act["amount"])
         eff.emissions = -gain * n.emissions / base_em * 100
         eff.security = gain * n.import_dependence * 100
+    elif kind == "build_factory":
+        t = act["tech"]
+        shares = trade.capacity_shares(cfg, world, t)
+        total_capacity = sum(m.factory_capacity.get(t, 0.0) for m in world.nations.values())
+        total_capacity += world.base.get(f"row_capacity_{t}", 0.0)
+        gain = act["amount"] / (total_capacity + act["amount"]) * (1 - shares.get(nid, 0.0))
+        abroad = sum(
+            m.equipment_demand.get(t, 0.0) for mid, m in world.nations.items() if mid != nid
+        )
+        eff.growth = cfg.tune("trade.cleantech_growth_elasticity") * gain * abroad / n.gdp * 100
+    elif kind == "electrification_program":
+        before = energy.electrification_bonus(cfg, n)
+        n.electrification += act["amount"]
+        try:
+            after = energy.electrification_bonus(cfg, n)
+        finally:
+            n.electrification -= act["amount"]
+        room = (after - before) * ctx.demand
+        eff.emissions = -room * ctx.ef_marginal / base_em * 100
     elif kind == "adaptation_spend":
         before = climate.adaptation_factor(cfg, n)
         n.adaptation += act["amount"]

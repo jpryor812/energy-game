@@ -17,6 +17,7 @@ Every real-world value in `data/*.yaml` names a source key below in its `source`
 | `un_wpp` | UN, *World Population Prospects 2024*, via Our World in Data | `population-with-un-projections.csv` (medium variant) | WPP 2024 | Population growth 2025-2050 (EU-27 summed from members) |
 | `forster2025` | Forster et al. (2025), *Indicators of Global Climate Change 2024*, Earth System Science Data 17, 2641 | https://essd.copernicus.org/articles/17/2641/2025/ | 2024 | Starting warming (1.36 degC human-induced), warming rate (0.27 degC/decade) used to set the non-CO2 multiplier |
 | `ipcc_ar6_wg1` | IPCC AR6 Working Group I, Summary for Policymakers | TCRE best estimate 1.65 degC per 1000 PgC | 2021 | Warming per tonne of CO2 |
+| `iea_wee2025` | IEA, *World Energy Employment 2025* (news release and secondary coverage) | https://www.iea.org/news/energy-employment-has-surged-but-growing-skills-shortages-threaten-future-momentum | 2024 | 18.4 million fossil-fuel supply jobs (of ~76 million energy jobs) to set fossil jobs per EJ |
 | `iea_weo2025` | IEA, *World Energy Outlook 2025*, Current Policies Scenario (secondary coverage of the key findings) | https://www.iea.org/reports/world-energy-outlook-2025/overview-and-key-findings | 2025 | Calibration check only (docs/CALIBRATION.md), not an input |
 
 ## Derived and approximate values
@@ -36,4 +37,5 @@ Every real-world value in `data/*.yaml` names a source key below in its `source`
 | EU and Nigeria export openness | Unsourced approximate: EU ~22% (extra-EU exports only; the World Bank EU figure counts trade between members), Nigeria 12% (no recent World Bank value). |
 | Clean-tech manufacturing shares | Unsourced approximate 2024 world shares from IEA and industry reporting: solar modules China 80%, Vietnam 5%, India 3%, US 2%, EU 1%; wind turbines China 60%, EU 25%, US 5%, India 4%; batteries China 75%, US 6%, Japan 4%, EU 4%; the rest of the world the remainder. |
 | World GDP 2025 | IMF WEO world aggregate (`WEOWORLD`), 118.5 T$, used to size the rest of the world as a trade partner. |
+| Clean-energy job intensities and world factory capacity | Unsourced approximate: set so construction, manufacturing and clean operations are each roughly 10 million jobs in the model's 2025 world, and world solar/wind/battery factory capacity is 0.15/0.10/0.10 T$/yr. |
 | Hard-currency issuers | USA, EU, Japan, UK, Canada and Australia borrow in their own currency: no hard-currency debt, FX reserves not tracked. |

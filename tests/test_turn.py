@@ -61,6 +61,7 @@ def test_stage_order_matches_build_doc():
         "technology",
         "diplomacy",
         "stocktake",
+        "elections",
         "scoring_snapshot",
         "events",
     ]
