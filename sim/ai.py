@@ -179,9 +179,14 @@ def candidates(cfg: Config, world: World, nid: str, personality: str) -> list[Ac
     out.append({"type": "methane_abatement", "amount": _ai(cfg, "methane_share") * n.capital})
     if "carbon_removal" in cfg.source_ids:
         unit = tech.nation_unit_cost(cfg, world, n, "carbon_removal")
-        out.append(
-            {"type": "build_removal", "amount": _ai(cfg, "removal_share") * n.capital / unit}
+        use = cfg.src("carbon_removal", "energy_use")
+        planned = n.capacity.get("carbon_removal", 0.0) + sum(
+            c.amount for c in n.pipeline if c.source == "carbon_removal"
         )
+        room = _ai(cfg, "removal_energy_cap") * n.gdp * n.energy_intensity / use - planned
+        amount = min(_ai(cfg, "removal_share") * n.capital / unit, max(0.0, room))
+        if amount > 0:
+            out.append({"type": "build_removal", "amount": amount})
     out.append({"type": "fund_forests", "amount": _ai(cfg, "forest_share") * n.capital})
     if ctx_clean_room_tight(cfg, world, nid):
         out.append(
@@ -431,11 +436,10 @@ def _tariff_cost_pp(cfg: Config, world: World, nid: str, partner: str, level: fl
 def _value_deal_as_host(cfg, world, nid, deal, personality, ctx, w_em, income) -> float:
     """Utility to the host of accepting `deal`, net of its payments, minus the bar to accept."""
     n = ctx.n
-    build = {
-        "type": "build_capacity",
-        "source": deal.terms["source"],
-        "amount": deal.terms["amount"],
-    }
+    capacity = deal.terms["amount"]
+    if deal.type == "climate_loan":  # cash: value the capacity it buys at the host's cost
+        capacity = deal.terms["amount"] / tech.nation_unit_cost(cfg, world, n, deal.terms["source"])
+    build = {"type": "build_capacity", "source": deal.terms["source"], "amount": capacity}
     eff = estimate(cfg, world, nid, build, ctx)
     benefit = (
         _p(cfg, personality, "w_growth") * eff.growth
@@ -447,7 +451,10 @@ def _value_deal_as_host(cfg, world, nid, deal, personality, ctx, w_em, income) -
     if payment + committed > _ai(cfg, "max_payment_share") * income[0]:
         return -math.inf  # cannot afford the payments
     cap_weight = _ai(cfg, "capital_cost_weight") / _p(cfg, personality, "budget_appetite")
-    value = benefit - cap_weight * payment / income[0]
+    cost = payment
+    if deal.type == "climate_loan":  # the loan itself pays the principal back: count interest
+        cost = deal.terms["amount"] * deals.effective_rate(cfg, world, deal)
+    value = benefit - cap_weight * cost / income[0]
     bar = -_p(cfg, personality, "w_deals") * _p(cfg, personality, "deal_affinity")
     bar -= _ai(cfg, "trust_weight") * (diplomacy.trust(world, nid, deal.financier) - 0.5)
     if deal.terms["currency"] == "hard" and not cfg.nat_spec(nid)["hard_currency_issuer"]:
@@ -479,29 +486,37 @@ def _deal_offer(cfg, world, nid, personality, w_em, income) -> tuple[float, Acti
     host = world.nations[hid]
     options = [s for s in ("solar", "wind", "other_renewables") if s in cfg.energy_source_ids]
     source = min(options, key=lambda s: (tech.lcoe(cfg, world, host, s), s))
+    kind = cfg.tuning["ai"]["personalities"][personality]["preferred_deal"]
     unit = tech.nation_unit_cost(cfg, world, n, source)
     trust = diplomacy.trust(world, nid, hid)
     rate = cfg.tune("market.discount_rate") + _ai(cfg, "deal_rate_premium") * (1 - trust)
+    if kind == "climate_loan":
+        rate = max(0.0, rate - _ai(cfg, "climate_loan_discount"))  # concessional
     years = _ai(cfg, "deal_duration") / 4
     host_income = income_per_year(cfg, host)[0]
     room = _ai(cfg, "max_payment_share") * host_income - deals.obligations(cfg, world, hid)
-    affordable = max(0.0, room) / (1 / years + rate)
-    amount = min(_ai(cfg, "deal_share") * n.capital, affordable) / unit
-    if amount <= 0:
+    budget = _ai(cfg, "deal_share") * n.capital
+    if kind != "equity_for_energy":  # fixed repayments must fit the host's budget
+        budget = min(budget, max(0.0, room) / (1 / years + rate))
+    if budget <= 0:
         return None
     act = {
         "type": "propose_deal",
         "target": hid,
-        "deal_type": "equipment_on_credit",
+        "deal_type": kind,
         "source": source,
-        "amount": amount,
-        "currency": "hard",
-        "rate": rate,
+        "amount": budget if kind == "climate_loan" else budget / unit,
         "duration": _ai(cfg, "deal_duration"),
         "collateral": _ai(cfg, "deal_collateral"),
         "exit_penalty": _ai(cfg, "deal_exit_penalty"),
     }
-    cut = amount / cfg.src(source, "headroom") * trade.displaced_ef(cfg, host)
+    if kind == "equity_for_energy":
+        act["share"] = _ai(cfg, "equity_share_offer")
+    else:
+        act["currency"] = "hard"
+        act["rate" if kind != "energy_as_a_service" else "price"] = rate
+    capacity = budget / unit
+    cut = capacity / cfg.src(source, "headroom") * trade.displaced_ef(cfg, host)
     credit = cfg.tune("credits.weight_financed") * cut / max(n.base["emissions"], 1e-9) * 100
     u = _p(cfg, personality, "w_deals") * _p(cfg, personality, "deal_affinity") + w_em * credit
     return u, act
@@ -525,14 +540,12 @@ def diplomatic(cfg, world, nid, personality, ctx, w_em, income) -> list[tuple[fl
                     (margin + 1, {"type": "respond_deal", "deal_id": did, "response": "accept"})
                 )
             elif margin > -_ai(cfg, "counter_margin") and d.terms["proposer"] == d.financier:
-                key = "rate" if d.type == "equipment_on_credit" else "price"
+                key = actions._price_key(d)
                 counter = d.terms[key] * _ai(cfg, "counter_rate_factor")
                 act = {"type": "respond_deal", "deal_id": did, "response": "counter", key: counter}
                 out.append((1.0, act))
         else:  # a counter-offer back to us as financier
-            hurdle = cfg.tune("market.discount_rate")
-            ok = d.type != "equipment_on_credit" or d.terms["rate"] >= hurdle
-            if ok and deals.build_cost(cfg, world, d) <= n.capital:
+            if deals.build_cost(cfg, world, d) <= n.capital:  # accept one round of counter
                 out.append((1.0, {"type": "respond_deal", "deal_id": did, "response": "accept"}))
 
     for pid in sorted(world.nations):

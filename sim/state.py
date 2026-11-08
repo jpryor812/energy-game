@@ -144,6 +144,11 @@ class Nation:
     forest_paid: float = 0.0
     removals: float = 0.0
     extra_demand: float = 0.0
+    # M5 shocks.
+    disaster_loss: float = 0.0
+    fossil_ban: float = 0.0
+    disruption: dict[str, float] = field(default_factory=dict)
+    disruption_until: dict[str, float] = field(default_factory=dict)
 
     _FLOATS = (
         "gdp", "population", "capital", "political_capital", "influence", "tech_points",
@@ -155,11 +160,13 @@ class Nation:
         "cleantech_exports", "tariff_revenue", "trade_drag", "credit_balance", "credits_bought",
         "period_emissions", "exported_cut_rate", "tax_change", "build_rate", "retraining",
         "electrification", "methane_abatement", "forest_paid", "removals", "extra_demand",
+        "disaster_loss", "fossil_ban",
     )  # fmt: skip
     _FLOAT_MAPS = (
         "capacity", "subsidies", "tariffs", "supply", "fossil_production", "fossil_exports",
         "fossil_imports", "base", "research", "climate_credit", "tax_credits",
         "factory_capacity", "factory_sales", "equipment_demand", "domestic_content", "jobs",
+        "disruption", "disruption_until",
     )  # fmt: skip
 
     @classmethod
@@ -204,6 +211,7 @@ class World:
     # M4b climate: methane (2025 = 1, relaxes toward current emissions), aerosols (2025 = 1),
     # and the global forest fund (T$ paid in).
     methane_index: float = 1.0
+    difficulty: str = "normal"
     aerosol_index: float = 1.0
     forest_fund: float = 0.0
 
@@ -237,6 +245,7 @@ class World:
             term_start={k: float(v) for k, v in d["term_start"].items()},
             elections=[dict(e) for e in d["elections"]],
             methane_index=float(d["methane_index"]),
+            difficulty=str(d["difficulty"]),
             aerosol_index=float(d["aerosol_index"]),
             forest_fund=float(d["forest_fund"]),
         )

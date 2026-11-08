@@ -368,6 +368,14 @@ The design depends most on four areas that need more work before building, and t
 - The Nation Index gains a fifth component, climate contribution, scored with the credit weights above.
 - Fair share at the stocktake: every nation's allowance follows the same 1.5 degC-consistent pathway applied to its own 2025 emissions (about halved by 2030, zero by 2050), rather than a share of the remaining global budget, which runs out around 2030. Credits are earned for emissions below the same pathway.
 
+**Decided 2026-11-08 (M5 planning, with the user)**
+
+- Foreign investment is climate investment only: equity in a plant (a share of its operating margin) or loans earning interest. No general FDI.
+- Equity investments can fail: a plant may shut or be seized when the host government or economy is unreliable (low stability, falling FX reserves, recent defaults, low trust), and the investor loses the stake.
+- Difficulty has two layers. World difficulty (easy, normal, hard) sets when the stocktake pathway reaches net zero (2060, 2050, 2045) and how often climate disasters and foreign factory disruptions happen (x0.5, x1, x1.5). Country difficulty comes from each country's real starting position.
+- Score = (1/2 absolute index + 1/2 relative index x country difficulty multiplier) x World Multiplier + bonuses. The absolute index compares where countries end up (income per person, clean share, emissions per person, energy security, approval), so wealthy, cleaner countries score higher; the relative index is the Nation Index (improvement on one's own start) and is multiplied by country difficulty (easy 1.0, easy-to-medium 1.1, medium 1.15, hard 1.3), so the same achievement is worth more for a harder country. Bonuses split the same way: absolute (first net zero, most impactful deal, largest cut in tonnes) and relative, multiplied by difficulty (largest percentage cut, largest gain in clean share).
+- Climate disasters and factory disruptions arrive as seeded events in M5, as early forms of the event system.
+
 **To tune in the simulation**
 
 - [ ] Credit ratios: host 1 to 1, financier 0.75 to 1, technology inventor 0.6 to 1.

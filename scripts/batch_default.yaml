@@ -2,6 +2,7 @@
 
 out_dir: runs/batch_default
 countries: [USA, IND, EUU, CHN, VNM, RUS]
-bots: [ai, all_clean, all_fossil, balanced, deal_maker]
-# Nothing draws on the RNG until events exist (v1), so seeds give identical runs for now.
-seeds: [1]
+bots: [ai, all_clean, all_fossil, balanced, deal_maker, reckless]
+# Seeds drive elections, disasters, factory disruptions and equity failures.
+seeds: [1, 2, 3]
+difficulties: [normal]

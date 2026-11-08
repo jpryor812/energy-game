@@ -23,8 +23,9 @@ python -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"
 ```bash
 pytest -q                                   # tests
 ruff check . && ruff format --check .       # lint
-python -m sim.runner run --country IND --bot balanced --seed 1 --out runs/ind_balanced_1
-python -m sim.runner batch --config scripts/batch_default.yaml
+python -m sim.runner run --country IND --bot balanced --seed 1 --out runs/ind_balanced_1 --difficulty hard
+python -m sim.runner batch --config scripts/batch_default.yaml --workers 8
+python -m sim.balance --workers 8           # regenerate docs/BALANCE_REPORT.md (~2 min)
 python -m sim.runner run --country USA --bot ai --seed 1 --out runs/ai_only  # AI-only world
 python -m sim.report bau                    # business-as-usual calibration tables
 python -m sim.report ai                     # the same for the AI-only world
@@ -56,4 +57,7 @@ Same seed and inputs always produce byte-identical output.
 - **M4b part 2 (climate and cooling):** done. Short-lived warming (methane, aerosols), carbon
   removal, a global forest fund, and a rest of the world that decarbonises with the 16 nations.
   An all-out world can end colder than 2025.
-- **M5** (four deal types, balance report): not built.
+- **M5 (deals, difficulty, scoring, balance):** done. Equity-for-energy (with failure risk) and
+  climate loans, world difficulty (easy/normal/hard) with seeded climate disasters and factory
+  disruptions, absolute and relative scoring with country difficulty, a parallel batch harness,
+  and `docs/BALANCE_REPORT.md` (5 of 7 criteria pass, 2 marked TUNE with reasons).

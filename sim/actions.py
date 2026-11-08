@@ -288,7 +288,12 @@ def _leave_apply(cfg, world, n, act):
     diplomacy.leave_club(world, n.id)
 
 
-DEAL_PRICE_MAX = {"rate": 0.3, "price": 50.0}  # validation bounds, not tuning
+DEAL_PRICE_MAX = {"rate": 0.3, "price": 50.0, "share": 1.0}  # validation bounds, not tuning
+
+
+def _price_key(deal) -> str:
+    """The term a counter-offer changes: interest rate, price per GJ, or equity share."""
+    return {"energy_as_a_service": "price", "equity_for_energy": "share"}.get(deal.type, "rate")
 
 
 def _deal_terms(cfg, act) -> dict:
@@ -297,20 +302,26 @@ def _deal_terms(cfg, act) -> dict:
     terms = {
         "source": _choice(act, "source", clean),
         "amount": _positive(act),
-        "currency": _choice(act, "currency", ["hard", "local"]),
         "duration": int(_num(act, "duration", 4, cfg.tune("deals.max_duration"))),
         "collateral": _num(act, "collateral", 0.0, 1.0),
         "exit_penalty": _num(act, "exit_penalty", 0.0, 1.0),
     }
-    key = "rate" if kind == "equipment_on_credit" else "price"
-    terms[key] = _num(act, key, 0.0, DEAL_PRICE_MAX[key])
+    if kind == "equity_for_energy":
+        terms["currency"] = "local"  # dividends come out of the host's economy
+        terms["share"] = _num(act, "share", 0.0, 1.0)
+    else:
+        terms["currency"] = _choice(act, "currency", ["hard", "local"])
+        key = "price" if kind == "energy_as_a_service" else "rate"
+        terms[key] = _num(act, key, 0.0, DEAL_PRICE_MAX[key])
     return terms
 
 
 def _propose_check(cfg, world, n, act):
     _target(world, n, act)
     terms = _deal_terms(cfg, act)
-    cost = tech.nation_unit_cost(cfg, world, n, terms["source"]) * terms["amount"]
+    cost = terms["amount"]  # a climate loan lends cash
+    if act["deal_type"] != "climate_loan":
+        cost = tech.nation_unit_cost(cfg, world, n, terms["source"]) * terms["amount"]
     if cost > n.capital + 1e-12:
         raise Rejected(f"needs {cost:.4g} capital to finance, has {n.capital:.4g}")
     return {}
@@ -335,7 +346,7 @@ def _respond_check(cfg, world, n, act):
     deal = _open_deal(world, n, act)
     response = _choice(act, "response", ["accept", "refuse", "counter"])
     if response == "counter":
-        key = "rate" if deal.type == "equipment_on_credit" else "price"
+        key = _price_key(deal)
         _num(act, key, 0.0, DEAL_PRICE_MAX[key])
     return {}
 
@@ -346,7 +357,7 @@ def _respond_apply(cfg, world, n, act):
     if response == "refuse":
         deal.status = "refused"
     elif response == "counter":
-        key = "rate" if deal.type == "equipment_on_credit" else "price"
+        key = _price_key(deal)
         deal.status = "countered"
         terms = {k: v for k, v in deal.terms.items() if k != "proposer"}
         terms[key] = float(act[key])
@@ -476,6 +487,19 @@ def _content_apply(cfg, world, n, act):
         n.domestic_content.pop(act["tech"], None)
 
 
+def _ban_check(cfg, world, n, act):
+    on = act.get("on")
+    if not isinstance(on, bool):
+        raise Rejected("'on' must be true or false")
+    return {
+        "political_capital": cfg.tune("actions.fossil_ban_pc") if on and not n.fossil_ban else 0.0
+    }
+
+
+def _ban_apply(cfg, world, n, act):
+    n.fossil_ban = 1.0 if act["on"] else 0.0
+
+
 def _retraining_apply(cfg, world, n, act):
     n.retraining += act["amount"]
 
@@ -523,6 +547,7 @@ SPECS: dict[str, Spec] = {
     "build_factory": Spec(DOMESTIC, _factory_check, _factory_apply),
     "set_domestic_content": Spec(DOMESTIC, _content_check, _content_apply),
     "fund_retraining": Spec(DOMESTIC, _spend_check, _retraining_apply),
+    "set_fossil_ban": Spec(DOMESTIC, _ban_check, _ban_apply),
     "electrification_program": Spec(DOMESTIC, _spend_check, _electrification_apply),
     "build_removal": Spec(DOMESTIC, _removal_check, _removal_apply),
     "methane_abatement": Spec(DOMESTIC, _spend_check, _methane_apply),

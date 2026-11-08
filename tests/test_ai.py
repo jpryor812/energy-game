@@ -29,12 +29,26 @@ def emissions_after(cfg, turns=40):
 
 
 def test_ai_uses_no_randomness(ai_cfg, monkeypatch):
-    def boom(*args, **kwargs):
-        raise AssertionError("AI touched sim.rng")
+    """The world may draw on sim.rng (disasters, elections); AI decisions never do."""
+    deciding = {"now": False}
+    real_stream, real_decide = rng.stream, ai.decide
 
-    monkeypatch.setattr(rng, "stream", boom)
-    monkeypatch.setattr(rng, "derive_seed", boom)
-    emissions_after(ai_cfg, turns=12)
+    def guarded(*args, **kwargs):
+        if deciding["now"]:
+            raise AssertionError("AI touched sim.rng")
+        return real_stream(*args, **kwargs)
+
+    def decide(*args, **kwargs):
+        deciding["now"] = True
+        try:
+            return real_decide(*args, **kwargs)
+        finally:
+            deciding["now"] = False
+
+    monkeypatch.setattr(rng, "stream", guarded)
+    monkeypatch.setattr(ai, "decide", decide)
+    w = emissions_after(ai_cfg, turns=12)
+    assert any(r["actions"] for h in w.history for r in h["nations"].values())
 
 
 def test_ai_only_world_is_deterministic(ai_cfg):

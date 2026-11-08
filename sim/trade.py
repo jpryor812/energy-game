@@ -105,6 +105,7 @@ def init_factories(cfg: Config, world: World) -> None:
         shares = base_shares(cfg, tech)
         for nid, n in world.nations.items():
             n.factory_capacity[tech] = shares.get(nid, 0.0) * total
+            n.base[f"factory_2025_{tech}"] = n.factory_capacity[tech]
         world.base[f"row_capacity_{tech}"] = shares[ROW] * total
 
 
@@ -114,6 +115,7 @@ def capacity_shares(cfg: Config, world: World, tech: str) -> dict[str, float]:
     k = cfg.tune("industry.credit_competitiveness")
     raw = {
         nid: n.factory_capacity.get(tech, 0.0)
+        * (1 - n.disruption.get(tech, 0.0))
         * (1 + n.tax_credits.get(f"manufacturing:{tech}", 0.0)) ** k
         for nid, n in world.nations.items()
     }
@@ -160,7 +162,28 @@ def cost_premium(cfg: Config, world: World, buyer: str, tech: str) -> float:
     weights = supplier_weights(cfg, world, buyer, tech)
     paid = sum(w * tariff(world, buyer, s) for s, w in weights.items() if s not in (buyer, ROW))
     tariffs = cfg.src(tech, "equipment_share") * paid
-    return tariffs + content_premium(cfg, world, buyer, tech)
+    return (
+        tariffs
+        + content_premium(cfg, world, buyer, tech)
+        + disruption_premium(cfg, world, buyer, tech)
+    )
+
+
+def disruption_premium(cfg: Config, world: World, buyer: str, tech: str) -> float:
+    """Extra equipment cost while factories abroad are disrupted: the share of world capacity
+    knocked out (outside the buyer's own factories) x the penalty."""
+    total = sum(n.factory_capacity.get(tech, 0.0) for n in world.nations.values())
+    total += world.base.get(f"row_capacity_{tech}", 0.0)
+    if total <= 0:
+        return 0.0
+    lost = sum(
+        n.factory_capacity.get(tech, 0.0) * n.disruption.get(tech, 0.0)
+        for nid, n in world.nations.items()
+        if nid != buyer
+    )
+    return (
+        cfg.src(tech, "equipment_share") * cfg.tune("shocks.disruption_cost_penalty") * lost / total
+    )
 
 
 def displaced_ef(cfg: Config, n: Nation) -> float:

@@ -1,7 +1,7 @@
 """Command-line entry point.
 
     python -m sim.runner run --country IND --bot noop --seed 1 --out runs/ind_noop_1
-    python -m sim.runner batch --config scripts/batch_default.yaml
+    python -m sim.runner batch --config scripts/batch_default.yaml --workers 8
 
 A run writes `history.jsonl`, `summary.json` and `state.json`. A batch writes one run directory per
 (country, bot, seed) plus `aggregate.csv`. Balance-report generation arrives in M5.
@@ -23,7 +23,7 @@ from sim.config import Config
 from sim.scenario import new_world
 from sim.state import World
 
-MILESTONE = "M4b"
+MILESTONE = "M5"
 
 
 def play(
@@ -36,6 +36,7 @@ def play(
     world: World | None = None,
     until: int | None = None,
     ai: bool = True,
+    difficulty: str | None = None,
 ) -> World:
     """Play from `world` (or a fresh world) until quarter `until` (default: the last turn), or
     until the player's government falls. While the player is out of office after losing an
@@ -45,7 +46,7 @@ def play(
         raise ValueError(f"'{country}' is not playable; choose from {cfg.playable_ids}")
     bot = bots.get(bot_name)
     if world is None:
-        world = new_world(cfg, seed)
+        world = new_world(cfg, seed, difficulty)
     if world.player is None:
         world.player = country
         elections.start_term(world)
@@ -63,6 +64,7 @@ def summarize(cfg: Config, world: World, country: str, bot_name: str, dt: int) -
     rejected = sum(
         1 for h in world.history for r in h["nations"][country]["actions"] if not r["ok"]
     )
+    events = [e for h in world.history for e in h.get("events", [])]
     return {
         "milestone": MILESTONE,
         "seed": world.seed,
@@ -77,6 +79,11 @@ def summarize(cfg: Config, world: World, country: str, bot_name: str, dt: int) -
         "ending": result["ending"],
         "rank": result["rank"],
         "nation_index": result["nation_index"],
+        "absolute_index": result["absolute_index"],
+        "difficulty_multiplier": result["difficulty_multiplier"],
+        "combined_index": result["combined_index"],
+        "absolute_components": result["absolute_components"],
+        "difficulty": world.difficulty,
         "components": result["components"],
         "world_multiplier": result["world_multiplier"],
         "warming": result["warming"],
@@ -85,7 +92,38 @@ def summarize(cfg: Config, world: World, country: str, bot_name: str, dt: int) -
         "actions_rejected": rejected,
         "elections": world.elections,
         "elections_lost": sum(1 for e in world.elections if e["event"] == "lost"),
+        "disasters": sum(1 for e in events if e["type"] == "disaster"),
+        "disruptions": sum(1 for e in events if e["type"] == "disruption"),
+        "sanity_issues": sanity_issues(world),
     }
+
+
+def sanity_issues(world: World) -> list[str]:
+    """Impossible values in the final state: NaN or infinity anywhere, GDP or population not
+    positive, negative capacity, demand or supply. Emissions and money may be negative."""
+    issues: list[str] = []
+
+    def walk(x: Any, path: str) -> None:
+        if isinstance(x, dict):
+            for k, v in x.items():
+                walk(v, f"{path}.{k}")
+        elif isinstance(x, list):
+            for i, v in enumerate(x):
+                walk(v, f"{path}[{i}]")
+        elif isinstance(x, float) and x != x or x in (float("inf"), float("-inf")):
+            issues.append(f"{path} is not finite")
+
+    walk({k: v for k, v in world.to_dict().items() if k != "history"}, "world")
+    for nid, n in sorted(world.nations.items()):
+        if n.gdp <= 0 or n.population <= 0:
+            issues.append(f"{nid}: GDP or population not positive")
+        for name in ("capacity", "supply"):
+            for src, v in getattr(n, name).items():
+                if v < -1e-9:
+                    issues.append(f"{nid}.{name}.{src} negative")
+        if n.demand < 0:
+            issues.append(f"{nid}.demand negative")
+    return issues[:20]
 
 
 def write_run(out: Path, world: World, summary: dict[str, Any]) -> None:
@@ -98,25 +136,54 @@ def write_run(out: Path, world: World, summary: dict[str, Any]) -> None:
 
 
 def run_one(
-    cfg: Config, seed: int, country: str, bot_name: str, out: Path, dt: int = 1
+    cfg: Config,
+    seed: int,
+    country: str,
+    bot_name: str,
+    out: Path | None,
+    dt: int = 1,
+    difficulty: str | None = None,
 ) -> dict[str, Any]:
-    world = play(cfg, seed, country, bot_name, dt=dt)
+    """Play one game; write its files to `out` (if given); return its summary."""
+    world = play(cfg, seed, country, bot_name, dt=dt, difficulty=difficulty)
     summary = summarize(cfg, world, country, bot_name, dt)
-    write_run(out, world, summary)
+    if out is not None:
+        write_run(out, world, summary)
     return summary
 
 
-def run_batch(cfg: Config, batch_path: Path) -> Path:
+def _job(args: tuple) -> dict[str, Any]:
+    cfg, seed, country, bot_name, out, difficulty = args
+    return run_one(cfg, seed, country, bot_name, out, difficulty=difficulty)
+
+
+def run_grid(cfg: Config, jobs: list[tuple], workers: int = 1) -> list[dict[str, Any]]:
+    """Run (seed, country, bot, out, difficulty) jobs, in parallel if `workers` > 1. Each game
+    is independent and deterministic, so results do not depend on the number of workers; they
+    come back in job order."""
+    args = [(cfg, *job) for job in jobs]
+    if workers <= 1:
+        return [_job(a) for a in args]
+    from concurrent.futures import ProcessPoolExecutor
+
+    with ProcessPoolExecutor(max_workers=workers) as pool:
+        return list(pool.map(_job, args))
+
+
+def run_batch(cfg: Config, batch_path: Path, workers: int = 1) -> Path:
     with batch_path.open(encoding="utf-8") as fh:
         spec = yaml.safe_load(fh)
     out_dir = Path(spec["out_dir"])
-    rows = []
-    for country, bot_name, seed in itertools.product(
-        sorted(spec["countries"]), sorted(spec["bots"]), sorted(spec["seeds"])
+    difficulties = sorted(spec.get("difficulties", [cfg.tuning["difficulty"]["default"]]))
+    jobs = []
+    for difficulty, country, bot_name, seed in itertools.product(
+        difficulties, sorted(spec["countries"]), sorted(spec["bots"]), sorted(spec["seeds"])
     ):
-        run_dir = out_dir / f"{country.lower()}_{bot_name}_{seed}"
-        summary = run_one(cfg, seed, country, bot_name, run_dir)
-        rows.append({k: summary[k] for k in AGGREGATE_COLUMNS})
+        name = f"{country.lower()}_{bot_name}_{seed}"
+        if len(difficulties) > 1:
+            name = f"{difficulty}_{name}"
+        jobs.append((seed, country, bot_name, out_dir / name, difficulty))
+    rows = [{k: s[k] for k in AGGREGATE_COLUMNS} for s in run_grid(cfg, jobs, workers)]
     out_dir.mkdir(parents=True, exist_ok=True)
     with (out_dir / "aggregate.csv").open("w", encoding="utf-8", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=AGGREGATE_COLUMNS, lineterminator="\n")
@@ -126,6 +193,7 @@ def run_batch(cfg: Config, batch_path: Path) -> Path:
 
 
 AGGREGATE_COLUMNS = [
+    "difficulty",
     "country",
     "elections_lost",
     "bot",
@@ -133,6 +201,8 @@ AGGREGATE_COLUMNS = [
     "turns_played",
     "score",
     "nation_index",
+    "absolute_index",
+    "combined_index",
     "rank",
     "world_multiplier",
     "warming",
@@ -152,21 +222,25 @@ def main(argv: list[str] | None = None) -> int:
     run_p.add_argument("--bot", default="noop")
     run_p.add_argument("--seed", type=int, required=True)
     run_p.add_argument("--out", type=Path, required=True)
+    run_p.add_argument("--difficulty", choices=config.DIFFICULTIES, default=None)
 
     batch_p = sub.add_parser("batch", help="play a grid of games")
     batch_p.add_argument("--config", type=Path, required=True)
+    batch_p.add_argument("--workers", type=int, default=1)
 
     args = parser.parse_args(argv)
     try:
         cfg = config.load(args.data_dir)
         if args.command == "run":
-            summary = run_one(cfg, args.seed, args.country, args.bot, args.out)
+            summary = run_one(
+                cfg, args.seed, args.country, args.bot, args.out, difficulty=args.difficulty
+            )
             print(
                 f"wrote {args.out}: score {summary['score']:.1f}, rank {summary['rank']}, "
                 f"{summary['ending']} (state {summary['state_hash'][:12]})"
             )
         else:
-            out_dir = run_batch(cfg, args.config)
+            out_dir = run_batch(cfg, args.config, args.workers)
             print(f"wrote {out_dir / 'aggregate.csv'}")
     except (config.ConfigError, KeyError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)

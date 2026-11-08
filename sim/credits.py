@@ -33,7 +33,7 @@ def issue(cfg: Config, world: World, dt: int) -> float:
     from sim.diplomacy import pathway_level
 
     year = cfg.tune("time.start_year") + world.t / 4
-    level = pathway_level(cfg, year)
+    level = pathway_level(cfg, year, world.difficulty)
     total = 0.0
     for nid in sorted(world.nations):
         n = world.nations[nid]

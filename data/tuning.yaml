@@ -83,9 +83,9 @@ economy:
     status: placeholder
     note: Growth lost per unit of unmet-demand share (10% shortfall -> -5 pp/yr).
   price_drag:
-    value: 0.05
+    value: 0.15
     status: placeholder
-    note: Growth lost per unit of energy-price rise above 2025 (doubling -> -5 pp/yr).
+    note: Growth lost per unit of energy-price rise above 2025 (doubling -> -15 pp/yr). Raised in M5 (from 0.05) so fast, costly transitions carry an economic price.
   trade_elasticity:
     value: 0.1
     status: placeholder
@@ -133,9 +133,9 @@ politics:
     status: placeholder
     note: Fraction of the gap to baseline closed per year.
   approval_shortfall_hit:
-    value: 2.0
+    value: 6.0
     status: placeholder
-    note: Approval lost per year per unit of shortfall growth drag S.
+    note: Approval lost per year per unit of shortfall growth drag S. Raised in M5 so neglecting energy security can bring a government down (balance criterion 7).
   approval_price_hit:
     value: 2.0
     status: placeholder
@@ -145,9 +145,9 @@ politics:
     status: placeholder
     note: Approval lost per year per unit of climate damage drag C.
   stability_reversion:
-    value: 0.25
+    value: 0.6
     status: placeholder
-    note: Fraction of the gap between stability and approval closed per year.
+    note: Fraction of the gap between stability and approval closed per year. Raised in M5 (from 0.25) so a collapse in approval can topple a government before an election.
 
 climate:
   warming_start:
@@ -346,6 +346,10 @@ actions:
     value: 100
     status: placeholder
     note: Influence points per T$.
+  fossil_ban_pc:
+    value: 10.0
+    status: placeholder
+    note: Political capital to ban new fossil plants (the private market stops building them).
   activity_cap_max:
     value: 0.3
     status: placeholder
@@ -365,9 +369,9 @@ actions:
 
 scoring:
   weight_income:
-    value: 0.2
+    value: 0.25
     status: placeholder
-    note: Nation Index weight. Equal weights across the five components.
+    note: Nation Index weight. Tuned in M5 (income 0.25, climate 0.15, others 0.2) so economic costs weigh against climate gains (criterion 3).
   weight_security:
     value: 0.2
     status: placeholder
@@ -381,7 +385,7 @@ scoring:
     status: placeholder
     note: Nation Index weight.
   weight_climate:
-    value: 0.2
+    value: 0.15
     status: placeholder
     note: Nation Index weight for climate contribution (added 2026-11-08).
   climate_scale:
@@ -389,9 +393,65 @@ scoring:
     status: placeholder
     note: Credit-weighted average yearly cut (share of 2025 emissions) that moves the climate score from 0.5 to 0.73.
   bonus_best_deal:
-    value: 5.0
+    value: 3.0
     status: placeholder
     note: Flat bonus to both parties of the deal that cut the most emissions.
+  weight_absolute:
+    value: 0.5
+    status: placeholder
+    note: Weight of the absolute index in the score (decided 2026-11-08).
+  weight_relative:
+    value: 0.5
+    status: placeholder
+    note: Weight of the relative index (x country difficulty) in the score.
+  abs_weight_income:
+    value: 0.3
+    status: placeholder
+    note: Absolute index weight. Tuned in M5 so economic outcomes balance climate ones (criterion 3).
+  abs_weight_clean_share:
+    value: 0.15
+    status: placeholder
+    note: Absolute index weight.
+  abs_weight_emissions:
+    value: 0.15
+    status: placeholder
+    note: Absolute index weight.
+  abs_weight_security:
+    value: 0.2
+    status: placeholder
+    note: Absolute index weight.
+  abs_weight_approval:
+    value: 0.2
+    status: placeholder
+    note: Absolute index weight.
+  abs_income_scale:
+    value: 1.0
+    status: placeholder
+    note: log(income per person / 16-nation average) that moves the absolute income score from 0.5 to 0.73.
+  difficulty_easy:
+    value: 1.0
+    status: placeholder
+    note: Country difficulty multiplier on the relative index and relative bonuses (decided 2026-11-08).
+  difficulty_easy_to_medium:
+    value: 1.1
+    status: placeholder
+    note: Country difficulty multiplier.
+  difficulty_medium:
+    value: 1.15
+    status: placeholder
+    note: Country difficulty multiplier.
+  difficulty_hard:
+    value: 1.3
+    status: placeholder
+    note: Country difficulty multiplier.
+  bonus_largest_cut:
+    value: 3.0
+    status: placeholder
+    note: Absolute bonus for the largest cut in tonnes.
+  bonus_clean_gain:
+    value: 3.0
+    status: placeholder
+    note: Relative bonus (x difficulty) for the largest gain in clean share of energy.
   income_scale:
     value: 0.1
     status: placeholder
@@ -409,9 +469,13 @@ scoring:
     status: placeholder
     note: log(end price / start price) that moves the price score from 0.5 to 0.27 or 0.73.
   clean_scale:
-    value: 1.0
+    value: 0.7
     status: placeholder
-    note: log(clean-build share / GDP share) that moves the clean score from 0.5 to 0.73.
+    note: log(world clean-tech manufacturing share now / 2025) that moves the clean score from 0.5 to 0.73 (doubling the share scores ~0.73).
+  clean_share_floor:
+    value: 0.01
+    status: placeholder
+    note: Added to manufacturing shares before comparing, so a nation with no factories in 2025 can gain by building some.
   world_good:
     value: 1.5
     unit: degC
@@ -444,17 +508,18 @@ scoring:
     status: placeholder
     note: Emissions at or below this share of 2025 count as net zero.
   bonus_first_net_zero:
-    value: 5.0
+    value: 3.0
     status: placeholder
     note: Flat bonus points.
   bonus_largest_reduction:
-    value: 5.0
+    value: 3.0
     status: placeholder
     note: Flat bonus points.
 
 ai:
   personalities:
     green_leader:
+      preferred_deal: climate_loan  # deal type this personality offers as financier
       retaliation: {value: 0.0, status: placeholder, note: "How readily this personality matches tariffs placed on it (0 = never)."}
       credit_value: {value: 80, status: placeholder, note: "What a tonne of carbon credit is worth to this personality ($/tCO2): it sells above and buys below."}
       deal_affinity: {value: 1.0, status: placeholder, note: "Extra utility for signing deals (scaled by w_deals)."}
@@ -468,6 +533,7 @@ ai:
       follow_strength: {value: 0.0, status: placeholder, note: "How strongly peers' emission cuts raise the emissions weight (cautious follower)."}
       budget_appetite: {value: 1.5, status: placeholder, note: "Divides the capital-cost weight: higher spends more readily."}
     fossil_defender:
+      preferred_deal: equipment_on_credit  # deal type this personality offers as financier
       retaliation: {value: 1.0, status: placeholder, note: "How readily this personality matches tariffs placed on it (0 = never)."}
       credit_value: {value: 15, status: placeholder, note: "What a tonne of carbon credit is worth to this personality ($/tCO2): it sells above and buys below."}
       deal_affinity: {value: 0.3, status: placeholder, note: "Extra utility for signing deals (scaled by w_deals)."}
@@ -481,6 +547,7 @@ ai:
       follow_strength: {value: 0.0, status: placeholder, note: "How strongly peers' emission cuts raise the emissions weight (cautious follower)."}
       budget_appetite: {value: 0.8, status: placeholder, note: "Divides the capital-cost weight: higher spends more readily."}
     opportunist:
+      preferred_deal: equity_for_energy  # deal type this personality offers as financier
       retaliation: {value: 1.0, status: placeholder, note: "How readily this personality matches tariffs placed on it (0 = never)."}
       credit_value: {value: 30, status: placeholder, note: "What a tonne of carbon credit is worth to this personality ($/tCO2): it sells above and buys below."}
       deal_affinity: {value: 1.0, status: placeholder, note: "Extra utility for signing deals (scaled by w_deals)."}
@@ -494,6 +561,7 @@ ai:
       follow_strength: {value: 0.0, status: placeholder, note: "How strongly peers' emission cuts raise the emissions weight (cautious follower)."}
       budget_appetite: {value: 1.0, status: placeholder, note: "Divides the capital-cost weight: higher spends more readily."}
     cautious_follower:
+      preferred_deal: equipment_on_credit  # deal type this personality offers as financier
       retaliation: {value: 0.3, status: placeholder, note: "How readily this personality matches tariffs placed on it (0 = never)."}
       credit_value: {value: 50, status: placeholder, note: "What a tonne of carbon credit is worth to this personality ($/tCO2): it sells above and buys below."}
       deal_affinity: {value: 0.5, status: placeholder, note: "Extra utility for signing deals (scaled by w_deals)."}
@@ -541,6 +609,9 @@ ai:
   removal_share: {value: 0.1, status: placeholder, note: "Share of capital an AI considers for carbon removal."}
   forest_share: {value: 0.03, status: placeholder, note: "Share of capital an AI considers paying into the forest fund."}
   methane_horizon: {value: 20, status: placeholder, note: "Years over which an AI spreads avoided methane warming to compare it with CO2 cuts."}
+  removal_energy_cap: {value: 0.25, status: placeholder, note: "An AI keeps carbon removal's energy use below this share of its economy's energy demand."}
+  equity_share_offer: {value: 0.5, status: placeholder, note: "Share of a plant's operating margin an AI equity investor asks for."}
+  climate_loan_discount: {value: 0.02, status: placeholder, note: "Interest a green-leader climate loan takes off the commercial rate (concessional)."}
 
 trade:
   world_gdp_2025: {value: 118.485, status: calibrated, note: "IMF WEO world GDP 2025, T$ (source imf_weo). The rest of the world is this minus the 16 nations."}
@@ -570,6 +641,13 @@ deals:
   default_trust_hit: {value: 0.3, status: placeholder, note: "Trust the financier loses in a defaulting host (others lose half)."}
   exit_trust_hit: {value: 0.15, status: placeholder, note: "Trust the financier loses in a host that exits early."}
   default_growth_hit: {value: 0.5, status: placeholder, note: "Share of defaulted debt lost from GDP (one-off, like a write-off)."}
+  equity_hazard: {value: 0.004, status: placeholder, note: "Base chance per quarter an equity-financed plant fails or is seized (seeded)."}
+  hazard_instability: {value: 4.0, status: placeholder, note: "Extra failure risk at zero host stability (scaled from 0 at stability 0.5)."}
+  hazard_fx: {value: 3.0, status: placeholder, note: "Extra failure risk per unit fall in host FX reserves below 2025."}
+  hazard_distrust: {value: 2.0, status: placeholder, note: "Extra failure risk at zero host trust in the investor (scaled from 0 at trust 0.5)."}
+  hazard_default: {value: 2.0, status: placeholder, note: "Extra failure risk per recent host default."}
+  recent_default_quarters: {value: 20, status: placeholder, note: "How long a default counts as recent."}
+  failure_trust_hit: {value: 0.1, status: placeholder, note: "Trust each side loses when an equity plant fails."}
 
 credits:
   start_price: {value: 20.0, status: placeholder, note: "Opening carbon credit price, $/tCO2."}
@@ -614,6 +692,7 @@ jobs:
   fossil_per_ej: {value: 0.0359, status: calibrated, source: iea_wee2025, note: "Million fossil supply jobs per EJ/yr of fossil production: IEA World Energy Employment 2025 (18.4 million, 2024) / world fossil production ~513 EJ."}
   clean_ops_per_ej: {value: 0.08, status: placeholder, note: "Million jobs per EJ/yr of non-fossil supply (operations). Unsourced approximate."}
   construction_per_ej: {value: 0.43, status: placeholder, note: "Million jobs per EJ/yr of capacity completed per year: ~10 million construction jobs over the model's 2025 build rate of ~23 EJ/yr. Unsourced approximate."}
+  construction_max_share: {value: 0.03, status: placeholder, note: "Construction jobs saturate at this share of the workforce (added in M5 after build waves produced 160 million US construction jobs)."}
   manufacturing_per_trillion: {value: 36.0, status: placeholder, note: "Million jobs per T$/yr of clean-tech factory sales: ~10 million over the model's 2025 sales of ~0.28 T$/yr. Unsourced approximate."}
   smoothing: {value: 0.5, status: placeholder, note: "Share of the gap to this quarter's build rate and factory sales closed each quarter (smooths job counts)."}
   workforce_share: {value: 0.5, status: placeholder, note: "Workforce as a share of population."}
@@ -636,3 +715,32 @@ elections:
   tax_weight: {value: 2.0, status: placeholder, note: "Vote share lost per unit of tax raised over the term (1 point -> -0.02)."}
   swing_sd: {value: 0.02, status: placeholder, note: "Standard deviation of the seeded vote swing."}
   threshold: {value: 0.5, status: placeholder, note: "Vote share needed to win."}
+
+difficulty:
+  default: normal  # world difficulty when a run does not choose one
+  levels:
+    easy:
+      net_zero_year: {value: 2060, status: placeholder, note: "The stocktake pathway reaches net zero this year (decided 2026-11-08)."}
+      disasters: {value: 0.5, status: placeholder, note: "Multiplier on climate disaster frequency."}
+      disruptions: {value: 0.5, status: placeholder, note: "Multiplier on foreign factory disruptions."}
+    normal:
+      net_zero_year: {value: 2050, status: placeholder, note: "The stocktake pathway reaches net zero this year."}
+      disasters: {value: 1.0, status: placeholder, note: "Multiplier on climate disaster frequency."}
+      disruptions: {value: 1.0, status: placeholder, note: "Multiplier on foreign factory disruptions."}
+    hard:
+      net_zero_year: {value: 2045, status: placeholder, note: "The stocktake pathway reaches net zero this year."}
+      disasters: {value: 1.5, status: placeholder, note: "Multiplier on climate disaster frequency."}
+      disruptions: {value: 1.5, status: placeholder, note: "Multiplier on foreign factory disruptions."}
+
+shocks:
+  disaster_rate: {value: 0.03, status: placeholder, note: "Chance per quarter of a climate disaster per degC above disaster_threshold, at vulnerability 1 (seeded)."}
+  disaster_threshold: {value: 1.0, status: placeholder, note: "Warming (degC) below which disasters do not happen in the game."}
+  disaster_gdp_loss: {value: 0.01, status: placeholder, note: "One-off GDP loss of an average disaster (share of GDP), cut by adaptation."}
+  disaster_capacity_loss: {value: 0.05, status: placeholder, note: "Share of one energy source's capacity an average disaster destroys."}
+  disaster_approval_hit: {value: 0.03, status: placeholder, note: "Approval lost in an average disaster."}
+  disruption_rate: {value: 0.01, status: placeholder, note: "Chance per quarter that one of a nation's clean-tech factory lines is disrupted (seeded)."}
+  disruption_severity: {value: 0.5, status: placeholder, note: "Share of a disrupted line's output lost."}
+  disruption_min_quarters: {value: 4, status: placeholder, note: "Shortest disruption."}
+  disruption_extra_quarters: {value: 4, status: placeholder, note: "A disruption lasts up to this many more quarters (seeded)."}
+  disruption_cost_penalty: {value: 0.3, status: placeholder, note: "Extra equipment cost per unit of world supply disrupted abroad."}
+

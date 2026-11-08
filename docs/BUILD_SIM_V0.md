@@ -158,7 +158,9 @@ Report on each (pass, fail, or tune) in `BALANCE_REPORT.md`:
 2. **No dominant bot:** no bot wins on every playable nation.
 3. **Viable strategies:** for each playable nation, at least two bot strategies finish within a set tolerance of the best score.
 4. **Difficulty ordering:** the US and UK (the easier nations) score higher than India, Vietnam, and Russia on average with the same bot.
+   > **Changed 2026-11-08:** checked on the absolute index (where countries end up), since the final score deliberately rewards harder countries' relative achievements with a difficulty multiplier. The UK is not playable, so the check uses the US (easy) and the EU and China (medium) against India, Vietnam and Russia (hard).
 5. **Free-rider tension:** a nation that cuts less than its fair share gains on N in the short term but loses to M(T) when many nations do the same; show this in a scenario run.
+   > **Changed 2026-11-08:** the short-term gain is measured on N's economic components (income and welfare), since N now also scores climate contribution, which free-riding loses by construction.
 6. **Sanity:** no NaN, no negative GDP, no negative capacity, no impossible emissions.
 7. **Game length:** runs finish 100 turns; a bot that ignores energy security triggers `Fallen Government` in a meaningful share of runs.
 

@@ -20,6 +20,8 @@ Shares and step sizes below are bot behaviour, not world tuning, so they live he
               high-emitting partners once a year, accepts offers it can afford, opens talks,
               joins the carbon club when eligible, and pledges.
 - ai:         the AI plays the player's nation with its own personality (an AI-only world).
+- reckless:   ignores energy security (bans new fossil plants, retires fossil, maxes taxes and
+              carbon price); used to test Fallen Government.
 """
 
 from __future__ import annotations
@@ -233,6 +235,29 @@ def deal_maker(cfg: Config, world: World, nid: str) -> list[Action]:
     return out + pick(diplomatic, slots(cfg, n, "diplomatic"))
 
 
+def reckless(cfg: Config, world: World, nid: str) -> list[Action]:
+    """Ignores energy security: bans new fossil plants, retires its biggest fossil source as fast
+    as political capital allows, and maxes out taxes and the carbon price. Used to check
+    that neglecting security can bring the government down."""
+    n = world.nations[nid]
+    wanted: list[Action | None] = []
+    if not n.fossil_ban and n.political_capital >= cfg.tune("actions.fossil_ban_pc") and world.t:
+        wanted.append({"type": "set_fossil_ban", "on": True})
+    fossil = [f for f in ("coal", "gas", "oil") if n.capacity.get(f, 0.0) > 0]
+    if fossil:
+        f = max(fossil, key=lambda x: (n.capacity[x], x))
+        per_ej = cfg.tune("actions.retire_pc_per_ej")
+        if f == "coal":
+            per_ej *= cfg.tune("actions.retire_coal_multiplier")
+        amount = min(0.25 * n.capacity[f], n.political_capital / per_ej)
+        if amount > 0:
+            wanted.append({"type": "retire_capacity", "source": f, "amount": amount})
+    if world.t == 0:
+        wanted.append({"type": "set_tax_rate", "level": cfg.tune("tax.max_change")})
+    wanted.append(raise_carbon(n, 50.0, cfg.tune("actions.carbon_price_max")))
+    return pick(wanted, slots(cfg, n, "domestic"))
+
+
 def ai_player(cfg: Config, world: World, nid: str) -> list[Action]:
     """The AI plays the player's nation. sim.runner hands this nation to the turn's AI stage
     instead of calling this, so the AI sees the quarter's slots and income."""
@@ -248,6 +273,7 @@ BOTS: dict[str, Bot] = {
     "all_clean": all_clean,
     "balanced": balanced,
     "deal_maker": deal_maker,
+    "reckless": reckless,
 }
 
 

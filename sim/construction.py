@@ -126,8 +126,12 @@ def order(cfg: Config, world: World, nid: str, n: Nation, t: int, at: int) -> No
     growth = economy.baseline_growth(cfg, nid, t)
     decline = cfg.nat(nid, "trend.intensity_decline")
     demand_growth = (1 + growth) * (1 - decline) - 1
-    target = base_demand(n) * (1 + demand_growth) ** ((at - t) / 4)
-    target *= 1 + cfg.tune("market.reserve_margin")
+    economy_demand = (base_demand(n) - n.extra_demand) * (1 + demand_growth) ** ((at - t) / 4)
+    removal_demand = 0.0
+    if "carbon_removal" in cfg.source_ids:  # plan power for removal already being built
+        removal = future_capacity(cfg, nid, n, "carbon_removal", t, at)
+        removal_demand = removal * cfg.src("carbon_removal", "energy_use")
+    target = (economy_demand + removal_demand) * (1 + cfg.tune("market.reserve_margin"))
     future = {s: future_capacity(cfg, nid, n, s, t, at) for s in cfg.energy_source_ids}
     normal = {s: future[s] / cfg.src(s, "headroom") for s in future}
     vre_cap = energy.vre_max_share(cfg, at, n) * target
@@ -183,6 +187,10 @@ def split_gap(
     electrifiable share and all clean sources within the clean ceiling; the rest goes to fossil
     sources by their mix weights (or the cheapest fossil source if the mix has none)."""
     mix = market_mix(cfg, world, nid, n)
+    if n.fossil_ban:  # no new fossil plants: their share goes to clean sources
+        clean_w = {s: w for s, w in mix.items() if not energy.is_fossil(cfg, s)}
+        total_w = sum(clean_w.values())
+        mix = {s: w / total_w for s, w in clean_w.items()} if total_w > 0 else {}
     alloc = {s: gap * w for s, w in mix.items()}
     vre = sum(alloc.get(s, 0.0) for s in cfg.vre_ids)
     if vre > max(0.0, vre_room):
@@ -195,7 +203,7 @@ def split_gap(
         for s in clean:
             alloc[s] *= max(0.0, clean_room) / total_clean
     leftover = gap - sum(alloc.values())
-    if leftover > 1e-12:
+    if leftover > 1e-12 and not n.fossil_ban:  # under a ban the gap stays unfilled
         fossil = {s: w for s, w in mix.items() if energy.is_fossil(cfg, s) and w > 0}
         if not fossil:
             options = [s for s in cost_candidates(cfg, nid) if energy.is_fossil(cfg, s)]

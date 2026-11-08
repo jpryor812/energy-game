@@ -51,7 +51,7 @@ def new_nation(cfg: Config, nid: str) -> Nation:
     )
 
 
-def new_world(cfg: Config, seed: int) -> World:
+def new_world(cfg: Config, seed: int, difficulty: str | None = None) -> World:
     nations = {nid: new_nation(cfg, nid) for nid in cfg.nation_ids}
     world = World(
         t=0,
@@ -59,7 +59,10 @@ def new_world(cfg: Config, seed: int) -> World:
         nations=nations,
         warming=cfg.tune("climate.warming_start"),
         tech_state={s: cfg.src(s, "global_installed") for s in cfg.source_ids},
+        difficulty=difficulty or cfg.tuning["difficulty"]["default"],
     )
+    if world.difficulty not in cfg.tuning["difficulty"]["levels"]:
+        raise ValueError(f"unknown difficulty '{world.difficulty}'")
     for nid in sorted(nations):
         n = nations[nid]
         d = energy.dispatch(cfg, n, energy.base_demand(n))
@@ -83,6 +86,8 @@ def new_world(cfg: Config, seed: int) -> World:
                 "carbon_price": n.carbon_price,
                 "import_dependence": n.import_dependence,
                 "income_per_person": n.gdp / n.population,
+                "clean_share": sum(v for k, v in n.supply.items() if cfg.category(k) != "fossil")
+                / max(sum(n.supply.values()), 1e-9),
                 "fx_reserves": n.fx_reserves,
                 "goods_openness": max(
                     cfg.tune("trade.openness_floor"),

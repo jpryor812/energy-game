@@ -1,4 +1,4 @@
-"""Deals: equipment on credit and energy-as-a-service.
+"""Deals: equipment on credit, energy-as-a-service, equity-for-energy and climate loans.
 
 A financier offers a host clean capacity. Terms: `source`, `amount` (EJ/yr), `currency`
 ("hard" or "local"), `duration` (quarters of payments), `collateral` (share of what is owed the
@@ -20,6 +20,15 @@ issue a reserve currency) its FX reserves; if both run out the host defaults. Lo
 payments come from capital, then local borrowing, so never default, but lose value to the
 financier as the host's FX reserves fall below their 2025 level (currency risk).
 
+Equity-for-energy (M5): the financier builds a plant and takes `share` of its operating margin
+(host energy price minus the plant's running cost) each quarter, paid in local currency. No
+fixed payment, so no default, but returns fall with the host's prices, and each quarter the plant
+may fail or be seized (seeded "deals" stream), more likely when the host is unstable, its FX
+reserves have fallen, it distrusts the investor, or it defaulted recently; the investor loses the
+stake and the capacity goes. Climate loan (M5): cash for the host to spend on clean capacity
+(`amount` in T$, assumed spent on `source`), repaid like equipment on credit from the next
+quarter.
+
 Emissions credit: once running, a deal cuts the host's emissions by roughly the plant's output x
 the host's average fossil emission factor at signing. The host's real emissions already show it;
 the financier earns `credits.weight_financed` x that cut for its score. Credit never reaches the
@@ -30,11 +39,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from sim import construction, diplomacy, tech, trade
+from sim import construction, diplomacy, rng, tech, trade
 from sim.config import Config
 from sim.state import Deal, Nation, World
 
-TYPES = ("equipment_on_credit", "energy_as_a_service")
+TYPES = ("equipment_on_credit", "energy_as_a_service", "equity_for_energy", "climate_loan")
+LOANS = ("equipment_on_credit", "climate_loan")  # the host carries debt
 OPEN = "proposed"
 ACTIVE = "active"
 
@@ -48,6 +58,9 @@ def new_id(world: World) -> str:
 
 
 def build_cost(cfg: Config, world: World, deal: Deal) -> float:
+    """What the financier pays: the plant at its own unit cost, or the loan amount (T$)."""
+    if deal.type == "climate_loan":
+        return deal.terms["amount"]
     fin = world.nations[deal.financier]
     return tech.nation_unit_cost(cfg, world, fin, deal.terms["source"]) * deal.terms["amount"]
 
@@ -61,8 +74,9 @@ def effective_rate(cfg: Config, world: World, deal: Deal) -> float:
 
 
 def output(cfg: Config, deal: Deal) -> float:
-    """Normal output of the deal's plant, EJ/yr."""
-    return deal.terms["amount"] / cfg.src(deal.terms["source"], "headroom")
+    """Normal output of the deal's plant (or of the plant a climate loan pays for), EJ/yr."""
+    capacity = deal.terms.get("capacity", deal.terms["amount"])
+    return capacity / cfg.src(deal.terms["source"], "headroom")
 
 
 def propose(world: World, financier: str, host: str, kind: str, terms: dict) -> Deal:
@@ -87,17 +101,28 @@ def activate(cfg: Config, world: World, deal: Deal) -> None:
     fin, host = world.nations[deal.financier], world.nations[deal.host]
     cost = build_cost(cfg, world, deal)
     fin.capital -= cost
-    construction.queue(cfg, host, deal.terms["source"], deal.terms["amount"], world.t)
-    online = world.t + int(cfg.src(deal.terms["source"], "build_time"))
+    source = deal.terms["source"]
+    online = world.t + int(cfg.src(source, "build_time"))
+    if deal.type == "climate_loan":
+        # Cash for the host to build clean capacity; repayments start next quarter.
+        host.capital += cost
+        capacity = cost / tech.nation_unit_cost(cfg, world, host, source)
+        pay_from = world.t + 1
+    else:
+        construction.queue(cfg, host, source, deal.terms["amount"], world.t)
+        capacity = deal.terms["amount"]
+        pay_from = online
     deal.terms |= {
         "cost": cost,
+        "capacity": capacity,
         "online_turn": online,
-        "end_turn": online + int(deal.terms["duration"]),
-        "cut_rate": output(cfg, deal) * trade.displaced_ef(cfg, host),
+        "pay_from": pay_from,
+        "end_turn": pay_from + int(deal.terms["duration"]),
         "paid": 0.0,
         "credited": 0.0,
     }
-    if deal.type == "equipment_on_credit":
+    deal.terms["cut_rate"] = output(cfg, deal) * trade.displaced_ef(cfg, host)
+    if deal.type in LOANS:
         deal.terms["outstanding"] = cost
         if deal.terms["currency"] == "hard" and not _issuer(cfg, deal.host):
             host.debt_hard += cost
@@ -143,7 +168,7 @@ def _default(cfg: Config, world: World, deal: Deal) -> None:
     seized = min(max(0.0, host.capital), deal.terms.get("collateral", 0.0) * owed)
     host.capital -= seized
     fin.capital += seized
-    if deal.type == "equipment_on_credit":
+    if deal.type in LOANS:
         if deal.terms["currency"] == "hard" and not _issuer(cfg, deal.host):
             host.debt_hard = max(0.0, host.debt_hard - owed)
         else:
@@ -153,7 +178,47 @@ def _default(cfg: Config, world: World, deal: Deal) -> None:
     diplomacy.adjust_all(world, deal.host, -hit / 2)
     diplomacy.adjust(world, deal.financier, deal.host, -hit / 2)
     deal.terms["seized"] = seized
+    deal.terms["defaulted_turn"] = world.t
     deal.status = "defaulted"
+
+
+def failure_chance(cfg: Config, world: World, deal: Deal) -> float:
+    """Chance per quarter that an equity-financed plant fails or is seized: higher when the
+    host's government is unstable, its FX reserves have fallen, it distrusts the investor, or it
+    has defaulted recently."""
+    host = world.nations[deal.host]
+    instability = max(0.0, 0.5 - host.stability) / 0.5
+    fx_fall = 0.0
+    if not _issuer(cfg, deal.host) and host.base.get("fx_reserves", 0.0) > 0:
+        fx_fall = max(0.0, 1 - host.fx_reserves / host.base["fx_reserves"])
+    distrust = max(0.0, 0.5 - diplomacy.trust(world, deal.host, deal.financier)) / 0.5
+    recent = sum(
+        1
+        for d in world.deals.values()
+        if d.host == deal.host
+        and d.status == "defaulted"
+        and world.t - d.terms.get("defaulted_turn", -1e9) < _k(cfg, "recent_default_quarters")
+    )
+    risk = (
+        1
+        + _k(cfg, "hazard_instability") * instability
+        + _k(cfg, "hazard_fx") * fx_fall
+        + _k(cfg, "hazard_distrust") * distrust
+        + _k(cfg, "hazard_default") * recent
+    )
+    return min(1.0, _k(cfg, "equity_hazard") * risk)
+
+
+def _fail(cfg: Config, world: World, deal: Deal) -> None:
+    host = world.nations[deal.host]
+    source = deal.terms["source"]
+    lost = min(host.capacity.get(source, 0.0), deal.terms["capacity"])
+    host.capacity[source] = host.capacity.get(source, 0.0) - lost
+    hit = _k(cfg, "failure_trust_hit")
+    diplomacy.adjust(world, deal.financier, deal.host, -hit)
+    diplomacy.adjust(world, deal.host, deal.financier, -hit)
+    deal.terms["failed_turn"] = world.t
+    deal.status = "failed"
 
 
 def exit_deal(cfg: Config, world: World, deal: Deal) -> None:
@@ -168,9 +233,19 @@ def exit_deal(cfg: Config, world: World, deal: Deal) -> None:
     deal.status = "exited"
 
 
+def dividend(cfg: Config, world: World, deal: Deal) -> float:
+    """Yearly equity dividend, T$: the investor's share of the plant's operating margin (host
+    energy price minus the plant's running cost) on its normal output. Falls with prices."""
+    host = world.nations[deal.host]
+    margin = max(0.0, host.energy_price - cfg.src(deal.terms["source"], "variable_cost"))
+    return deal.terms["share"] * output(cfg, deal) * margin * 1e-3
+
+
 def annual_payment(cfg: Config, world: World, deal: Deal) -> float:
     """What the host pays per year on an active (or proposed) deal, T$."""
-    if deal.type == "equipment_on_credit":
+    if deal.type == "equity_for_energy":
+        return dividend(cfg, world, deal)
+    if deal.type in LOANS:
         owed = deal.terms.get("outstanding", build_cost(cfg, world, deal))
         years = max(
             0.25, (deal.terms.get("end_turn", world.t + deal.terms["duration"]) - world.t) / 4
@@ -197,17 +272,24 @@ def service(cfg: Config, world: World, dt: int) -> None:
             if world.t - deal.start_turn >= _k(cfg, "proposal_expiry"):
                 deal.status = "expired"
             continue
-        if deal.status != ACTIVE or world.t < deal.terms["online_turn"]:
+        if deal.status != ACTIVE or world.t < deal.terms["pay_from"]:
             continue
         host, fin = world.nations[deal.host], world.nations[deal.financier]
+        if deal.type == "equity_for_energy" and world.t >= deal.terms["online_turn"]:
+            roll = rng.stream(world.seed, "deals", world.t, deal.id).random()
+            if roll < failure_chance(cfg, world, deal):
+                _fail(cfg, world, deal)
+                continue
         currency = deal.terms["currency"]
-        if deal.type == "equipment_on_credit":
+        principal = 0.0
+        if deal.type in LOANS:
             left_q = max(1, deal.terms["end_turn"] - world.t)
             principal = min(deal.terms["outstanding"], deal.terms["outstanding"] * dt / left_q)
             interest = deal.terms["outstanding"] * effective_rate(cfg, world, deal) * dt / 4
             due = principal + interest
+        elif deal.type == "equity_for_energy":
+            due = dividend(cfg, world, deal) * dt / 4
         else:
-            principal = 0.0
             due = deal.terms["price"] * output(cfg, deal) * 1e-3 * dt / 4
         paid = _collect(cfg, host, deal.host, due, currency)
         fin.capital += paid * _fx_factor(cfg, host, deal.host, currency)
@@ -215,12 +297,14 @@ def service(cfg: Config, world: World, dt: int) -> None:
         if paid + 1e-12 < due:
             _default(cfg, world, deal)
             continue
-        if deal.type == "equipment_on_credit":
+        if deal.type in LOANS:
             deal.terms["outstanding"] -= principal
             if currency == "hard" and not _issuer(cfg, deal.host):
                 host.debt_hard = max(0.0, host.debt_hard - principal)
             else:
                 host.debt_local = max(0.0, host.debt_local - principal)
+        if world.t < deal.terms["online_turn"]:
+            continue  # a climate loan's plant is not running yet
         credit = deal.terms["cut_rate"] * dt / 4
         deal.terms["credited"] += credit
         fin.climate_credit["financed"] = fin.climate_credit.get("financed", 0.0) + weight * credit

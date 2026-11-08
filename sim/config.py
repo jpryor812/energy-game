@@ -122,6 +122,7 @@ REQUIRED_TUNING = (
     "actions.efficiency_max_gain",
     "actions.efficiency_scale",
     "actions.influence_per_trillion",
+    "actions.fossil_ban_pc",
     "actions.activity_cap_max",
     "actions.activity_pc_cost",
     "actions.activity_gdp_ratio",
@@ -135,6 +136,7 @@ REQUIRED_TUNING = (
     "scoring.import_scale",
     "scoring.price_scale",
     "scoring.clean_scale",
+    "scoring.clean_share_floor",
     "scoring.world_good",
     "scoring.world_bad",
     "scoring.world_floor",
@@ -167,6 +169,13 @@ REQUIRED_TUNING = (
     "deals.default_trust_hit",
     "deals.exit_trust_hit",
     "deals.default_growth_hit",
+    "deals.equity_hazard",
+    "deals.hazard_instability",
+    "deals.hazard_fx",
+    "deals.hazard_distrust",
+    "deals.hazard_default",
+    "deals.recent_default_quarters",
+    "deals.failure_trust_hit",
     "credits.start_price",
     "credits.drift",
     "credits.min_price",
@@ -184,6 +193,20 @@ REQUIRED_TUNING = (
     "stocktake.coalition_tariff_max",
     "stocktake.pledge_trust",
     "scoring.weight_climate",
+    "scoring.weight_absolute",
+    "scoring.weight_relative",
+    "scoring.abs_income_scale",
+    "scoring.abs_weight_income",
+    "scoring.abs_weight_clean_share",
+    "scoring.abs_weight_emissions",
+    "scoring.abs_weight_security",
+    "scoring.abs_weight_approval",
+    "scoring.difficulty_easy",
+    "scoring.difficulty_easy_to_medium",
+    "scoring.difficulty_medium",
+    "scoring.difficulty_hard",
+    "scoring.bonus_largest_cut",
+    "scoring.bonus_clean_gain",
     "scoring.climate_scale",
     "scoring.bonus_best_deal",
     "ai.personalities.{personality}.retaliation",
@@ -209,6 +232,9 @@ REQUIRED_TUNING = (
     "ai.removal_share",
     "ai.forest_share",
     "ai.methane_horizon",
+    "ai.equity_share_offer",
+    "ai.removal_energy_cap",
+    "ai.climate_loan_discount",
     "tax.min_change",
     "tax.max_change",
     "tax.growth_drag",
@@ -227,6 +253,7 @@ REQUIRED_TUNING = (
     "jobs.fossil_per_ej",
     "jobs.clean_ops_per_ej",
     "jobs.construction_per_ej",
+    "jobs.construction_max_share",
     "jobs.manufacturing_per_trillion",
     "jobs.smoothing",
     "jobs.workforce_share",
@@ -245,6 +272,16 @@ REQUIRED_TUNING = (
     "elections.tax_weight",
     "elections.swing_sd",
     "elections.threshold",
+    "shocks.disaster_rate",
+    "shocks.disaster_threshold",
+    "shocks.disaster_gdp_loss",
+    "shocks.disaster_capacity_loss",
+    "shocks.disaster_approval_hit",
+    "shocks.disruption_rate",
+    "shocks.disruption_severity",
+    "shocks.disruption_min_quarters",
+    "shocks.disruption_extra_quarters",
+    "shocks.disruption_cost_penalty",
     "ai.personalities.{personality}.w_growth",
     "ai.personalities.{personality}.w_security",
     "ai.personalities.{personality}.w_emissions",
@@ -342,6 +379,12 @@ class Config:
                 return l0 + (l1 - l0) * (year - y0) / (y1 - y0)
         return 1.0
 
+    def level(self, difficulty: str, key: str) -> Any:
+        """A world-difficulty setting, e.g. level("hard", "net_zero_year")."""
+        return _lookup(
+            self.tuning["difficulty"]["levels"][difficulty], key, f"difficulty.{difficulty}"
+        )
+
     def nat_spec(self, nation: str) -> dict[str, Any]:
         return self.countries["nations"][nation]
 
@@ -400,6 +443,7 @@ def load(data_dir: Path | str = DEFAULT_DATA_DIR) -> Config:
     _validate_countries(cfg)
     _validate_tuning(cfg)
     _validate_targets(cfg)
+    _validate_difficulty(cfg)
     return cfg
 
 
@@ -521,6 +565,21 @@ def _validate_tuning(cfg: Config) -> None:
     factors = cfg.tune("seasonality.demand_factor")
     if not isinstance(factors, list) or len(factors) != 4:
         raise ConfigError("tuning: seasonality.demand_factor must list four quarterly factors")
+
+
+DIFFICULTIES = ("easy", "normal", "hard")
+
+
+def _validate_difficulty(cfg: Config) -> None:
+    spec = cfg.tuning.get("difficulty", {})
+    if spec.get("default") not in DIFFICULTIES:
+        raise ConfigError(f"tuning: difficulty.default must be one of {DIFFICULTIES}")
+    for level in DIFFICULTIES:
+        _require(
+            spec.get("levels", {}).get(level, {}),
+            ["net_zero_year", "disasters", "disruptions"],
+            f"tuning.difficulty.levels.{level}",
+        )
 
 
 def _validate_targets(cfg: Config) -> None:

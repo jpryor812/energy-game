@@ -57,7 +57,7 @@ def test_components_move_the_right_way(cfg, noop_world):
     base = scoring.components(cfg, w, "AAA")
     w.nations["AAA"].gdp *= 1.2
     w.nations["AAA"].energy_price *= 0.5
-    w.nations["AAA"].clean_built += 10.0
+    w.nations["AAA"].factory_capacity["solar"] = 1.0  # a big share of world clean-tech making
     better = scoring.components(cfg, w, "AAA")
     assert better["income"] > base["income"]
     assert better["welfare"] > base["welfare"]
@@ -82,8 +82,13 @@ def test_bonuses(cfg, noop_world):
 
 def test_score_combines_index_multiplier_and_bonuses(cfg, noop_world):
     result = scoring.score(cfg, noop_world, "AAA")
-    expected = result["nation_index"] * result["world_multiplier"] + sum(result["bonuses"].values())
-    assert result["score"] == pytest.approx(expected)
+    mult = result["difficulty_multiplier"]
+    combined = 0.5 * result["absolute_index"] + 0.5 * result["nation_index"] * mult
+    assert result["combined_index"] == pytest.approx(combined)
+    bonus = sum(
+        v * (mult if k in scoring.RELATIVE_BONUSES else 1) for k, v in result["bonuses"].items()
+    )
+    assert result["score"] == pytest.approx(combined * result["world_multiplier"] + bonus)
     assert sorted(r["rank"] for r in result["all_nations"].values()) == [1, 2]
 
 

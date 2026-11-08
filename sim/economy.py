@@ -1,6 +1,6 @@
 """GDP, income, population, energy intensity, FX, approval and stability.
 
-Annual GDP growth:  g = g0 + I + P + T - S - E - R - D - C - F
+Annual GDP growth:  g = g0 + I + P + T - S - E - R - D - C - F - H
 
 - g0: baseline, interpolated from `trend.g0_start` (2025) to `trend.g0_end` (final turn).
 - I: zero; investment is already in g0, and public builds act through energy supply.
@@ -12,6 +12,7 @@ Annual GDP growth:  g = g0 + I + P + T - S - E - R - D - C - F
 - E: energy price rise above the 2025 level x `price_drag`, softened by carbon-revenue rebates.
 - D: rise in hard-currency debt / GDP above the 2025 ratio x `debt_drag`.
 - F: discretionary tax change x `tax.growth_drag` (negative when taxes are cut).
+- H: one-off GDP loss from climate disasters (sim.shocks).
 - C: climate damage from warming since 2025 (computed by sim.climate the step before).
 
 Every drag is measured against the nation's own 2025 state, because the baseline growth rate
@@ -56,13 +57,18 @@ def growth_terms(cfg: Config, nid: str, n: Nation, t: int, dt: int = 1) -> dict[
         "D": cfg.tune("economy.debt_drag") * debt_rise,
         # Fiscal: discretionary tax above (or below) 2025 slows (or speeds) growth.
         "F": cfg.tune("tax.growth_drag") * n.tax_change,
+        # Hazards: one-off GDP loss from climate disasters last quarter, as an annual rate.
+        "H": n.disaster_loss * 4 / dt,
         "C": n.climate_damage,
     }
 
 
 def annual_growth(terms: dict[str, float]) -> float:
     gains = terms["g0"] + terms["P"] + terms["T"]
-    return gains - terms["S"] - terms["E"] - terms["R"] - terms["D"] - terms["C"] - terms["F"]
+    losses = (
+        terms["S"] + terms["E"] + terms["R"] + terms["D"] + terms["C"] + terms["F"] + terms["H"]
+    )
+    return gains - losses
 
 
 def carbon_revenue(n: Nation) -> float:
@@ -130,6 +136,7 @@ def apply_growth(world: World, cfg: Config, dt: int) -> None:
         g = annual_growth(terms)
         n.growth = g
         n.pending_writeoff = 0.0
+        n.disaster_loss = 0.0
         years = dt / 4
         n.gdp *= (1 + g) ** years
         n.population *= (1 + cfg.nat(nid, "trend.population_growth")) ** years

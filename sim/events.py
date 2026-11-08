@@ -1,14 +1,16 @@
-"""Events hook. A no-op in v0; v1 plugs the event system in here.
-
-Events will draw from `sim.rng.stream(world.seed, "events", world.t, ...)`.
+"""Events hook. M5 plugs in seeded shocks (sim.shocks): climate disasters and factory
+disruptions. The richer event system, with choices and chains, comes later.
 """
 
 from __future__ import annotations
 
+from typing import Any
+
+from sim import shocks
 from sim.config import Config
 from sim.state import World
 
 
-def on_turn(world: World, cfg: Config) -> None:
-    """Called once per turn, after the scoring snapshot. Does nothing in v0."""
-    return None
+def on_turn(world: World, cfg: Config, dt: int = 1) -> list[dict[str, Any]]:
+    """Called once per turn, after the scoring snapshot. Returns what happened."""
+    return shocks.apply(world, cfg, dt)

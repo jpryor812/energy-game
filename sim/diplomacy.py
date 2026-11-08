@@ -103,11 +103,17 @@ def remaining_budget(cfg: Config, world: World) -> float:
     return total - world.global_cumulative_emissions
 
 
-def pathway_level(cfg: Config, year: float) -> float:
+def pathway_level(cfg: Config, year: float, difficulty: str = "normal") -> float:
     """1.5 degC-consistent emissions level at `year`, as a share of 2025: linear between the
-    `stocktake.pathway_*` waypoints from 1.0 in 2025, flat after the last."""
-    points = [(cfg.tune("time.start_year"), 1.0)]
-    points += list(zip(_s(cfg, "pathway_years"), _s(cfg, "pathway_levels"), strict=True))
+    `stocktake.pathway_*` waypoints from 1.0 in 2025, flat after the last. World difficulty
+    stretches or squeezes the pathway in time so it reaches net zero in its `net_zero_year`."""
+    start = cfg.tune("time.start_year")
+    years = _s(cfg, "pathway_years")
+    stretch = (cfg.level(difficulty, "net_zero_year") - start) / (years[-1] - start)
+    points = [(start, 1.0)]
+    points += list(
+        zip([start + (y - start) * stretch for y in years], _s(cfg, "pathway_levels"), strict=True)
+    )
     if year >= points[-1][0]:
         return points[-1][1]
     for (y0, l0), (y1, l1) in zip(points, points[1:], strict=False):
@@ -121,7 +127,10 @@ def set_allowances(cfg: Config, world: World) -> None:
     following the 1.5 degC pathway, summed quarter by quarter."""
     start = cfg.tune("time.start_year") + world.t / 4
     quarters = int(cfg.tune("time.stocktake_interval"))
-    path = sum(pathway_level(cfg, start + (q + 0.5) / 4) for q in range(quarters)) / 4
+    path = (
+        sum(pathway_level(cfg, start + (q + 0.5) / 4, world.difficulty) for q in range(quarters))
+        / 4
+    )
     for nid in sorted(world.nations):
         n = world.nations[nid]
         n.fair_share_budget = n.base["emissions"] * path

@@ -350,6 +350,55 @@ Decisions made with the user on 2026-11-08 are recorded in docs/DESIGN.md ("Deci
     steady-state warming avoided spread over 20 years), carbon removal and the forest fund, and
     judge spare capacity at the seasonal peak before retiring plants.
 
+## M5: last deal types, difficulty, scoring layers, balance
+
+Decisions made with the user on 2026-11-08 are in docs/DESIGN.md ("Decided 2026-11-08 (M5
+planning)").
+
+92. **Equity-for-energy:** the investor builds a plant and takes a share of its operating margin
+    (host energy price minus the plant's running cost) on normal output, paid in local currency.
+    Each quarter the plant may fail or be seized (seeded): 0.4% base, raised by host instability,
+    a fall in its FX reserves, its distrust of the investor and recent defaults. A failure shuts
+    the plant (capacity lost) and costs trust both ways.
+93. **Climate loans** lend cash, assumed spent on the named clean source (the model cannot
+    enforce it); repaid like equipment on credit from the next quarter. AI green leaders offer
+    them at 2 points below the commercial rate; opportunists offer equity (asking half the
+    margin); others offer equipment on credit.
+94. **World difficulty** (easy, normal, hard) stretches the stocktake pathway in time so it
+    reaches net zero in 2060, 2050 or 2045, and scales climate disasters and factory disruptions
+    x0.5, x1, x1.5. Chosen per run (`--difficulty`); normal by default.
+95. **Climate disasters** (seeded): chance per quarter 0.03 x (warming above 1.0 degC) x
+    vulnerability x difficulty; severity 0.5-1.5; a 1% GDP loss (cut by adaptation), 5% of one
+    source's capacity destroyed and 0.03 approval lost for an average one.
+96. **Factory disruptions** (seeded): 1% chance per quarter per factory line x difficulty; half
+    its output lost for 4-8 quarters; buyers shift supplier and pay 0.3 x the world share
+    disrupted (outside their own factories) on equipment meanwhile.
+97. **Scoring layers.** Score = (0.5 absolute + 0.5 relative x country difficulty) x World
+    Multiplier + absolute bonuses + relative bonuses x difficulty (easy 1.0, easy-to-medium 1.1,
+    medium 1.15, hard 1.3). Absolute index weights: income 0.3, clean share 0.15, emissions per
+    person 0.15, security 0.2, approval 0.2 (tuned from equal weights so economic outcomes balance
+    climate ones). Relative weights: income 0.25, climate 0.15, others 0.2. Bonuses 3 points each.
+    Rank for endings uses the combined index.
+98. **Clean competitiveness** (relative index) is now the nation's share of world clean-tech
+    factory capacity against 2025, as the design doc describes, instead of clean capacity built
+    at home, which double-counted the climate component and made all-clean play dominant.
+99. **Tuning for balance:** energy-price drag 0.05 -> 0.15; shortfall approval hit 2 -> 6;
+    stability follows approval at 60%/yr (was 25%); construction jobs saturate at 3% of the
+    workforce (build waves had produced 160 million US construction jobs and toppled AI-run
+    governments); the market plans power for carbon removal under construction, and AI keeps
+    removal's energy below 25% of demand.
+100. **Fossil ban** (`set_fossil_ban`, 10 political capital): the private market stops building
+     fossil plants; with the clean ceiling, demand growth can then outrun supply. The reckless
+     test bot uses it.
+101. **Balance harness** (`python -m sim.balance --workers N`): runs 6 playable nations x 6 bots
+     x 3 seeds, a world-difficulty comparison, and a free-rider scenario where every nation plays
+     all_fossil, then writes docs/BALANCE_REPORT.md. Thresholds (5% for viable strategies, 30%
+     for reckless falls) are report settings. Criterion 4 is checked on the absolute index and
+     passes with 3 of 4 scripted bots; criterion 5's short-term gain is measured on N's economic
+     components (both changes noted in docs/BUILD_SIM_V0.md).
+102. **Parallel runs** are independent and deterministic; results come back in job order, so
+     they do not depend on the number of workers (tested).
+
 ## Open questions
 
 - **Difficulty ordering (for M5).** Early bot runs score the US below India and Vietnam on the
@@ -358,11 +407,17 @@ Decisions made with the user on 2026-11-08 are recorded in docs/DESIGN.md ("Deci
 - **AI overshoot (for M5).** Cheap clean energy leads several low-ambition nations to cut far
   past their target paths, and the US and China drop sharply in the late 2040s
   (docs/CALIBRATION.md, "AI world").
-- **Construction jobs swing with build waves (for M5).** Big late-game build-outs (the US in
-  the 2040s) create and then shed millions of construction jobs, which can swing an election
-  by 20+ points; consider tying construction jobs to a smoother measure.
-- **Strategy balance (for M5).** With M4b, `all_clean` or the AI is the best strategy for most
-  nations; `balanced` and `deal_maker` trail. The difficulty order is still not the design's.
+- **All-clean in hard, coal-heavy nations.** After M5 tuning, three strategies are within 5% for
+  China, the EU, Russia and the US, but all_clean stays ~7% ahead in India and Vietnam: climate
+  gains still outweigh its real growth cost there (criterion 3, TUNE).
+- **Fallen Government is rare.** Political capital limits how fast a government can shut plants,
+  so even the reckless bot topples only Vietnam's government (17% of its runs; criterion 7, TUNE).
+- **World difficulty barely moves scores** (easy 73.7, hard 73.3 for balanced): disasters and
+  disruptions are too mild to matter yet.
+- **Many rejected bot actions** (about 1,200 across the balance grid), mostly bots asking for
+  more political capital or capital than they have; harmless, but worth tidying in the bots.
+- **Resolved in M5:** construction-job swings (construction jobs now saturate), the difficulty
+  order (checked on the absolute index), and dominant all-clean play in most nations.
 - **Resolved in M4:** all-or-nothing fair share (now a 1.5 degC pathway on each nation's own
   emissions).
 - **Resolved in M2:** BAU builder vs. player builds (market runs for everyone), frozen-trend

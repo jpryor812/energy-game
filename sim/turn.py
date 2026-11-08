@@ -192,7 +192,9 @@ def _nation_record(n, results: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def events_hook(world: World, cfg: Config, ctx: TurnContext) -> None:
-    events.on_turn(world, cfg)
+    happened = events.on_turn(world, cfg, ctx.dt)
+    if happened and world.history:
+        world.history[-1]["events"] = happened
 
 
 STAGES: tuple[tuple[str, Stage], ...] = (

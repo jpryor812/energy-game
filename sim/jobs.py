@@ -5,7 +5,8 @@ Jobs (millions) in four groups:
 - fossil: fossil-fuel supply, proportional to fossil production (IEA World Energy Employment
   2025: 18.4 million fossil supply jobs in 2024);
 - clean_ops: running non-fossil plants, proportional to non-fossil supply;
-- construction: building any energy capacity, proportional to capacity completed per year;
+- construction: building any energy capacity, rising with capacity completed per year but
+  saturating at a share of the workforce (M5: linear counts reached 160 million US jobs);
 - manufacturing: clean-tech factories, proportional to factory sales.
 
 Each step, the change in jobs moves approval: fossil losses count `fossil_loss_weight` times
@@ -14,6 +15,8 @@ Elections (sim.elections) use the same weighted job change over a whole term.
 """
 
 from __future__ import annotations
+
+import math
 
 from sim import energy
 from sim.config import FUELS, Config
@@ -29,9 +32,18 @@ def count(cfg: Config, n: Nation) -> dict[str, float]:
     return {
         "fossil": _j(cfg, "fossil_per_ej") * sum(n.fossil_production.get(f, 0.0) for f in FUELS),
         "clean_ops": _j(cfg, "clean_ops_per_ej") * clean_supply,
-        "construction": _j(cfg, "construction_per_ej") * n.build_rate,
+        "construction": construction_jobs(cfg, n),
         "manufacturing": _j(cfg, "manufacturing_per_trillion") * sum(n.factory_sales.values()),
     }
+
+
+def construction_jobs(cfg: Config, n: Nation) -> float:
+    """Construction jobs rise with the build rate but saturate at `construction_max_share` of
+    the workforce: huge build waves cannot employ more people than the country has."""
+    cap = _j(cfg, "construction_max_share") * _j(cfg, "workforce_share") * n.population
+    if cap <= 0:
+        return 0.0
+    return cap * (1 - math.exp(-_j(cfg, "construction_per_ej") * n.build_rate / cap))
 
 
 def retraining_relief(cfg: Config, n: Nation) -> float:
