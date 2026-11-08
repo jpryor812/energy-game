@@ -342,7 +342,7 @@ The design depends most on four areas that need more work before building, and t
 - Tone is educational, with the fun coming from strategic push and pull.
 - Web first.
 - The EU is one player for now.
-- AI nations are deterministic, with no LLM for now, and follow their real stated climate pledges directionally, not exactly.
+- AI nations are deterministic, with no LLM for now, and follow their real stated climate pledges directionally, not exactly. *(Changed 2026-11-07: they follow assumed target paths based on each nation's general policy stance over the last 10-20 years, not real pledges; see `data/targets.yaml`.)*
 - GDP is a single number that funds capital, the master lever spent on building, research, influence, and deals.
 - Fair share of the carbon budget is based on emissions and updates through the game.
 - Bonus points for first to net zero, the largest emissions reduction, the breakthrough technology the world adopts most, and the most impactful trade deal for emissions.

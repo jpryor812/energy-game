@@ -79,9 +79,79 @@ Regenerate the tables with `python -m sim.report bau`. The loose checks below ar
 5. **GDP 2025 annual figures are ~1% above IMF 2025**, because the IMF 2025 value is used as the
    2025Q1 level and growth continues through the year.
 
+## AI world (M3)
+
+All 16 nations played by the AI (`python -m sim.runner run --country USA --bot ai ...`, or
+`report.ai_world`). Each follows an assumed target path (data/targets.yaml, a design assumption
+from its policy stance, not a real pledge) as strongly as its personality says.
+
+### World
+
+| Metric | 2025 | 2030 | 2040 | 2049 |
+|---|---|---|---|---|
+| Global CO2 (Gt/yr) | 43.2 | 37.1 | 32.4 | 22.9 |
+| Warming, end of year (degC) | 1.39 | 1.52 | 1.75 | 1.91 |
+
+### Nations
+
+| Nation | GDP 2025 (T$) | GDP 2049 | Growth 2025-49 (%/yr) | CO2 2025 (Mt) | CO2 2030 | CO2 2040 | CO2 2049 | Fossil share 2025 | 2049 | Max shortfall |
+|---|---|---|---|---|---|---|---|---|---|---|
+| AUS | 1.86 | 2.74 | 1.6 | 353 | 210 | 205 | 23 | 83% | 6% | 0.0% |
+| BRA | 2.31 | 3.63 | 1.9 | 427 | 318 | 206 | 57 | 47% | 6% | 0.0% |
+| CAN | 2.34 | 3.17 | 1.3 | 491 | 281 | 222 | 56 | 65% | 12% | 0.0% |
+| CHN | 20.12 | 44.50 | 3.4 | 11,391 | 9,729 | 6,092 | 918 | 79% | 6% | 0.0% |
+| EUU | 21.44 | 29.52 | 1.3 | 2,260 | 1,281 | 489 | 95 | 66% | 6% | 0.0% |
+| GBR | 4.04 | 5.37 | 1.2 | 298 | 111 | 66 | 10 | 72% | 6% | 0.0% |
+| IDN | 1.49 | 3.87 | 4.0 | 768 | 683 | 582 | 416 | 88% | 24% | 0.0% |
+| IND | 4.08 | 14.91 | 5.5 | 2,999 | 2,703 | 3,007 | 2,728 | 88% | 42% | 0.0% |
+| JPN | 4.46 | 5.17 | 0.6 | 917 | 506 | 395 | 43 | 82% | 6% | 0.0% |
+| MEX | 1.85 | 2.68 | 1.6 | 422 | 284 | 159 | 125 | 89% | 34% | 0.0% |
+| NGA | 0.30 | 0.59 | 2.9 | 108 | 64 | 84 | 74 | 94% | 39% | 0.0% |
+| RUS | 2.59 | 2.83 | 0.4 | 1,604 | 1,307 | 1,254 | 1,212 | 87% | 76% | 0.0% |
+| SAU | 1.30 | 2.16 | 2.1 | 625 | 394 | 326 | 241 | 98% | 46% | 0.0% |
+| USA | 31.27 | 49.17 | 1.9 | 4,553 | 3,222 | 2,991 | 297 | 79% | 6% | 0.0% |
+| VNM | 0.51 | 1.76 | 5.3 | 321 | 316 | 328 | 267 | 75% | 20% | 2.0% |
+| ZAF | 0.43 | 0.54 | 1.0 | 425 | 310 | 225 | 31 | 94% | 9% | 0.0% |
+
+Energy CO2 in 2049 is about 16.6 Gt: between the no-action baseline (~36 Gt) and the IEA's
+announced-pledges level for 2050 (roughly 12 Gt, from memory of WEO scenarios, not re-checked).
+Warming reaches 1.91 degC, against 2.05 degC with no action.
+
+| Nation | Personality | Target path 2049 | Actual 2049 |
+|---|---|---|---|
+| AUS | cautious_follower | 0.21 | 0.06 |
+| BRA | cautious_follower | 0.31 | 0.12 |
+| CAN | cautious_follower | 0.21 | 0.11 |
+| CHN | opportunist | 0.43 | 0.07 |
+| EUU | green_leader | 0.05 | 0.04 |
+| GBR | green_leader | 0.06 | 0.03 |
+| IDN | opportunist | 0.56 | 0.43 |
+| IND | opportunist | 1.00 | 0.90 |
+| JPN | cautious_follower | 0.11 | 0.04 |
+| MEX | fossil_defender | 0.60 | 0.25 |
+| NGA | fossil_defender | 0.73 | 0.63 |
+| RUS | fossil_defender | 0.73 | 0.72 |
+| SAU | fossil_defender | 0.66 | 0.36 |
+| USA | opportunist | 0.60 | 0.06 |
+| VNM | opportunist | 0.32 | 0.76 |
+| ZAF | cautious_follower | 0.31 | 0.04 |
+
+What to expect, and what to look at in M5:
+
+- **Ambitious-stance nations track their paths** (EU, UK, Japan); low-ambition ones stay high
+  (Russia, India, Nigeria).
+- **Several nations overshoot their path**, including fossil defenders (Saudi Arabia, Mexico).
+  Global learning makes wind and solar cheap, so the market builds them on cost and the AI
+  builds them for growth (lower energy prices), not for climate.
+- **A late-2040s drop for the US and China.** Once clean energy is cheap and the clean ceiling
+  (95% by 2050) leaves room, both market and public builds push fossil out of dispatch fast.
+  Many nations finish near the 5% fossil floor the ceiling leaves.
+- **Vietnam undershoots** its path: fast growth and little capital.
+- Energy shortfalls stay below 2% everywhere.
+
 ## Placeholders that matter most for balance
 
 Climate damage coefficient, the growth drag weights (shortfall, price, trade, debt, stranded
 assets), the capital share of GDP, the long-run growth rule, carbon prices, climate
-vulnerability, tech costs and learning rates, the market cost weight, the electrifiable share,
-and all scoring constants. All are tagged `status: placeholder` in `data/`.
+vulnerability, tech costs and learning rates, the market cost weight, the electrifiable share and
+clean ceiling, the AI personality weights, the target paths, and all scoring constants. All are tagged `status: placeholder` in `data/`.

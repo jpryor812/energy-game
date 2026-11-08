@@ -15,6 +15,7 @@ Shares and step sizes below are bot behaviour, not world tuning, so they live he
 - balanced:   moderate carbon price, builds gas and the cheapest clean source, invests in
               efficiency and adaptation.
 - deal_maker: balanced, plus a pledge and influence buying. A stand-in until deals exist (M4).
+- ai:         the AI plays the player's nation with its own personality (an AI-only world).
 """
 
 from __future__ import annotations
@@ -159,8 +160,17 @@ def deal_maker(cfg: Config, world: World, nid: str) -> list[Action]:
     return out
 
 
+def ai_player(cfg: Config, world: World, nid: str) -> list[Action]:
+    """The AI plays the player's nation. sim.runner hands this nation to the turn's AI stage
+    instead of calling this, so the AI sees the quarter's slots and income."""
+    from sim import ai
+
+    return ai.decide(cfg, world, nid)
+
+
 BOTS: dict[str, Bot] = {
     "noop": noop,
+    "ai": ai_player,
     "all_fossil": all_fossil,
     "all_clean": all_clean,
     "balanced": balanced,

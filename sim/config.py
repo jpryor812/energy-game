@@ -28,7 +28,7 @@ from sim import canonical
 
 DEFAULT_DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
-FILES = ("tuning", "techs", "countries", "events")
+FILES = ("tuning", "techs", "countries", "events", "targets")
 TUNABLE_STATUSES = frozenset({"placeholder", "calibrated"})
 TUNABLE_KEYS = frozenset({"value", "status", "note", "source", "unit"})
 PERSONALITIES = frozenset({"green_leader", "fossil_defender", "opportunist", "cautious_follower"})
@@ -53,6 +53,8 @@ REQUIRED_TUNING = (
     "energy.vre_base_absorb_share",
     "energy.vre_max_share_start",
     "energy.vre_max_share_end",
+    "energy.clean_max_share_start",
+    "energy.clean_max_share_end",
     "energy.fuel_price.{fuel}",
     "economy.capital_share_of_gdp",
     "economy.fossil_revenue_take",
@@ -129,6 +131,30 @@ REQUIRED_TUNING = (
     "scoring.net_zero_share",
     "scoring.bonus_first_net_zero",
     "scoring.bonus_largest_reduction",
+    "ai.personalities.{personality}.w_growth",
+    "ai.personalities.{personality}.w_security",
+    "ai.personalities.{personality}.w_emissions",
+    "ai.personalities.{personality}.w_trust",
+    "ai.personalities.{personality}.w_deals",
+    "ai.personalities.{personality}.target_adherence",
+    "ai.personalities.{personality}.carbon_price_max",
+    "ai.personalities.{personality}.follow_strength",
+    "ai.personalities.{personality}.budget_appetite",
+    "ai.build_shares",
+    "ai.carbon_steps",
+    "ai.retire_shares",
+    "ai.subsidy_share",
+    "ai.research_share",
+    "ai.efficiency_share",
+    "ai.adaptation_share",
+    "ai.rebate_share",
+    "ai.capital_cost_weight",
+    "ai.pc_cost_weight",
+    "ai.carbon_response",
+    "ai.gap_scale",
+    "ai.emissions_weight_floor",
+    "ai.security_margin",
+    "ai.min_utility",
 )
 REQUIRED_SOURCE = {
     "all": ("build_time", "lifespan", "capital_cost", "learning_rate", "global_installed"),
@@ -164,6 +190,7 @@ class Config:
     techs: dict[str, Any]
     countries: dict[str, Any]
     events: dict[str, Any]
+    targets: dict[str, Any]
 
     def to_dict(self) -> dict[str, Any]:
         return {name: getattr(self, name) for name in FILES}
@@ -185,6 +212,19 @@ class Config:
 
     def nat(self, nation: str, dotted_path: str) -> Any:
         return _lookup(self.countries["nations"][nation], dotted_path, f"countries.{nation}")
+
+    def target_level(self, nation: str, year: float) -> float:
+        """Assumed target emissions at `year`, as a share of 2025 energy CO2: linear from 1.0 at
+        the start year through the waypoints, flat after the last."""
+        spec = self.targets["targets"][nation]
+        points = [(self.tune("time.start_year"), 1.0)]
+        points += list(zip(spec["years"]["value"], spec["levels"]["value"], strict=True))
+        if year >= points[-1][0]:
+            return points[-1][1]
+        for (y0, l0), (y1, l1) in zip(points, points[1:], strict=False):
+            if y0 <= year <= y1:
+                return l0 + (l1 - l0) * (year - y0) / (y1 - y0)
+        return 1.0
 
     def nat_spec(self, nation: str) -> dict[str, Any]:
         return self.countries["nations"][nation]
@@ -243,6 +283,7 @@ def load(data_dir: Path | str = DEFAULT_DATA_DIR) -> Config:
     _validate_techs(cfg)
     _validate_countries(cfg)
     _validate_tuning(cfg)
+    _validate_targets(cfg)
     return cfg
 
 
@@ -287,7 +328,9 @@ def validate_tunables(node: Any, path: str) -> None:
 def _expand(paths: tuple[str, ...], cfg: Config) -> list[str]:
     out = []
     for p in paths:
-        if "{fuel}" in p:
+        if "{personality}" in p:
+            out.extend(p.replace("{personality}", x) for x in sorted(PERSONALITIES))
+        elif "{fuel}" in p:
             out.extend(p.replace("{fuel}", f) for f in FUELS)
         elif "{energy_source}" in p:
             out.extend(p.replace("{energy_source}", s) for s in cfg.energy_source_ids)
@@ -362,3 +405,27 @@ def _validate_tuning(cfg: Config) -> None:
     factors = cfg.tune("seasonality.demand_factor")
     if not isinstance(factors, list) or len(factors) != 4:
         raise ConfigError("tuning: seasonality.demand_factor must list four quarterly factors")
+
+
+def _validate_targets(cfg: Config) -> None:
+    targets = cfg.targets.get("targets")
+    if not isinstance(targets, dict):
+        raise ConfigError("targets.yaml: 'targets' must be a mapping")
+    start = cfg.tune("time.start_year")
+    for nid in cfg.nation_ids:
+        spec = targets.get(nid)
+        if not isinstance(spec, dict):
+            raise ConfigError(f"targets.yaml: no target path for {nid}")
+        _require(spec, ["years", "levels"], f"targets.{nid}")
+        years, levels = spec["years"]["value"], spec["levels"]["value"]
+        if not isinstance(years, list) or not isinstance(levels, list) or not years:
+            raise ConfigError(f"targets.{nid}: years and levels must be non-empty lists")
+        if len(years) != len(levels):
+            raise ConfigError(f"targets.{nid}: years and levels differ in length")
+        if any(b <= a for a, b in zip([start, *years], years, strict=False)):
+            raise ConfigError(f"targets.{nid}: years must rise and come after {start}")
+        if any(v < 0 for v in levels):
+            raise ConfigError(f"targets.{nid}: levels must be non-negative")
+    for nid in targets:
+        if nid not in cfg.nation_ids:
+            raise ConfigError(f"targets.yaml: unknown nation '{nid}'")

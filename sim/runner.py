@@ -23,7 +23,7 @@ from sim.config import Config
 from sim.scenario import new_world
 from sim.state import World
 
-MILESTONE = "M2"
+MILESTONE = "M3"
 
 
 def play(
@@ -35,9 +35,11 @@ def play(
     dt: int = 1,
     world: World | None = None,
     until: int | None = None,
+    ai: bool = True,
 ) -> World:
     """Play from `world` (or a fresh world) until quarter `until` (default: the last turn), or
-    until the player's government falls."""
+    until the player's government falls. With bot "ai" the AI plays the player's nation too;
+    with `ai=False` the other nations take no actions (business as usual)."""
     if country not in cfg.playable_ids:
         raise ValueError(f"'{country}' is not playable; choose from {cfg.playable_ids}")
     bot = bots.get(bot_name)
@@ -45,7 +47,8 @@ def play(
         world = new_world(cfg, seed)
     end = cfg.value("tuning", "time.turns") if until is None else until
     while world.t < end and not scoring.is_fallen(cfg, world, country):
-        world = turn.step(world, cfg, actions={country: bot(cfg, world, country)}, dt=dt)
+        acts = {} if bot_name == "ai" else {country: bot(cfg, world, country)}
+        world = turn.step(world, cfg, actions=acts, dt=dt, ai=ai)
     return world
 
 

@@ -120,6 +120,8 @@ Deterministic utility scoring: each nation scores its available actions by its p
 
 Personalities: `green_leader`, `fossil_defender`, `opportunist`, `cautious_follower`. Each has weights for growth, security, emissions, trust, and deals. Assign by nation in `countries.yaml`. Nations follow their real stated climate pledges directionally (recorded as targets in the data file with sources), not exactly.
 
+> **Changed in M3 (decided 2026-11-07):** instead of real pledges, each nation follows an *assumed* target path based on its general climate-policy stance over roughly the last 10-20 years, recorded in `data/targets.yaml` as placeholders. See `docs/ASSUMPTIONS.md`.
+
 Deal acceptance: accept if the nation's utility gain exceeds a threshold that rises with currency risk and falls with trust.
 
 ## Bots (`bots.py`)

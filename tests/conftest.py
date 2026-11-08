@@ -90,6 +90,14 @@ FIXTURE_COUNTRIES = {
 }
 
 
+FIXTURE_TARGETS = {
+    "targets": {
+        "AAA": {"years": tun([2035, 2050]), "levels": tun([0.8, 0.2])},
+        "BBB": {"years": tun([2040, 2060]), "levels": tun([1.1, 0.5])},
+    }
+}
+
+
 @pytest.fixture(scope="session")
 def fixture_dir(tmp_path_factory) -> Path:
     d = tmp_path_factory.mktemp("data")
@@ -97,6 +105,7 @@ def fixture_dir(tmp_path_factory) -> Path:
         src = config.DEFAULT_DATA_DIR / f"{name}.yaml"
         (d / f"{name}.yaml").write_text(src.read_text())
     (d / "countries.yaml").write_text(yaml.safe_dump(FIXTURE_COUNTRIES, sort_keys=True))
+    (d / "targets.yaml").write_text(yaml.safe_dump(FIXTURE_TARGETS, sort_keys=True))
     return d
 
 

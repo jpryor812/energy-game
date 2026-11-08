@@ -160,10 +160,58 @@ with the reason for each. Newest milestone last.
     `balanced` plus a pledge and influence buying until deals exist.
 46. **Non-player nations take no actions in M2**; only the market runs for them. M3 adds AI.
 
+## M3: AI nations
+
+47. **Assumed target paths, not real pledges** (decided with the user, 2026-11-07). Each nation
+    follows a path in `data/targets.yaml` (levels as a share of its 2025 energy CO2 at waypoint
+    years, linear between, flat after) chosen from its general climate-policy stance over
+    roughly 2005-2025, grouped as consistently ambitious, ambitious targets with slower
+    delivery, volatile, peak-then-decline, growth first, moderate, and low ambition. They are
+    placeholders, not sourced data.
+48. **Personalities** are game archetypes based on energy-policy stance, not commentary:
+    green leader (EU, UK), opportunist (China, India, Indonesia, Vietnam, USA), cautious
+    follower (Japan, Canada, Australia, Brazil, South Africa), fossil defender (Saudi Arabia,
+    Russia, Nigeria, Mexico).
+49. **Utility AI.** Each quarter an AI nation scores a fixed menu of concrete candidates with
+    closed-form estimates (no lookahead simulation, which would be ~100x slower): growth in
+    pp/yr, security in pp of demand, emissions in % of 2025 emissions/yr, and costs in years
+    of capital and political-capital income. Utility = personality-weighted effects minus
+    costs. It takes the best affordable candidates, one per action type, up to its slots;
+    ties break by action type then target. AI nations decide from the same start-of-quarter
+    state, so moves are simultaneous. They never use the RNG (a test enforces this).
+50. **Estimates.** A public build replaces what the market would have built over the next year;
+    any surplus pushes out the most expensive fossil source running. Clean output beyond the
+    ceilings, or wind and solar the grid cannot absorb, counts for nothing. A retirement is
+    penalised heavily once spare capacity would fall below 5% of demand, and charged the
+    expected shortfall growth loss if it goes negative. A carbon-price step is assumed to cut
+    0.1% of emissions per $/t in the long run.
+51. **Emissions weight** = personality weight x (1 + adherence x gap / 0.1), where gap is
+    actual emissions minus the target path (shares of 2025 emissions), never below zero: a
+    nation well ahead of its path stops pushing. Followers add the gap between their peers'
+    average cut and their own. Trust and deal weights are defined but unused until M4.
+52. **Pledges.** At t=0 each AI nation makes a pledge equal to its first waypoint.
+53. **Clean ceiling.** All non-fossil sources together can serve at most a share of demand
+    rising from 55% (2025) to 95% (2050), standing in for end-use conversion limits; without it
+    bioenergy replaced all oil. The market and the AI respect it, and 5% of demand stays fossil
+    at the end without new technology (carbon capture is not modelled).
+54. **Market counts only absorbable wind and solar** when planning, so public wind built ahead
+    of grid no longer leaves a shortfall.
+55. **Efficiency is a cumulative stock.** All efficiency spending together can cut energy
+    intensity by at most 30% beyond the trend (63% of that at 5% of GDP); M2 reset the
+    diminishing returns on every investment.
+56. **AI-only and bot runs.** `--bot ai` hands the player's nation to the AI too. In every run,
+    nations without player or bot actions are AI-controlled; the business-as-usual reference
+    (`report.bau_world`) switches AI off.
+57. **Seeds.** Nothing uses the RNG yet, so seeds give identical runs; the default batch uses
+    one seed until events arrive.
+
 ## Open questions
 
 - **Difficulty ordering (for M5).** Early bot runs score the US below India and Vietnam on the
   same bot, the reverse of the design intent, because each Nation Index component is relative
   to the nation's own start. Tune in the balance pass.
+- **AI overshoot (for M5).** Cheap clean energy leads several low-ambition nations to cut far
+  past their target paths, and the US and China drop sharply in the late 2040s
+  (docs/CALIBRATION.md, "AI world").
 - **Resolved in M2:** BAU builder vs. player builds (market runs for everyone), frozen-trend
   BAU (market follows cost), and slots (2 + 1).

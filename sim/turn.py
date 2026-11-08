@@ -4,8 +4,9 @@
 world. `t` counts quarters; `dt` is the number of quarters one call covers (1 now; 4 for the
 planned annual mode), so annual mode can reuse the same rules.
 
-Income, actions, construction (with the market builder for every nation), dispatch and trade,
-economy, climate, technology and the snapshot all run. Diplomacy and stocktake arrive in M4.
+Income, AI decisions, actions, construction (with the market builder for every nation),
+dispatch and trade, economy, climate, technology and the snapshot all run. Diplomacy and
+stocktake arrive in M4.
 """
 
 from __future__ import annotations
@@ -16,10 +17,10 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from sim import actions as acts
+from sim import ai, energy, events, tech
 from sim import climate as climate_model
 from sim import construction as build
 from sim import economy as econ
-from sim import energy, events, tech
 from sim.config import Config
 from sim.state import World
 
@@ -33,6 +34,7 @@ class TurnContext:
     stocktake: bool = False
     results: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
     completed: dict[str, float] = field(default_factory=dict)
+    ai: bool = True
 
 
 Stage = Callable[[World, Config, TurnContext], None]
@@ -56,7 +58,13 @@ def income_and_slots(world: World, cfg: Config, ctx: TurnContext) -> None:
 
 
 def collect_actions(world: World, cfg: Config, ctx: TurnContext) -> None:
-    """M3: AI nations add their actions to ctx.actions (player/bot actions arrive pre-filled)."""
+    """AI nations decide, all from the same start-of-quarter state, so moves are simultaneous.
+    Nations whose actions arrived pre-filled (the player or a bot) are not touched."""
+    if not ctx.ai:
+        return
+    for nid in sorted(world.nations):
+        if nid not in ctx.actions:
+            ctx.actions[nid] = ai.decide(cfg, world, nid)
 
 
 def resolve_actions(world: World, cfg: Config, ctx: TurnContext) -> None:
@@ -174,8 +182,12 @@ def step(
     cfg: Config,
     actions: dict[str, list[dict[str, Any]]] | None = None,
     dt: int = 1,
+    ai: bool = True,
 ) -> World:
-    """Advance the world by `dt` quarters and return the new world. The input is not modified."""
+    """Advance the world by `dt` quarters and return the new world. The input is not modified.
+
+    Nations without entries in `actions` are played by the AI unless `ai` is False (the
+    business-as-usual reference, where only the market builds)."""
     if dt < 1:
         raise ValueError("dt must be a positive number of quarters")
     new = copy.deepcopy(world)
@@ -184,6 +196,7 @@ def step(
         dt=dt,
         actions=copy.deepcopy(actions or {}),
         stocktake=stocktake_due(new.t, dt, interval),
+        ai=ai,
     )
     for _name, stage in STAGES:
         stage(new, cfg, ctx)

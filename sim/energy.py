@@ -8,7 +8,8 @@ Dispatch, per nation per step:
 1. Demand = GDP x energy intensity x the seasonal factor for the quarter(s) covered.
 2. Wind and solar run first. Output beyond what the grid can absorb (a base share of demand
    plus grid and storage capacity) is curtailed.
-   Wind and solar can never serve more than the electrifiable share of demand.
+   Wind and solar can never serve more than the electrifiable share of demand, and all
+   non-fossil sources together never more than the clean ceiling (end-use conversion limits).
 3. Every other source has a *normal* output, capacity / headroom, which reproduces the
    2025 data mix at t=0. If normal output exceeds the remaining demand, the most expensive
    sources are cut first. If it falls short, headroom is used cheapest first. What is still
@@ -58,13 +59,27 @@ def marginal_cost(cfg: Config, nid: str, source: str, carbon_price: float) -> fl
     return cfg.src(source, "variable_cost") + carbon_price * ef / 1e3
 
 
+def _ramp(cfg: Config, name: str, t: int) -> float:
+    start = cfg.tune(f"energy.{name}_start")
+    end = cfg.tune(f"energy.{name}_end")
+    frac = min(1.0, max(0.0, t / max(1, cfg.tune("time.turns") - 1)))
+    return start + (end - start) * frac
+
+
 def vre_max_share(cfg: Config, t: int) -> float:
     """Most of primary demand wind and solar can serve at turn t: the electrifiable share,
     rising linearly from 2025 to the final turn."""
-    start = cfg.tune("energy.vre_max_share_start")
-    end = cfg.tune("energy.vre_max_share_end")
-    frac = min(1.0, max(0.0, t / max(1, cfg.tune("time.turns") - 1)))
-    return start + (end - start) * frac
+    return _ramp(cfg, "vre_max_share", t)
+
+
+def clean_max_share(cfg: Config, t: int) -> float:
+    """Most of primary demand all non-fossil sources together can serve at turn t, standing in
+    for end-use conversion (vehicles, heating, industry); rises linearly to the final turn."""
+    return _ramp(cfg, "clean_max_share", t)
+
+
+def is_fossil(cfg: Config, source: str) -> bool:
+    return cfg.category(source) == "fossil"
 
 
 def vre_absorb_limit(cfg: Config, nation: Nation, demand: float, t: int = 0) -> float:
@@ -79,10 +94,11 @@ def vre_absorb_limit(cfg: Config, nation: Nation, demand: float, t: int = 0) -> 
 
 def dispatch(cfg: Config, nation: Nation, demand: float, t: int = 0) -> Dispatch:
     supply = {s: 0.0 for s in cfg.energy_source_ids}
+    clean_cap = clean_max_share(cfg, t) * demand
 
     vre = cfg.vre_ids
     vre_avail = sum(nation.capacity.get(s, 0.0) for s in vre)
-    vre_used = min(vre_avail, vre_absorb_limit(cfg, nation, demand, t), demand)
+    vre_used = min(vre_avail, vre_absorb_limit(cfg, nation, demand, t), demand, clean_cap)
     if vre_avail > 0:
         for s in vre:
             supply[s] = nation.capacity.get(s, 0.0) * vre_used / vre_avail
@@ -93,6 +109,17 @@ def dispatch(cfg: Config, nation: Nation, demand: float, t: int = 0) -> Dispatch
     cost = {s: marginal_cost(cfg, nation.id, s, nation.carbon_price) for s in others}
     by_cost = sorted(others, key=lambda s: (cost[s], s))
     normal = {s: nation.capacity.get(s, 0.0) / cfg.src(s, "headroom") for s in others}
+    top = {s: nation.capacity.get(s, 0.0) for s in others}
+
+    # Non-fossil dispatchables share what is left under the clean ceiling, cheapest first.
+    room = max(0.0, clean_cap - vre_used)
+    clean = [s for s in by_cost if not is_fossil(cfg, s)]
+    for s in clean:
+        normal[s] = min(normal[s], room)
+        room -= normal[s]
+    for s in clean:
+        top[s] = normal[s] + min(top[s] - normal[s], room)
+        room -= top[s] - normal[s]
     total_normal = sum(normal.values())
 
     if total_normal >= remaining:
@@ -111,7 +138,7 @@ def dispatch(cfg: Config, nation: Nation, demand: float, t: int = 0) -> Dispatch
         for s in others:
             supply[s] = normal[s]
         for s in by_cost:
-            extra = min(need, nation.capacity.get(s, 0.0) - normal[s])
+            extra = min(need, top[s] - normal[s])
             supply[s] += extra
             need -= extra
             if need <= 0:

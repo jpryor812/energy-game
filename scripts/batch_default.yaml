@@ -2,5 +2,6 @@
 
 out_dir: runs/batch_default
 countries: [USA, IND, EUU, CHN, VNM, RUS]
-bots: [all_clean, all_fossil, balanced, deal_maker]
-seeds: [1, 2, 3]
+bots: [ai, all_clean, all_fossil, balanced, deal_maker]
+# Nothing draws on the RNG until events exist (v1), so seeds give identical runs for now.
+seeds: [1]

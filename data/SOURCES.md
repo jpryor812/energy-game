@@ -31,4 +31,6 @@ Every real-world value in `data/*.yaml` names a source key below in its `source`
 | Fuel prices | Unsourced approximate 2025 averages (coal ~$105/t, Brent ~$69/bbl, gas between Henry Hub and LNG). |
 | Long-run growth (`g0_end`) | Placeholder rule: min(g0_start, halfway from g0_start to 1.5%). |
 | Tech costs, build times, lifespans, learning rates | Unsourced approximate, typical published ranges; see notes in `techs.yaml`. |
+| Target paths (`targets.yaml`) | Design assumptions from each nation's general climate-policy stance over ~2005-2025, not real pledges (decided 2026-11-07). |
+| Personalities | Game archetypes based on energy-policy stance, not sourced data. |
 | Hard-currency issuers | USA, EU, Japan, UK, Canada and Australia borrow in their own currency: no hard-currency debt, FX reserves not tracked. |

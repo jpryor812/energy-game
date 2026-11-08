@@ -35,6 +35,14 @@ energy:
     value: 0.7
     status: placeholder
     note: Same, by the final turn, as electrification spreads.
+  clean_max_share_start:
+    value: 0.55
+    status: placeholder
+    note: Most of primary demand all non-fossil sources can serve in 2025 (end-use conversion limits). Just above Brazil's 2024 share (0.52), the highest.
+  clean_max_share_end:
+    value: 0.95
+    status: placeholder
+    note: Same, by the final turn. Below 1 so a few percent of hard-to-convert demand stays fossil without new technology.
   fuel_price:
     coal:
       value: 4.2
@@ -281,13 +289,13 @@ actions:
     status: placeholder
     note: Highest share of a source's build cost the government can subsidise.
   efficiency_max_gain:
-    value: 0.2
+    value: 0.3
     status: placeholder
-    note: Most one efficiency investment can cut energy intensity.
+    note: Most cumulative efficiency investment can cut energy intensity (beyond the trend).
   efficiency_scale:
-    value: 0.02
+    value: 0.05
     status: placeholder
-    note: Spend, as a share of GDP, that gives ~63% of efficiency_max_gain.
+    note: Cumulative spend, as a share of current GDP, that gives ~63% of efficiency_max_gain.
   influence_per_trillion:
     value: 100
     status: placeholder
@@ -385,3 +393,61 @@ scoring:
     value: 5.0
     status: placeholder
     note: Flat bonus points.
+
+ai:
+  personalities:
+    green_leader:
+      w_growth: {value: 1.0, status: placeholder, note: "Weight on estimated growth effects (per pp/yr)."}
+      w_security: {value: 1.0, status: placeholder, note: "Weight on estimated energy-security effects (per pp of demand)."}
+      w_emissions: {value: 1.5, status: placeholder, note: "Weight on estimated emissions cuts (per % of 2025 emissions/yr)."}
+      w_trust: {value: 1.0, status: placeholder, note: "Weight on trust (used from M4)."}
+      w_deals: {value: 1.0, status: placeholder, note: "Weight on deal value (used from M4)."}
+      target_adherence: {value: 3.0, status: placeholder, note: "How strongly the gap to the assumed target path raises the emissions weight."}
+      carbon_price_max: {value: 200, status: placeholder, note: "Highest carbon price this personality will set ($/tCO2)."}
+      follow_strength: {value: 0.0, status: placeholder, note: "How strongly peers' emission cuts raise the emissions weight (cautious follower)."}
+      budget_appetite: {value: 1.5, status: placeholder, note: "Divides the capital-cost weight: higher spends more readily."}
+    fossil_defender:
+      w_growth: {value: 1.5, status: placeholder, note: "Weight on estimated growth effects (per pp/yr)."}
+      w_security: {value: 1.5, status: placeholder, note: "Weight on estimated energy-security effects (per pp of demand)."}
+      w_emissions: {value: 0.1, status: placeholder, note: "Weight on estimated emissions cuts (per % of 2025 emissions/yr)."}
+      w_trust: {value: 0.5, status: placeholder, note: "Weight on trust (used from M4)."}
+      w_deals: {value: 1.0, status: placeholder, note: "Weight on deal value (used from M4)."}
+      target_adherence: {value: 0.3, status: placeholder, note: "How strongly the gap to the assumed target path raises the emissions weight."}
+      carbon_price_max: {value: 10, status: placeholder, note: "Highest carbon price this personality will set ($/tCO2)."}
+      follow_strength: {value: 0.0, status: placeholder, note: "How strongly peers' emission cuts raise the emissions weight (cautious follower)."}
+      budget_appetite: {value: 0.8, status: placeholder, note: "Divides the capital-cost weight: higher spends more readily."}
+    opportunist:
+      w_growth: {value: 1.5, status: placeholder, note: "Weight on estimated growth effects (per pp/yr)."}
+      w_security: {value: 1.0, status: placeholder, note: "Weight on estimated energy-security effects (per pp of demand)."}
+      w_emissions: {value: 0.4, status: placeholder, note: "Weight on estimated emissions cuts (per % of 2025 emissions/yr)."}
+      w_trust: {value: 0.5, status: placeholder, note: "Weight on trust (used from M4)."}
+      w_deals: {value: 1.5, status: placeholder, note: "Weight on deal value (used from M4)."}
+      target_adherence: {value: 1.0, status: placeholder, note: "How strongly the gap to the assumed target path raises the emissions weight."}
+      carbon_price_max: {value: 60, status: placeholder, note: "Highest carbon price this personality will set ($/tCO2)."}
+      follow_strength: {value: 0.0, status: placeholder, note: "How strongly peers' emission cuts raise the emissions weight (cautious follower)."}
+      budget_appetite: {value: 1.0, status: placeholder, note: "Divides the capital-cost weight: higher spends more readily."}
+    cautious_follower:
+      w_growth: {value: 1.0, status: placeholder, note: "Weight on estimated growth effects (per pp/yr)."}
+      w_security: {value: 1.2, status: placeholder, note: "Weight on estimated energy-security effects (per pp of demand)."}
+      w_emissions: {value: 0.8, status: placeholder, note: "Weight on estimated emissions cuts (per % of 2025 emissions/yr)."}
+      w_trust: {value: 1.0, status: placeholder, note: "Weight on trust (used from M4)."}
+      w_deals: {value: 0.5, status: placeholder, note: "Weight on deal value (used from M4)."}
+      target_adherence: {value: 1.5, status: placeholder, note: "How strongly the gap to the assumed target path raises the emissions weight."}
+      carbon_price_max: {value: 100, status: placeholder, note: "Highest carbon price this personality will set ($/tCO2)."}
+      follow_strength: {value: 3.0, status: placeholder, note: "How strongly peers' emission cuts raise the emissions weight (cautious follower)."}
+      budget_appetite: {value: 0.8, status: placeholder, note: "Divides the capital-cost weight: higher spends more readily."}
+  build_shares: {value: [0.1, 0.25], status: placeholder, note: "Candidate build sizes, as shares of current capital."}
+  carbon_steps: {value: [5, 15], status: placeholder, note: "Candidate carbon-price increases ($/tCO2)."}
+  retire_shares: {value: [0.02, 0.05], status: placeholder, note: "Candidate coal retirements, as shares of current coal capacity."}
+  subsidy_share: {value: 0.3, status: placeholder, note: "Subsidy share the AI considers for its cheapest clean source."}
+  research_share: {value: 0.05, status: placeholder, note: "Share of capital per research candidate."}
+  efficiency_share: {value: 0.1, status: placeholder, note: "Share of capital per efficiency candidate."}
+  adaptation_share: {value: 0.05, status: placeholder, note: "Share of capital per adaptation candidate."}
+  rebate_share: {value: 0.5, status: placeholder, note: "Rebate share the AI considers once it has raised the carbon price."}
+  capital_cost_weight: {value: 1.0, status: placeholder, note: "Utility lost per year of capital income spent (before budget_appetite)."}
+  pc_cost_weight: {value: 1.0, status: placeholder, note: "Utility lost per year of political-capital income spent."}
+  carbon_response: {value: 0.001, status: placeholder, note: "Estimated long-run share of emissions cut per $/tCO2 of carbon price."}
+  gap_scale: {value: 0.1, status: placeholder, note: "Gap to the target path (share of 2025 emissions) that doubles the emissions weight at adherence 1."}
+  emissions_weight_floor: {value: 0.0, status: placeholder, note: "Emissions weight never falls below this share of its base value. Zero, so a nation well ahead of its target path stops pushing."}
+  security_margin: {value: 0.05, status: placeholder, note: "Spare normal capacity (share of demand) below which building adds security."}
+  min_utility: {value: 0.0, status: placeholder, note: "Candidates must score above this to be chosen."}

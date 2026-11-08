@@ -113,6 +113,7 @@ class Nation:
     rebate: float = 0.0
     activity_cap: float = 0.0
     adaptation: float = 0.0
+    efficiency_spent: float = 0.0
     pending_writeoff: float = 0.0
     carbon_revenue: float = 0.0
     clean_built: float = 0.0
@@ -123,8 +124,8 @@ class Nation:
         "fx_reserves", "debt_hard", "debt_local", "approval", "stability", "energy_intensity",
         "demand", "carbon_price", "emissions", "cumulative_emissions", "fair_share_budget",
         "shortfall", "curtailment", "energy_price", "export_revenue", "growth", "climate_damage",
-        "rebate", "activity_cap", "adaptation", "pending_writeoff", "carbon_revenue", "clean_built",
-        "import_dependence",
+        "rebate", "activity_cap", "adaptation", "efficiency_spent", "pending_writeoff",
+        "carbon_revenue", "clean_built", "import_dependence",
     )  # fmt: skip
     _FLOAT_MAPS = (
         "capacity", "subsidies", "tariffs", "supply", "fossil_production", "fossil_exports",

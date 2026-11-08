@@ -157,11 +157,22 @@ def _spend_check(cfg, world, n, act):
     return {"capital": _positive(act)}
 
 
-def _efficiency_apply(cfg, world, n, act):
-    gain = _a(cfg, "efficiency_max_gain") * (
-        1 - math.exp(-act["amount"] / (n.gdp * _a(cfg, "efficiency_scale")))
+def efficiency_factor(cfg: Config, n: Nation, spent: float) -> float:
+    """Energy-intensity multiplier from cumulative efficiency spending (diminishing returns)."""
+    return 1 - _a(cfg, "efficiency_max_gain") * (
+        1 - math.exp(-spent / (n.gdp * _a(cfg, "efficiency_scale")))
     )
-    n.energy_intensity *= 1 - gain
+
+
+def efficiency_gain(cfg: Config, n: Nation, amount: float) -> float:
+    """Share of energy intensity cut by spending `amount` more on efficiency."""
+    old = efficiency_factor(cfg, n, n.efficiency_spent)
+    return 1 - efficiency_factor(cfg, n, n.efficiency_spent + amount) / old
+
+
+def _efficiency_apply(cfg, world, n, act):
+    n.energy_intensity *= 1 - efficiency_gain(cfg, n, act["amount"])
+    n.efficiency_spent += act["amount"]
 
 
 def _influence_apply(cfg, world, n, act):

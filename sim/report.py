@@ -1,6 +1,7 @@
 """Metrics over run histories, and the business-as-usual calibration table.
 
     python -m sim.report bau            # print the BAU calibration tables (markdown)
+    python -m sim.report ai             # the same tables for the AI-only world
 
 BALANCE_REPORT.md generation arrives in M5.
 """
@@ -26,7 +27,11 @@ def annual(history: list[dict[str, Any]], year: int, key: str, nid: str | None =
 
 
 def bau_world(cfg: Config, seed: int = 1) -> World:
-    return runner.play(cfg, seed, cfg.playable_ids[0], "noop")
+    return runner.play(cfg, seed, cfg.playable_ids[0], "noop", ai=False)
+
+
+def ai_world(cfg: Config, seed: int = 1) -> World:
+    return runner.play(cfg, seed, cfg.playable_ids[0], "ai")
 
 
 def bau_tables(cfg: Config, world: World) -> str:
@@ -65,11 +70,12 @@ def bau_tables(cfg: Config, world: World) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
-    if argv[:1] != ["bau"]:
-        print("usage: python -m sim.report bau", file=sys.stderr)
+    if argv[:1] not in (["bau"], ["ai"]):
+        print("usage: python -m sim.report bau|ai", file=sys.stderr)
         return 2
     cfg = config.load()
-    print(bau_tables(cfg, bau_world(cfg)))
+    world = bau_world(cfg) if argv[0] == "bau" else ai_world(cfg)
+    print(bau_tables(cfg, world))
     return 0
 
 

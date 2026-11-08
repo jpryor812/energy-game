@@ -121,15 +121,26 @@ def order(cfg: Config, world: World, nid: str, n: Nation, t: int, at: int) -> No
     demand_growth = (1 + growth) * (1 - decline) - 1
     target = base_demand(n) * (1 + demand_growth) ** ((at - t) / 4)
     target *= 1 + cfg.tune("market.reserve_margin")
-    normal = sum(
-        future_capacity(cfg, nid, n, s, t, at) / cfg.src(s, "headroom")
-        for s in cfg.energy_source_ids
+    future = {s: future_capacity(cfg, nid, n, s, t, at) for s in cfg.energy_source_ids}
+    normal = {s: future[s] / cfg.src(s, "headroom") for s in future}
+    vre_cap = energy.vre_max_share(cfg, at) * target
+    clean_cap = energy.clean_max_share(cfg, at) * target
+    enablers = [s for s in cfg.source_ids if cfg.category(s) == "enabler"]
+    absorb = cfg.tune("energy.vre_base_absorb_share") * target + sum(
+        future_capacity(cfg, nid, n, s, t, at) for s in enablers
     )
-    gap = target - normal
+    # Count only wind and solar the grid will be able to take.
+    vre_normal = min(sum(normal[s] for s in cfg.vre_ids), vre_cap, absorb)
+    clean_normal = vre_normal + sum(
+        v for s, v in normal.items() if not energy.is_fossil(cfg, s) and s not in cfg.vre_ids
+    )
+    clean_normal = min(clean_normal, clean_cap)
+    fossil_normal = sum(v for s, v in normal.items() if energy.is_fossil(cfg, s))
+    gap = target - clean_normal - fossil_normal
     if gap > 0:
-        mix = market_mix(cfg, world, nid, n)
-        for s in sorted(mix):
-            amount = gap * mix[s] * cfg.src(s, "headroom")
+        alloc = split_gap(cfg, world, nid, n, gap, vre_cap - vre_normal, clean_cap - clean_normal)
+        for s in sorted(alloc):
+            amount = alloc[s] * cfg.src(s, "headroom")
             if amount <= 0:
                 continue
             n.pipeline.append(Construction(s, amount, at))
@@ -143,9 +154,47 @@ def order(cfg: Config, world: World, nid: str, n: Nation, t: int, at: int) -> No
         absorb = cfg.tune("energy.vre_base_absorb_share") * target + sum(
             future_capacity(cfg, nid, n, s, t, at) for s in enablers
         )
-        useful = min(vre, energy.vre_max_share(cfg, at) * target)
+        useful = min(
+            vre, energy.vre_max_share(cfg, at) * target, energy.clean_max_share(cfg, at) * target
+        )
         if useful > absorb:
             n.pipeline.append(Construction("grid", useful - absorb, at))
+
+
+def split_gap(
+    cfg: Config,
+    world: World,
+    nid: str,
+    n: Nation,
+    gap: float,
+    vre_room: float,
+    clean_room: float,
+) -> dict[str, float]:
+    """Split a gap in normal output by the market mix, keeping wind and solar within the
+    electrifiable share and all clean sources within the clean ceiling; the rest goes to fossil
+    sources by their mix weights (or the cheapest fossil source if the mix has none)."""
+    mix = market_mix(cfg, world, nid, n)
+    alloc = {s: gap * w for s, w in mix.items()}
+    vre = sum(alloc.get(s, 0.0) for s in cfg.vre_ids)
+    if vre > max(0.0, vre_room):
+        for s in cfg.vre_ids:
+            if s in alloc:
+                alloc[s] *= max(0.0, vre_room) / vre
+    clean = [s for s in alloc if not energy.is_fossil(cfg, s)]
+    total_clean = sum(alloc[s] for s in clean)
+    if total_clean > max(0.0, clean_room):
+        for s in clean:
+            alloc[s] *= max(0.0, clean_room) / total_clean
+    leftover = gap - sum(alloc.values())
+    if leftover > 1e-12:
+        fossil = {s: w for s, w in mix.items() if energy.is_fossil(cfg, s) and w > 0}
+        if not fossil:
+            options = [s for s in cost_candidates(cfg, nid) if energy.is_fossil(cfg, s)]
+            fossil = {min(options, key=lambda s: (tech.lcoe(cfg, world, n, s), s)): 1.0}
+        total = sum(fossil.values())
+        for s, w in fossil.items():
+            alloc[s] = alloc.get(s, 0.0) + leftover * w / total
+    return alloc
 
 
 def pay(n: Nation, amount: float) -> None:

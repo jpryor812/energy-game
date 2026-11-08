@@ -25,6 +25,7 @@ pytest -q                                   # tests
 ruff check . && ruff format --check .       # lint
 python -m sim.runner run --country IND --bot balanced --seed 1 --out runs/ind_balanced_1
 python -m sim.runner batch --config scripts/batch_default.yaml
+python -m sim.runner run --country USA --bot ai --seed 1 --out runs/ai_only  # AI-only world
 python -m sim.report bau                    # business-as-usual calibration tables
 ```
 
@@ -43,4 +44,6 @@ Same seed and inputs always produce byte-identical output.
 - **M2 (actions, bots, scoring):** done. 12 actions with slots and political capital, a
   cost-responsive market builder, four bots (`all_fossil`, `all_clean`, `balanced`,
   `deal_maker`) plus `noop`, the Nation Index, World Multiplier, bonuses and endings.
-- **M3 onward** (AI nations, trust, tariffs, deals, stocktake, balance report): not built.
+- **M3 (AI nations):** done. A deterministic utility AI with four personalities plays every
+  nation without a player, following assumed target paths. `--bot ai` runs an AI-only world.
+- **M4 onward** (trust, tariffs, deals, stocktake, balance report): not built.

@@ -18,6 +18,11 @@ ENERGY_CO2_2049 = (30_000, 48_000)
 WARMING_2049 = (1.8, 2.4)
 
 
+# AI-only world (M3): nations follow assumed target paths directionally, so it must land below
+# the no-action baseline but not at a deep-cut path within 25 years.
+AI_WARMING_2049 = (1.6, 2.0)
+
+
 @pytest.fixture(scope="module")
 def real():
     cfg = config.load()
@@ -66,3 +71,33 @@ def test_early_growth_tracks_imf(real):
         g30 = report.annual(w.history, 2030, "gdp", nid)
         realized = (g30 / g25) ** (1 / 5) - 1
         assert realized == pytest.approx(cfg.nat(nid, "trend.g0_start"), abs=0.005), nid
+
+
+@pytest.fixture(scope="module")
+def ai_real():
+    cfg = config.load()
+    return cfg, report.ai_world(cfg)
+
+
+def test_ai_world_between_baseline_and_deep_cuts(real, ai_real):
+    _, bau = real
+    _, w = ai_real
+    assert w.warming < bau.warming
+    assert AI_WARMING_2049[0] < w.warming < AI_WARMING_2049[1]
+
+
+def test_ai_world_keeps_lights_on(ai_real):
+    _, w = ai_real
+    worst = max(n["shortfall"] / n["demand"] for r in w.history for n in r["nations"].values())
+    assert worst < 0.03
+
+
+def test_ai_world_follows_targets_directionally(ai_real):
+    """Ambitious-stance nations cut more than low-ambition ones."""
+    _, w = ai_real
+
+    def cut(nid):
+        n = w.nations[nid]
+        return 1 - n.emissions / n.base["emissions"]
+
+    assert min(cut("EUU"), cut("GBR")) > max(cut("RUS"), cut("IND"))
