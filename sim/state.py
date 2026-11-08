@@ -1,0 +1,186 @@
+"""World state: plain dataclasses that round-trip through JSON.
+
+The engine is functions over these objects. `to_dict` / `from_dict` are explicit per class so the
+saved format is stable and readable; `World.hash()` is the digest used by determinism tests.
+"""
+
+from __future__ import annotations
+
+import json
+from dataclasses import asdict, dataclass, field
+from typing import Any
+
+from sim import canonical
+from sim.config import Config
+
+STATE_VERSION = 1
+
+
+@dataclass
+class Pledge:
+    target_emissions: float
+    year: int
+    made_turn: int
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> Pledge:
+        return cls(
+            target_emissions=float(d["target_emissions"]),
+            year=int(d["year"]),
+            made_turn=int(d["made_turn"]),
+        )
+
+
+@dataclass
+class Construction:
+    """Capacity under construction; comes online at `complete_turn`."""
+
+    source: str
+    amount: float
+    complete_turn: int
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> Construction:
+        return cls(
+            source=d["source"], amount=float(d["amount"]), complete_turn=int(d["complete_turn"])
+        )
+
+
+@dataclass
+class Deal:
+    id: str
+    type: str
+    financier: str
+    host: str
+    terms: dict[str, Any]
+    status: str
+    start_turn: int
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> Deal:
+        return cls(
+            id=d["id"],
+            type=d["type"],
+            financier=d["financier"],
+            host=d["host"],
+            terms=dict(d["terms"]),
+            status=d["status"],
+            start_turn=int(d["start_turn"]),
+        )
+
+
+@dataclass
+class Nation:
+    id: str
+    playable: bool
+    personality: str | None = None
+    gdp: float = 0.0
+    population: float = 0.0
+    capital: float = 0.0
+    political_capital: float = 0.0
+    influence: float = 0.0
+    tech_points: float = 0.0
+    fx_reserves: float = 0.0
+    debt_hard: float = 0.0
+    debt_local: float = 0.0
+    approval: float = 0.0
+    stability: float = 0.0
+    energy_intensity: float = 0.0
+    demand: float = 0.0
+    capacity: dict[str, float] = field(default_factory=dict)
+    pipeline: list[Construction] = field(default_factory=list)
+    carbon_price: float = 0.0
+    subsidies: dict[str, float] = field(default_factory=dict)
+    tariffs: dict[str, float] = field(default_factory=dict)
+    emissions: float = 0.0
+    cumulative_emissions: float = 0.0
+    fair_share_budget: float = 0.0
+    slots_banked: dict[str, int] = field(default_factory=dict)
+    pledge: Pledge | None = None
+
+    _FLOATS = (
+        "gdp", "population", "capital", "political_capital", "influence", "tech_points",
+        "fx_reserves", "debt_hard", "debt_local", "approval", "stability", "energy_intensity",
+        "demand", "carbon_price", "emissions", "cumulative_emissions", "fair_share_budget",
+    )  # fmt: skip
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> Nation:
+        return cls(
+            id=d["id"],
+            playable=bool(d["playable"]),
+            personality=d["personality"],
+            **{name: float(d[name]) for name in cls._FLOATS},
+            capacity={k: float(v) for k, v in d["capacity"].items()},
+            pipeline=[Construction.from_dict(c) for c in d["pipeline"]],
+            subsidies={k: float(v) for k, v in d["subsidies"].items()},
+            tariffs={k: float(v) for k, v in d["tariffs"].items()},
+            slots_banked={k: int(v) for k, v in d["slots_banked"].items()},
+            pledge=Pledge.from_dict(d["pledge"]) if d["pledge"] is not None else None,
+        )
+
+
+@dataclass
+class World:
+    t: int
+    seed: int
+    nations: dict[str, Nation]
+    global_cumulative_emissions: float = 0.0
+    warming: float = 0.0
+    tech_state: dict[str, float] = field(default_factory=dict)
+    blocs: dict[str, list[str]] = field(default_factory=dict)
+    deals: dict[str, Deal] = field(default_factory=dict)
+    trust: dict[str, dict[str, float]] = field(default_factory=dict)
+    history: list[dict[str, Any]] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        d = asdict(self)
+        d["version"] = STATE_VERSION
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> World:
+        if d.get("version") != STATE_VERSION:
+            raise ValueError(f"unsupported state version {d.get('version')!r}")
+        return cls(
+            t=int(d["t"]),
+            seed=int(d["seed"]),
+            nations={k: Nation.from_dict(v) for k, v in d["nations"].items()},
+            global_cumulative_emissions=float(d["global_cumulative_emissions"]),
+            warming=float(d["warming"]),
+            tech_state={k: float(v) for k, v in d["tech_state"].items()},
+            blocs={k: list(v) for k, v in d["blocs"].items()},
+            deals={k: Deal.from_dict(v) for k, v in d["deals"].items()},
+            trust={a: {b: float(x) for b, x in row.items()} for a, row in d["trust"].items()},
+            history=[dict(h) for h in d["history"]],
+        )
+
+    def to_json(self, *, indent: int | None = 2) -> str:
+        return canonical.dumps(self.to_dict(), indent=indent)
+
+    @classmethod
+    def from_json(cls, text: str) -> World:
+        return cls.from_dict(json.loads(text))
+
+    def hash(self) -> str:
+        return canonical.digest(self.to_dict())
+
+
+def new_world(cfg: Config, seed: int) -> World:
+    """The world at t=0 built from the data files.
+
+    M0: nations carry only structural data (id, playable, personality). Starting economic and
+    energy values arrive in M1 with sources, so every number is zero for now.
+    """
+    sources = cfg.source_ids
+    nations = {}
+    for nid in cfg.nation_ids:
+        spec = cfg.countries["nations"][nid]
+        nations[nid] = Nation(
+            id=nid,
+            playable=spec["playable"],
+            personality=spec["personality"],
+            capacity={s: 0.0 for s in sources},
+            slots_banked={"domestic": 0, "diplomatic": 0},
+        )
+    return World(t=0, seed=seed, nations=nations, tech_state={s: 0.0 for s in sources})

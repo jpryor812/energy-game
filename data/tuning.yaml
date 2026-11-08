@@ -1,0 +1,16 @@
+# Global tunables. Every number is a tunable: value, status (placeholder | calibrated), note.
+# "calibrated" here also covers values fixed by the design doc rather than by data.
+
+time:
+  start_year:
+    value: 2025
+    status: calibrated
+    note: Fixed by docs/DESIGN.md (game starts 2025Q1). Not a balance parameter.
+  turns:
+    value: 100
+    status: calibrated
+    note: Fixed by docs/DESIGN.md (one quarter per turn, 2025Q1 to 2049Q4). Counted in quarters.
+  stocktake_interval:
+    value: 20
+    status: calibrated
+    note: Fixed by docs/DESIGN.md (global stocktake every five years, when t % 20 == 19).

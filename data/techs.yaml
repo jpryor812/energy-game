@@ -1,0 +1,24 @@
+# Energy sources and enablers. Categories come from docs/BUILD_SIM_V0.md ("Sources").
+#
+# M0: structure only. Build cost, build time, lifespan, capacity factor, emissions per unit and
+# the learning-curve exponent b are added in M1 as tunables, each with a note and source.
+
+sources:
+  coal:
+    category: fossil
+  oil:
+    category: fossil
+  gas:
+    category: fossil
+  nuclear:
+    category: clean_dispatchable
+  hydro:
+    category: clean_dispatchable
+  wind:
+    category: variable_renewable
+  solar:
+    category: variable_renewable
+  storage:
+    category: enabler
+  grid:
+    category: enabler

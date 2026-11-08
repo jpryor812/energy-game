@@ -1,0 +1,3 @@
+# Event definitions. Empty in v0: events are a hook only (sim/events.py).
+
+events: []
