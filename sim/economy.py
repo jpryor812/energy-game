@@ -6,7 +6,8 @@ Annual GDP growth:  g = g0 + I + P + T - S - E - R - D - C
 - I: zero; investment is already in g0, and public builds act through energy supply.
 - P: productivity from cumulative research spending / GDP, capped.
 - R: stranded-asset write-offs from early retirements, a one-off loss in the step after.
-- T: trade, the change in fossil export value since 2025 as a share of GDP x elasticity.
+- T: trade: the change in fossil export value since 2025 as a share of GDP x elasticity, plus
+  the goods-trade effect of tariffs (sim.trade) and clean-tech exports against their baseline.
 - S: energy shortfall share x `shortfall_drag`.
 - E: energy price rise above the 2025 level x `price_drag`, softened by carbon-revenue rebates.
 - D: rise in hard-currency debt / GDP above the 2025 ratio x `debt_drag`.
@@ -18,7 +19,7 @@ already reflects 2025 conditions. GDP is in T$ (constant 2025 USD at market exch
 
 from __future__ import annotations
 
-from sim import energy
+from sim import energy, trade
 from sim.config import Config
 from sim.state import Nation, World
 
@@ -44,7 +45,9 @@ def growth_terms(cfg: Config, nid: str, n: Nation, t: int, dt: int = 1) -> dict[
         "P": min(
             cfg.tune("research.productivity_cap"), cfg.tune("research.productivity") * research
         ),
-        "T": cfg.tune("economy.trade_elasticity") * export_change,
+        "T": cfg.tune("economy.trade_elasticity") * export_change
+        + n.trade_drag
+        + trade.cleantech_effect(cfg, n),
         "S": cfg.tune("economy.shortfall_drag") * share_short,
         "E": cfg.tune("economy.price_drag") * price_rise * relief,
         # A one-off level loss spread over this step, expressed as an annual rate.
@@ -84,7 +87,7 @@ def apply_income(world: World, cfg: Config, dt: int) -> None:
         new_hard = max(0.0, n.debt_hard - n.base.get("debt_hard", 0.0))
         new_local = max(0.0, n.debt_local - n.base.get("debt_local", 0.0))
         n.carbon_revenue = carbon_revenue(n)
-        income = share * n.gdp + take * n.export_revenue + n.carbon_revenue
+        income = share * n.gdp + take * n.export_revenue + n.carbon_revenue + n.tariff_revenue
         income -= r_hard * new_hard + r_local * new_local
         n.capital += income * years
 
@@ -98,6 +101,7 @@ def apply_income(world: World, cfg: Config, dt: int) -> None:
 
 
 def apply_growth(world: World, cfg: Config, dt: int) -> None:
+    trade.apply_goods(world, cfg)
     pol = "politics."
     reversion = cfg.tune(pol + "approval_reversion")
     baseline = cfg.tune(pol + "approval_baseline")

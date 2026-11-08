@@ -7,7 +7,7 @@ is malformed or unaffordable is rejected and logged, never raised, so a bad acti
 run. Every action uses one slot of its type; unused slots are banked with no cap.
 
 Units: amounts of capacity in EJ/yr, money in T$, carbon price in $/tCO2, shares in 0..1.
-Tariffs, deals, talks and blocs arrive in M4.
+Diplomatic actions (M4): talks, tariffs, the carbon club, deals, and carbon credit orders.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from sim import construction, tech
+from sim import construction, credits, deals, diplomacy, tech, trade
 from sim.config import Config
 from sim.state import Nation, Pledge, World
 
@@ -214,6 +214,208 @@ def _pledge_apply(cfg, world, n, act):
     n.pledge = Pledge(target_emissions=target, year=int(act["year"]), made_turn=world.t)
 
 
+def _target(world, n, act) -> str:
+    t = act.get("target")
+    if t not in world.nations or t == n.id:
+        raise Rejected("'target' must be another nation")
+    return t
+
+
+def _talks_check(cfg, world, n, act):
+    _target(world, n, act)
+    return {"influence": cfg.tune("diplomacy.talks_influence_cost")}
+
+
+def _talks_apply(cfg, world, n, act):
+    diplomacy.adjust(world, act["target"], n.id, cfg.tune("diplomacy.talks_trust_gain"))
+
+
+def _tariff_check(cfg, world, n, act):
+    t = _target(world, n, act)
+    _num(act, "level", 0.0, cfg.tune("trade.tariff_max"))
+    members = trade.club_members(world)
+    if n.id in members and t in members:
+        raise Rejected("carbon club members cannot tariff each other")
+    return {}
+
+
+def _tariff_apply(cfg, world, n, act):
+    t, level = act["target"], float(act["level"])
+    raised = max(0.0, level - n.tariffs.get(t, 0.0))
+    if level > 0:
+        n.tariffs[t] = level
+    else:
+        n.tariffs.pop(t, None)
+    diplomacy.adjust(world, t, n.id, -cfg.tune("diplomacy.tariff_trust_hit") * raised)
+
+
+def _lift_check(cfg, world, n, act):
+    t = _target(world, n, act)
+    if n.tariffs.get(t, 0.0) <= 0:
+        raise Rejected(f"no tariff on {t} to lift")
+    return {}
+
+
+def _lift_apply(cfg, world, n, act):
+    n.tariffs.pop(act["target"], None)
+
+
+def _join_check(cfg, world, n, act):
+    _choice(act, "bloc", [trade.CLUB])
+    if n.id in trade.club_members(world):
+        raise Rejected("already a member")
+    if not diplomacy.club_eligible(cfg, world, n.id):
+        need = cfg.tune("diplomacy.club_min_carbon_price")
+        raise Rejected(f"carbon price must be at least {need}")
+    return {}
+
+
+def _join_apply(cfg, world, n, act):
+    diplomacy.join_club(world, n.id)
+
+
+def _leave_check(cfg, world, n, act):
+    _choice(act, "bloc", [trade.CLUB])
+    if n.id not in trade.club_members(world):
+        raise Rejected("not a member")
+    return {}
+
+
+def _leave_apply(cfg, world, n, act):
+    diplomacy.leave_club(world, n.id)
+
+
+DEAL_PRICE_MAX = {"rate": 0.3, "price": 50.0}  # validation bounds, not tuning
+
+
+def _deal_terms(cfg, act) -> dict:
+    kind = _choice(act, "deal_type", list(deals.TYPES))
+    clean = [s for s in cfg.energy_source_ids if cfg.category(s) != "fossil"]
+    terms = {
+        "source": _choice(act, "source", clean),
+        "amount": _positive(act),
+        "currency": _choice(act, "currency", ["hard", "local"]),
+        "duration": int(_num(act, "duration", 4, cfg.tune("deals.max_duration"))),
+        "collateral": _num(act, "collateral", 0.0, 1.0),
+        "exit_penalty": _num(act, "exit_penalty", 0.0, 1.0),
+    }
+    key = "rate" if kind == "equipment_on_credit" else "price"
+    terms[key] = _num(act, key, 0.0, DEAL_PRICE_MAX[key])
+    return terms
+
+
+def _propose_check(cfg, world, n, act):
+    _target(world, n, act)
+    terms = _deal_terms(cfg, act)
+    cost = tech.nation_unit_cost(cfg, world, n, terms["source"]) * terms["amount"]
+    if cost > n.capital + 1e-12:
+        raise Rejected(f"needs {cost:.4g} capital to finance, has {n.capital:.4g}")
+    return {}
+
+
+def _propose_apply(cfg, world, n, act):
+    deals.propose(world, n.id, act["target"], act["deal_type"], _deal_terms(cfg, act))
+
+
+def _open_deal(world, n, act):
+    deal = world.deals.get(act.get("deal_id"))
+    if deal is None or deal.status != deals.OPEN:
+        raise Rejected("no open proposal with that id")
+    if deals.responder(deal) != n.id:
+        raise Rejected("this proposal is not addressed to you")
+    if deal.start_turn >= world.t:
+        raise Rejected("a proposal can be answered from the next quarter")
+    return deal
+
+
+def _respond_check(cfg, world, n, act):
+    deal = _open_deal(world, n, act)
+    response = _choice(act, "response", ["accept", "refuse", "counter"])
+    if response == "counter":
+        key = "rate" if deal.type == "equipment_on_credit" else "price"
+        _num(act, key, 0.0, DEAL_PRICE_MAX[key])
+    return {}
+
+
+def _respond_apply(cfg, world, n, act):
+    deal = world.deals[act["deal_id"]]
+    response = act["response"]
+    if response == "refuse":
+        deal.status = "refused"
+    elif response == "counter":
+        key = "rate" if deal.type == "equipment_on_credit" else "price"
+        deal.status = "countered"
+        terms = {k: v for k, v in deal.terms.items() if k != "proposer"}
+        terms[key] = float(act[key])
+        terms["proposer"] = n.id
+        deals.propose(world, deal.financier, deal.host, deal.type, terms)
+    elif deals.build_cost(cfg, world, deal) > world.nations[deal.financier].capital:
+        deal.status = "lapsed"  # the financier can no longer pay
+    else:
+        deals.activate(cfg, world, deal)
+
+
+def _exit_check(cfg, world, n, act):
+    deal = world.deals.get(act.get("deal_id"))
+    if deal is None or deal.status != deals.ACTIVE or deal.host != n.id:
+        raise Rejected("no active deal of yours with that id")
+    if deal.type != "energy_as_a_service":
+        raise Rejected("only energy-as-a-service deals have an exit clause")
+    return {}
+
+
+def _exit_apply(cfg, world, n, act):
+    deals.exit_deal(cfg, world, world.deals[act["deal_id"]])
+
+
+def _orders(world, nid, side):
+    return [o for o in world.credit_orders if o["nation"] == nid and o["side"] == side]
+
+
+def _buy_check(cfg, world, n, act):
+    amount = _positive(act)
+    limit = _num(act, "max_price", cfg.tune("credits.min_price"), 1e4)
+    if _orders(world, n.id, "sell"):
+        raise Rejected("cannot buy and sell credits in the same quarter")
+    committed = sum(credits.cost(o["amount"], o["limit"]) for o in _orders(world, n.id, "buy"))
+    if credits.cost(amount, limit) + committed > n.capital + 1e-12:
+        raise Rejected("not enough capital for this order at its price limit")
+    return {}
+
+
+def _buy_apply(cfg, world, n, act):
+    world.credit_orders.append(
+        {
+            "nation": n.id,
+            "side": "buy",
+            "amount": float(act["amount"]),
+            "limit": float(act["max_price"]),
+        }
+    )
+
+
+def _sell_check(cfg, world, n, act):
+    amount = _positive(act)
+    _num(act, "min_price", 0.0, 1e4)
+    if _orders(world, n.id, "buy"):
+        raise Rejected("cannot buy and sell credits in the same quarter")
+    offered = sum(o["amount"] for o in _orders(world, n.id, "sell"))
+    if amount + offered > n.credit_balance + 1e-12:
+        raise Rejected(f"only {n.credit_balance:.4g} Mt of credits to sell")
+    return {}
+
+
+def _sell_apply(cfg, world, n, act):
+    world.credit_orders.append(
+        {
+            "nation": n.id,
+            "side": "sell",
+            "amount": float(act["amount"]),
+            "limit": float(act["min_price"]),
+        }
+    )
+
+
 SPECS: dict[str, Spec] = {
     "build_capacity": Spec(DOMESTIC, _build_check, _build_apply),
     "retire_capacity": Spec(DOMESTIC, _retire_check, _retire_apply),
@@ -227,6 +429,16 @@ SPECS: dict[str, Spec] = {
     "adaptation_spend": Spec(DOMESTIC, _spend_check, _adaptation_apply),
     "rebate": Spec(DOMESTIC, _rebate_check, _rebate_apply),
     "make_pledge": Spec(DIPLOMATIC, _pledge_check, _pledge_apply),
+    "open_talks": Spec(DIPLOMATIC, _talks_check, _talks_apply),
+    "set_tariff": Spec(DIPLOMATIC, _tariff_check, _tariff_apply),
+    "lift_tariff": Spec(DIPLOMATIC, _lift_check, _lift_apply),
+    "join_bloc": Spec(DIPLOMATIC, _join_check, _join_apply),
+    "leave_bloc": Spec(DIPLOMATIC, _leave_check, _leave_apply),
+    "propose_deal": Spec(DIPLOMATIC, _propose_check, _propose_apply),
+    "respond_deal": Spec(DIPLOMATIC, _respond_check, _respond_apply),
+    "exit_deal": Spec(DIPLOMATIC, _exit_check, _exit_apply),
+    "buy_credits": Spec(DIPLOMATIC, _buy_check, _buy_apply),
+    "sell_credits": Spec(DIPLOMATIC, _sell_check, _sell_apply),
 }
 
 

@@ -76,7 +76,7 @@ One turn is one quarter, so 2025 to 2050 is 100 turns. At a few minutes a turn t
 4. **End turn:** AI nations make their moves at the same time.
 5. **Resolution and events:** the economy, grid, and emissions update, then events fire and ask for your response.
 
-Every twentieth turn, once every five years, is a **global stocktake**, where each country's emissions are checked against its fair share and consequences follow. Democracies also face an **election** on a cycle, which tests approval.
+Every twentieth turn, once every five years, is a **global stocktake**, where each country's emissions are checked against its fair share and consequences follow. Democracies also face an **election** on a cycle, which tests approval. *(Changed 2026-11-08: the player faces an election every four years in every playable nation; see Decided below.)*
 
 The player has limited action slots each turn (a starting suggestion: three domestic and two diplomatic), so every turn forces a choice about what to leave undone. Unused slots build up for later turns.
 
@@ -355,6 +355,16 @@ The design depends most on four areas that need more work before building, and t
 - Bonuses are flat points on top of the score, because they are easier to read and balance than a multiplier stacked on the score.
 - Annual mode runs the same rules at four quarters per turn, so there is one ruleset to build and balance.
 - The first simulation models each country at national level, with regions added later.
+
+**Decided 2026-11-08 (M4 planning, with the user)**
+
+- Clean slate on diplomacy: every pair of nations starts at neutral trust with no tariffs or sanctions. Nations keep their real 2025 energy state and general economic output; no real-world trade restrictions carry over.
+- Trade is a major system: goods trade between all nations (gravity model on real export openness) and a clean-tech equipment trade (solar, wind, batteries) from manufacturers, starting from approximate real 2024 manufacturing shares.
+- Carbon credits trade on a market whose price is set by supply and demand in the game. Credits score less than real reductions: real cuts 1.0, directly financed projects 0.75, other nations using your technology 0.6, purchased credits 0.25 (placeholders). Buying credits is a fallback move. Nations below their fair share earn their surplus as sellable credits.
+- The climate goal is 1.5 degC: fair shares come from the remaining 1.5 degC budget, and the World Multiplier is 1.0 at 1.5 degC. Excellent global play should be able to bring warming below its 2025 level by 2050, through deep cuts, falling short-lived (non-CO2) warming, and late-game carbon removal.
+- Domestic economy carries as much weight as trade: taxes, tax credits, supply chains and manufacturing, employment and retraining, and industrial policy (M4b).
+- Elections every four years for the player, in every playable nation. Losing one does not end the game: an opposition (the AI with the nation's default personality) governs for one term, then the player returns. AI-led nations keep the same leaders. Fallen Government (stability collapse) still ends the game.
+- The Nation Index gains a fifth component, climate contribution, scored with the credit weights above.
 
 **To tune in the simulation**
 

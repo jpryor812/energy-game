@@ -19,7 +19,7 @@ from __future__ import annotations
 import math
 from collections import defaultdict
 
-from sim import economy, energy, tech
+from sim import economy, energy, tech, trade
 from sim.config import Config
 from sim.energy import base_demand
 from sim.state import Construction, Nation, World
@@ -216,15 +216,21 @@ def seed_pipeline(cfg: Config, world: World, nid: str, n: Nation) -> None:
 
 
 def apply(world: World, cfg: Config, dt: int) -> dict[str, float]:
-    """Run construction for every nation; return capacity completed per source (all nations)."""
+    """Run construction for every nation; record clean-tech equipment trade; return capacity
+    completed per source (all nations)."""
     completed: dict[str, float] = defaultdict(float)
+    by_nation: dict[str, dict[str, float]] = {}
     clean = [s for s in cfg.source_ids if cfg.category(s) != "fossil"]
     for nid in sorted(world.nations):
         n = world.nations[nid]
         retire(cfg, nid, n, dt)
-        for s, amount in complete(n, world.t).items():
+        done = complete(n, world.t)
+        by_nation[nid] = done
+        for s, amount in done.items():
             completed[s] += amount
             if s in clean:
                 n.clean_built += amount
         market_build(cfg, world, nid, n)
+    costs = {s: tech.unit_cost(cfg, world, s) for s in trade.EQUIPMENT}
+    trade.apply_equipment(cfg, world, by_nation, costs, dt)
     return dict(completed)

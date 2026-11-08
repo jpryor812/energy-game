@@ -202,7 +202,15 @@ def test_sanity_no_nan_or_negative(bau_run):
                 walk(v, f"{path}[{i}]")
         elif isinstance(x, float):
             assert math.isfinite(x), path
-            if not path.endswith((".growth", ".capital", "trade_balance")):
+            signed = (
+                ".growth",
+                ".capital",
+                "trade_balance",
+                "remaining_budget",
+                "overshoot_share",
+                "trade_drag",
+            )
+            if not path.endswith(signed):
                 assert x >= -1e-9, path
 
     walk(bau_run[-1].to_dict(), "world")

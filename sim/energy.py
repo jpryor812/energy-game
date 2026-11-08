@@ -170,6 +170,7 @@ def apply_dispatch(world: World, cfg: Config, dt: int) -> None:
         n.energy_price = d.price
         n.emissions = d.emissions
         n.cumulative_emissions += d.emissions * dt / 4
+        n.period_emissions += d.emissions * dt / 4
 
 
 def global_fuel_use(world: World) -> dict[str, float]:

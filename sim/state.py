@@ -118,6 +118,16 @@ class Nation:
     carbon_revenue: float = 0.0
     clean_built: float = 0.0
     import_dependence: float = 0.0
+    # M4 trade, credits and stocktake.
+    goods_exports: float = 0.0
+    cleantech_exports: float = 0.0
+    tariff_revenue: float = 0.0
+    trade_drag: float = 0.0
+    credit_balance: float = 0.0
+    credits_bought: float = 0.0
+    period_emissions: float = 0.0
+    exported_cut_rate: float = 0.0
+    climate_credit: dict[str, float] = field(default_factory=dict)
 
     _FLOATS = (
         "gdp", "population", "capital", "political_capital", "influence", "tech_points",
@@ -125,11 +135,13 @@ class Nation:
         "demand", "carbon_price", "emissions", "cumulative_emissions", "fair_share_budget",
         "shortfall", "curtailment", "energy_price", "export_revenue", "growth", "climate_damage",
         "rebate", "activity_cap", "adaptation", "efficiency_spent", "pending_writeoff",
-        "carbon_revenue", "clean_built", "import_dependence",
+        "carbon_revenue", "clean_built", "import_dependence", "goods_exports",
+        "cleantech_exports", "tariff_revenue", "trade_drag", "credit_balance", "credits_bought",
+        "period_emissions", "exported_cut_rate",
     )  # fmt: skip
     _FLOAT_MAPS = (
         "capacity", "subsidies", "tariffs", "supply", "fossil_production", "fossil_exports",
-        "fossil_imports", "base", "research",
+        "fossil_imports", "base", "research", "climate_credit",
     )  # fmt: skip
 
     @classmethod
@@ -160,6 +172,11 @@ class World:
     deals: dict[str, Deal] = field(default_factory=dict)
     trust: dict[str, dict[str, float]] = field(default_factory=dict)
     history: list[dict[str, Any]] = field(default_factory=list)
+    # M4: coalition tariffs set at stocktakes (target -> level, applied by bloc members),
+    # carbon credit market price ($/tCO2) and this quarter's credit orders.
+    coalition_tariffs: dict[str, float] = field(default_factory=dict)
+    credit_price: float = 0.0
+    credit_orders: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
@@ -183,6 +200,9 @@ class World:
             deals={k: Deal.from_dict(v) for k, v in d["deals"].items()},
             trust={a: {b: float(x) for b, x in row.items()} for a, row in d["trust"].items()},
             history=[dict(h) for h in d["history"]],
+            coalition_tariffs={k: float(v) for k, v in d["coalition_tariffs"].items()},
+            credit_price=float(d["credit_price"]),
+            credit_orders=[dict(o) for o in d["credit_orders"]],
         )
 
     def to_json(self, *, indent: int | None = 2) -> str:

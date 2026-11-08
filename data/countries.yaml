@@ -11,7 +11,7 @@ nations:
     playable: true
     archetype: "Capital-rich, politically volatile"
     difficulty: "easy"
-    personality: opportunist
+    personality: "opportunist"
     hard_currency_issuer: true
     start:
       gdp: {value: 30.8613, status: "calibrated", unit: "T$", source: "imf_weo", note: "GDP 2025, current USD at market exchange rates."}
@@ -20,6 +20,7 @@ nations:
       debt_hard: {value: 0.0, status: "placeholder", unit: "T$", note: "Borrows in its own reserve currency."}
       debt_local: {value: 38.391457, status: "calibrated", unit: "T$", source: "imf_weo", note: "General government gross debt 2025 minus hard-currency debt."}
       carbon_price: {value: 3.0, status: "placeholder", unit: "$/tCO2", note: "Unsourced approximate: headline price x coverage, 2025."}
+      export_openness: {value: 0.109747, status: "calibrated", unit: "share of GDP", source: "wb_wdi", note: "Exports of goods and services / GDP, 2024."}
       energy:
         coal: {value: 7.904257, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         oil: {value: 35.816224, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
@@ -37,6 +38,10 @@ nations:
         coal: {value: 92.720414, status: "calibrated", unit: "MtCO2/EJ", source: "gcb", note: "Fuel CO2 / fuel use, 2024."}
         oil: {value: 61.12205, status: "calibrated", unit: "MtCO2/EJ", source: "gcb", note: "Fuel CO2 / fuel use, 2024."}
         gas: {value: 53.823356, status: "calibrated", unit: "MtCO2/EJ", source: "gcb", note: "Fuel CO2 / fuel use, 2024."}
+      manufacturing_share:
+        solar: {value: 0.02, status: "placeholder", note: "Unsourced approximate share of world manufacturing, 2024."}
+        wind: {value: 0.05, status: "placeholder", note: "Unsourced approximate share of world manufacturing, 2024."}
+        storage: {value: 0.06, status: "placeholder", note: "Unsourced approximate share of world manufacturing, 2024."}
     trend:
       g0_start: {value: 0.021167, status: "calibrated", source: "imf_weo", note: "Mean real GDP growth 2025-2030 (WEO projections)."}
       g0_end: {value: 0.018083, status: "placeholder", note: "min(g0_start, halfway to 0.015). Placeholder convergence rule."}
@@ -57,7 +62,7 @@ nations:
     playable: false
     archetype: "Capital-rich, small, finance hub"
     difficulty: "easy"
-    personality: green_leader
+    personality: "green_leader"
     hard_currency_issuer: true
     start:
       gdp: {value: 4.012224, status: "calibrated", unit: "T$", source: "imf_weo", note: "GDP 2025, current USD at market exchange rates."}
@@ -66,6 +71,7 @@ nations:
       debt_hard: {value: 0.0, status: "placeholder", unit: "T$", note: "Borrows in its own reserve currency."}
       debt_local: {value: 4.096481, status: "calibrated", unit: "T$", source: "imf_weo", note: "General government gross debt 2025 minus hard-currency debt."}
       carbon_price: {value: 20.0, status: "placeholder", unit: "$/tCO2", note: "Unsourced approximate: headline price x coverage, 2025."}
+      export_openness: {value: 0.310561, status: "calibrated", unit: "share of GDP", source: "wb_wdi", note: "Exports of goods and services / GDP, 2024."}
       energy:
         coal: {value: 0.169081, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         oil: {value: 2.678976, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
@@ -104,7 +110,7 @@ nations:
     playable: false
     archetype: "Tech-rich, import-dependent"
     difficulty: "medium"
-    personality: cautious_follower
+    personality: "cautious_follower"
     hard_currency_issuer: true
     start:
       gdp: {value: 4.453094, status: "calibrated", unit: "T$", source: "imf_weo", note: "GDP 2025, current USD at market exchange rates."}
@@ -113,6 +119,7 @@ nations:
       debt_hard: {value: 0.0, status: "placeholder", unit: "T$", note: "Borrows in its own reserve currency."}
       debt_local: {value: 9.119937, status: "calibrated", unit: "T$", source: "imf_weo", note: "General government gross debt 2025 minus hard-currency debt."}
       carbon_price: {value: 2.0, status: "placeholder", unit: "$/tCO2", note: "Unsourced approximate: headline price x coverage, 2025."}
+      export_openness: {value: 0.219799, status: "calibrated", unit: "share of GDP", source: "wb_wdi", note: "Exports of goods and services / GDP, 2024."}
       energy:
         coal: {value: 4.530787, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         oil: {value: 6.418404, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
@@ -130,6 +137,8 @@ nations:
         coal: {value: 84.085167, status: "calibrated", unit: "MtCO2/EJ", source: "gcb", note: "Fuel CO2 / fuel use, 2024."}
         oil: {value: 55.090487, status: "calibrated", unit: "MtCO2/EJ", source: "gcb", note: "Fuel CO2 / fuel use, 2024."}
         gas: {value: 59.651919, status: "calibrated", unit: "MtCO2/EJ", source: "gcb", note: "Fuel CO2 / fuel use, 2024."}
+      manufacturing_share:
+        storage: {value: 0.04, status: "placeholder", note: "Unsourced approximate share of world manufacturing, 2024."}
     trend:
       g0_start: {value: 0.007333, status: "calibrated", source: "imf_weo", note: "Mean real GDP growth 2025-2030 (WEO projections)."}
       g0_end: {value: 0.007333, status: "placeholder", note: "min(g0_start, halfway to 0.015). Placeholder convergence rule."}
@@ -152,7 +161,7 @@ nations:
     playable: true
     archetype: "Rule-setter"
     difficulty: "medium"
-    personality: green_leader
+    personality: "green_leader"
     hard_currency_issuer: true
     start:
       gdp: {value: 21.297818, status: "calibrated", unit: "T$", source: "imf_weo", note: "GDP 2025, current USD at market exchange rates."}
@@ -161,6 +170,7 @@ nations:
       debt_hard: {value: 0.0, status: "placeholder", unit: "T$", note: "Borrows in its own reserve currency."}
       debt_local: {value: 17.591998, status: "calibrated", unit: "T$", source: "imf_weo", note: "General government gross debt 2025 minus hard-currency debt."}
       carbon_price: {value: 32.0, status: "placeholder", unit: "$/tCO2", note: "Unsourced approximate: headline price x coverage, 2025."}
+      export_openness: {value: 0.22, status: "placeholder", unit: "share of GDP", note: "Unsourced approximate."}
       energy:
         coal: {value: 4.708339, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         oil: {value: 21.864204, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
@@ -178,6 +188,10 @@ nations:
         coal: {value: 99.964548, status: "calibrated", unit: "MtCO2/EJ", source: "gcb", note: "Fuel CO2 / fuel use, 2024."}
         oil: {value: 54.496336, status: "calibrated", unit: "MtCO2/EJ", source: "gcb", note: "Fuel CO2 / fuel use, 2024."}
         gas: {value: 55.99123, status: "calibrated", unit: "MtCO2/EJ", source: "gcb", note: "Fuel CO2 / fuel use, 2024."}
+      manufacturing_share:
+        solar: {value: 0.01, status: "placeholder", note: "Unsourced approximate share of world manufacturing, 2024."}
+        wind: {value: 0.25, status: "placeholder", note: "Unsourced approximate share of world manufacturing, 2024."}
+        storage: {value: 0.04, status: "placeholder", note: "Unsourced approximate share of world manufacturing, 2024."}
     trend:
       g0_start: {value: 0.014333, status: "calibrated", source: "imf_weo", note: "Mean real GDP growth 2025-2030 (WEO projections)."}
       g0_end: {value: 0.014333, status: "placeholder", note: "min(g0_start, halfway to 0.015). Placeholder convergence rule."}
@@ -199,7 +213,7 @@ nations:
     playable: true
     archetype: "Manufacturer and scale player"
     difficulty: "medium"
-    personality: opportunist
+    personality: "opportunist"
     hard_currency_issuer: false
     start:
       gdp: {value: 19.626191, status: "calibrated", unit: "T$", source: "imf_weo", note: "GDP 2025, current USD at market exchange rates."}
@@ -208,6 +222,7 @@ nations:
       debt_hard: {value: 0.504113, status: "calibrated", unit: "T$", source: "wb_ids", note: "Public and publicly guaranteed external debt, 2024."}
       debt_local: {value: 18.847312, status: "calibrated", unit: "T$", source: "imf_weo", note: "General government gross debt 2025 minus hard-currency debt."}
       carbon_price: {value: 5.0, status: "placeholder", unit: "$/tCO2", note: "Unsourced approximate: headline price x coverage, 2025."}
+      export_openness: {value: 0.204428, status: "calibrated", unit: "share of GDP", source: "wb_wdi", note: "Exports of goods and services / GDP, 2024."}
       energy:
         coal: {value: 92.157505, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         oil: {value: 32.270594, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
@@ -225,6 +240,10 @@ nations:
         coal: {value: 96.422109, status: "calibrated", unit: "MtCO2/EJ", source: "gcb", note: "Fuel CO2 / fuel use, 2024."}
         oil: {value: 52.846439, status: "calibrated", unit: "MtCO2/EJ", source: "gcb", note: "Fuel CO2 / fuel use, 2024."}
         gas: {value: 56.874349, status: "calibrated", unit: "MtCO2/EJ", source: "gcb", note: "Fuel CO2 / fuel use, 2024."}
+      manufacturing_share:
+        solar: {value: 0.8, status: "placeholder", note: "Unsourced approximate share of world manufacturing, 2024."}
+        wind: {value: 0.6, status: "placeholder", note: "Unsourced approximate share of world manufacturing, 2024."}
+        storage: {value: 0.75, status: "placeholder", note: "Unsourced approximate share of world manufacturing, 2024."}
     trend:
       g0_start: {value: 0.040833, status: "calibrated", source: "imf_weo", note: "Mean real GDP growth 2025-2030 (WEO projections)."}
       g0_end: {value: 0.027917, status: "placeholder", note: "min(g0_start, halfway to 0.015). Placeholder convergence rule."}
@@ -247,7 +266,7 @@ nations:
     playable: false
     archetype: "Hydro and land"
     difficulty: "medium"
-    personality: cautious_follower
+    personality: "cautious_follower"
     hard_currency_issuer: false
     start:
       gdp: {value: 2.279918, status: "calibrated", unit: "T$", source: "imf_weo", note: "GDP 2025, current USD at market exchange rates."}
@@ -256,6 +275,7 @@ nations:
       debt_hard: {value: 0.194369, status: "calibrated", unit: "T$", source: "wb_ids", note: "Public and publicly guaranteed external debt, 2024."}
       debt_local: {value: 1.932794, status: "calibrated", unit: "T$", source: "imf_weo", note: "General government gross debt 2025 minus hard-currency debt."}
       carbon_price: {value: 0.0, status: "placeholder", unit: "$/tCO2", note: "Unsourced approximate: headline price x coverage, 2025."}
+      export_openness: {value: 0.179386, status: "calibrated", unit: "share of GDP", source: "wb_wdi", note: "Exports of goods and services / GDP, 2024."}
       energy:
         coal: {value: 0.532105, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         oil: {value: 5.139839, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
@@ -294,7 +314,7 @@ nations:
     playable: false
     archetype: "Resource exporter with great sun and wind"
     difficulty: "medium"
-    personality: cautious_follower
+    personality: "cautious_follower"
     hard_currency_issuer: true
     start:
       gdp: {value: 1.840755, status: "calibrated", unit: "T$", source: "imf_weo", note: "GDP 2025, current USD at market exchange rates."}
@@ -303,6 +323,7 @@ nations:
       debt_hard: {value: 0.0, status: "placeholder", unit: "T$", note: "Borrows in its own reserve currency."}
       debt_local: {value: 0.955352, status: "calibrated", unit: "T$", source: "imf_weo", note: "General government gross debt 2025 minus hard-currency debt."}
       carbon_price: {value: 2.0, status: "placeholder", unit: "$/tCO2", note: "Unsourced approximate: headline price x coverage, 2025."}
+      export_openness: {value: 0.246215, status: "calibrated", unit: "share of GDP", source: "wb_wdi", note: "Exports of goods and services / GDP, 2024."}
       energy:
         coal: {value: 1.522764, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         oil: {value: 2.233739, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
@@ -341,7 +362,7 @@ nations:
     playable: false
     archetype: "Capital-rich fossil exporter"
     difficulty: "medium"
-    personality: fossil_defender
+    personality: "fossil_defender"
     hard_currency_issuer: false
     start:
       gdp: {value: 1.273555, status: "calibrated", unit: "T$", source: "imf_weo", note: "GDP 2025, current USD at market exchange rates."}
@@ -350,6 +371,7 @@ nations:
       debt_hard: {value: 0.202495, status: "placeholder", unit: "T$", note: "Unsourced approximate: half of government debt."}
       debt_local: {value: 0.202495, status: "calibrated", unit: "T$", source: "imf_weo", note: "General government gross debt 2025 minus hard-currency debt."}
       carbon_price: {value: 0.0, status: "placeholder", unit: "$/tCO2", note: "Unsourced approximate: headline price x coverage, 2025."}
+      export_openness: {value: 0.29388, status: "calibrated", unit: "share of GDP", source: "wb_wdi", note: "Exports of goods and services / GDP, 2024."}
       energy:
         coal: {value: 0.006196, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         oil: {value: 7.374442, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
@@ -387,7 +409,7 @@ nations:
     playable: true
     archetype: "Fossil exporter exposed to trade restrictions"
     difficulty: "hard"
-    personality: fossil_defender
+    personality: "fossil_defender"
     hard_currency_issuer: false
     start:
       gdp: {value: 2.572315, status: "calibrated", unit: "T$", source: "imf_weo", note: "GDP 2025, current USD at market exchange rates."}
@@ -396,6 +418,7 @@ nations:
       debt_hard: {value: 0.136086, status: "calibrated", unit: "T$", source: "wb_ids", note: "Public and publicly guaranteed external debt, 2022."}
       debt_local: {value: 0.290919, status: "calibrated", unit: "T$", source: "imf_weo", note: "General government gross debt 2025 minus hard-currency debt."}
       carbon_price: {value: 0.0, status: "placeholder", unit: "$/tCO2", note: "Unsourced approximate: headline price x coverage, 2025."}
+      export_openness: {value: 0.218564, status: "calibrated", unit: "share of GDP", source: "wb_wdi", note: "Exports of goods and services / GDP, 2024."}
       energy:
         coal: {value: 3.748964, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         oil: {value: 7.664771, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
@@ -435,7 +458,7 @@ nations:
     playable: true
     archetype: "Rising demand, limited capital"
     difficulty: "hard"
-    personality: opportunist
+    personality: "opportunist"
     hard_currency_issuer: false
     start:
       gdp: {value: 3.908964, status: "calibrated", unit: "T$", source: "imf_weo", note: "GDP 2025, current USD at market exchange rates."}
@@ -444,6 +467,7 @@ nations:
       debt_hard: {value: 0.23895, status: "calibrated", unit: "T$", source: "wb_ids", note: "Public and publicly guaranteed external debt, 2024."}
       debt_local: {value: 3.056307, status: "calibrated", unit: "T$", source: "imf_weo", note: "General government gross debt 2025 minus hard-currency debt."}
       carbon_price: {value: 0.0, status: "placeholder", unit: "$/tCO2", note: "Unsourced approximate: headline price x coverage, 2025."}
+      export_openness: {value: 0.22064, status: "calibrated", unit: "share of GDP", source: "wb_wdi", note: "Exports of goods and services / GDP, 2024."}
       energy:
         coal: {value: 22.967374, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         oil: {value: 10.903478, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
@@ -461,6 +485,9 @@ nations:
         coal: {value: 91.783808, status: "calibrated", unit: "MtCO2/EJ", source: "gcb", note: "Fuel CO2 / fuel use, 2024."}
         oil: {value: 68.540788, status: "calibrated", unit: "MtCO2/EJ", source: "gcb", note: "Fuel CO2 / fuel use, 2024."}
         gas: {value: 59.029033, status: "calibrated", unit: "MtCO2/EJ", source: "gcb", note: "Fuel CO2 / fuel use, 2024."}
+      manufacturing_share:
+        solar: {value: 0.03, status: "placeholder", note: "Unsourced approximate share of world manufacturing, 2024."}
+        wind: {value: 0.04, status: "placeholder", note: "Unsourced approximate share of world manufacturing, 2024."}
     trend:
       g0_start: {value: 0.070667, status: "calibrated", source: "imf_weo", note: "Mean real GDP growth 2025-2030 (WEO projections)."}
       g0_end: {value: 0.042833, status: "placeholder", note: "min(g0_start, halfway to 0.015). Placeholder convergence rule."}
@@ -482,7 +509,7 @@ nations:
     playable: false
     archetype: "Coal and minerals exporter"
     difficulty: "hard"
-    personality: opportunist
+    personality: "opportunist"
     hard_currency_issuer: false
     start:
       gdp: {value: 1.445642, status: "calibrated", unit: "T$", source: "imf_weo", note: "GDP 2025, current USD at market exchange rates."}
@@ -491,6 +518,7 @@ nations:
       debt_hard: {value: 0.245497, status: "calibrated", unit: "T$", source: "wb_ids", note: "Public and publicly guaranteed external debt, 2024."}
       debt_local: {value: 0.345771, status: "calibrated", unit: "T$", source: "imf_weo", note: "General government gross debt 2025 minus hard-currency debt."}
       carbon_price: {value: 0.5, status: "placeholder", unit: "$/tCO2", note: "Unsourced approximate: headline price x coverage, 2025."}
+      export_openness: {value: 0.223096, status: "calibrated", unit: "share of GDP", source: "wb_wdi", note: "Exports of goods and services / GDP, 2024."}
       energy:
         coal: {value: 4.720846, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         oil: {value: 3.164342, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
@@ -528,7 +556,7 @@ nations:
     playable: true
     archetype: "Export manufacturer, dirty grid"
     difficulty: "hard"
-    personality: opportunist
+    personality: "opportunist"
     hard_currency_issuer: false
     start:
       gdp: {value: 0.494046, status: "calibrated", unit: "T$", source: "imf_weo", note: "GDP 2025, current USD at market exchange rates."}
@@ -537,6 +565,7 @@ nations:
       debt_hard: {value: 0.03845, status: "calibrated", unit: "T$", source: "wb_ids", note: "Public and publicly guaranteed external debt, 2024."}
       debt_local: {value: 0.112234, status: "calibrated", unit: "T$", source: "imf_weo", note: "General government gross debt 2025 minus hard-currency debt."}
       carbon_price: {value: 0.0, status: "placeholder", unit: "$/tCO2", note: "Unsourced approximate: headline price x coverage, 2025."}
+      export_openness: {value: 0.901663, status: "calibrated", unit: "share of GDP", source: "wb_wdi", note: "Exports of goods and services / GDP, 2024."}
       energy:
         coal: {value: 2.496366, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         oil: {value: 1.400281, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
@@ -554,6 +583,8 @@ nations:
         coal: {value: 91.807852, status: "calibrated", unit: "MtCO2/EJ", source: "gcb", note: "Fuel CO2 / fuel use, 2024."}
         oil: {value: 59.985809, status: "calibrated", unit: "MtCO2/EJ", source: "gcb", note: "Fuel CO2 / fuel use, 2024."}
         gas: {value: 55.256772, status: "calibrated", unit: "MtCO2/EJ", source: "gcb", note: "Fuel CO2 / fuel use, 2024."}
+      manufacturing_share:
+        solar: {value: 0.05, status: "placeholder", note: "Unsourced approximate share of world manufacturing, 2024."}
     trend:
       g0_start: {value: 0.069, status: "calibrated", source: "imf_weo", note: "Mean real GDP growth 2025-2030 (WEO projections)."}
       g0_end: {value: 0.042, status: "placeholder", note: "min(g0_start, halfway to 0.015). Placeholder convergence rule."}
@@ -576,7 +607,7 @@ nations:
     playable: false
     archetype: "Coal-dependent grid, mineral-rich"
     difficulty: "hard"
-    personality: cautious_follower
+    personality: "cautious_follower"
     hard_currency_issuer: false
     start:
       gdp: {value: 0.427141, status: "calibrated", unit: "T$", source: "imf_weo", note: "GDP 2025, current USD at market exchange rates."}
@@ -585,6 +616,7 @@ nations:
       debt_hard: {value: 0.097813, status: "calibrated", unit: "T$", source: "wb_ids", note: "Public and publicly guaranteed external debt, 2024."}
       debt_local: {value: 0.237065, status: "calibrated", unit: "T$", source: "imf_weo", note: "General government gross debt 2025 minus hard-currency debt."}
       carbon_price: {value: 2.0, status: "placeholder", unit: "$/tCO2", note: "Unsourced approximate: headline price x coverage, 2025."}
+      export_openness: {value: 0.317919, status: "calibrated", unit: "share of GDP", source: "wb_wdi", note: "Exports of goods and services / GDP, 2024."}
       energy:
         coal: {value: 3.514439, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         oil: {value: 0.964771, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
@@ -623,7 +655,7 @@ nations:
     playable: false
     archetype: "Energy access gap, oil exporter"
     difficulty: "hard"
-    personality: fossil_defender
+    personality: "fossil_defender"
     hard_currency_issuer: false
     start:
       gdp: {value: 0.290491, status: "calibrated", unit: "T$", source: "imf_weo", note: "GDP 2025, current USD at market exchange rates."}
@@ -632,6 +664,7 @@ nations:
       debt_hard: {value: 0.050192, status: "calibrated", unit: "T$", source: "wb_ids", note: "Public and publicly guaranteed external debt, 2024."}
       debt_local: {value: 0.054676, status: "calibrated", unit: "T$", source: "imf_weo", note: "General government gross debt 2025 minus hard-currency debt."}
       carbon_price: {value: 0.0, status: "placeholder", unit: "$/tCO2", note: "Unsourced approximate: headline price x coverage, 2025."}
+      export_openness: {value: 0.12, status: "placeholder", unit: "share of GDP", note: "Unsourced approximate."}
       energy:
         coal: {value: 0.031842, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Derived: fuel CO2 2024 / world emission factor; hydro, solar from 2023 electricity."}
         oil: {value: 1.100317, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Derived: fuel CO2 2024 / world emission factor; hydro, solar from 2023 electricity."}
@@ -666,7 +699,7 @@ nations:
     playable: false
     archetype: "Resource-rich, cold"
     difficulty: "easy_to_medium"
-    personality: cautious_follower
+    personality: "cautious_follower"
     hard_currency_issuer: true
     start:
       gdp: {value: 2.321182, status: "calibrated", unit: "T$", source: "imf_weo", note: "GDP 2025, current USD at market exchange rates."}
@@ -675,6 +708,7 @@ nations:
       debt_hard: {value: 0.0, status: "placeholder", unit: "T$", note: "Borrows in its own reserve currency."}
       debt_local: {value: 2.636863, status: "calibrated", unit: "T$", source: "imf_weo", note: "General government gross debt 2025 minus hard-currency debt."}
       carbon_price: {value: 20.0, status: "placeholder", unit: "$/tCO2", note: "Unsourced approximate: headline price x coverage, 2025."}
+      export_openness: {value: 0.324691, status: "calibrated", unit: "share of GDP", source: "wb_wdi", note: "Exports of goods and services / GDP, 2024."}
       energy:
         coal: {value: 0.292115, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         oil: {value: 4.353116, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
@@ -712,7 +746,7 @@ nations:
     playable: false
     archetype: "Trade-linked mid-income"
     difficulty: "medium"
-    personality: fossil_defender
+    personality: "fossil_defender"
     hard_currency_issuer: false
     start:
       gdp: {value: 1.835039, status: "calibrated", unit: "T$", source: "imf_weo", note: "GDP 2025, current USD at market exchange rates."}
@@ -721,6 +755,7 @@ nations:
       debt_hard: {value: 0.289465, status: "calibrated", unit: "T$", source: "wb_ids", note: "Public and publicly guaranteed external debt, 2024."}
       debt_local: {value: 0.842754, status: "calibrated", unit: "T$", source: "imf_weo", note: "General government gross debt 2025 minus hard-currency debt."}
       carbon_price: {value: 1.0, status: "placeholder", unit: "$/tCO2", note: "Unsourced approximate: headline price x coverage, 2025."}
+      export_openness: {value: 0.372836, status: "calibrated", unit: "share of GDP", source: "wb_wdi", note: "Exports of goods and services / GDP, 2024."}
       energy:
         coal: {value: 0.282359, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         oil: {value: 3.602376, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}

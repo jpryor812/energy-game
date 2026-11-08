@@ -319,21 +319,33 @@ actions:
 
 scoring:
   weight_income:
-    value: 0.25
+    value: 0.2
     status: placeholder
-    note: Nation Index weight. Equal weights to start.
+    note: Nation Index weight. Equal weights across the five components.
   weight_security:
-    value: 0.25
+    value: 0.2
     status: placeholder
     note: Nation Index weight.
   weight_welfare:
-    value: 0.25
+    value: 0.2
     status: placeholder
     note: Nation Index weight.
   weight_clean:
-    value: 0.25
+    value: 0.2
     status: placeholder
     note: Nation Index weight.
+  weight_climate:
+    value: 0.2
+    status: placeholder
+    note: Nation Index weight for climate contribution (added 2026-11-08).
+  climate_scale:
+    value: 0.2
+    status: placeholder
+    note: Credit-weighted average yearly cut (share of 2025 emissions) that moves the climate score from 0.5 to 0.73.
+  bonus_best_deal:
+    value: 5.0
+    status: placeholder
+    note: Flat bonus to both parties of the deal that cut the most emissions.
   income_scale:
     value: 0.1
     status: placeholder
@@ -355,12 +367,12 @@ scoring:
     status: placeholder
     note: log(clean-build share / GDP share) that moves the clean score from 0.5 to 0.73.
   world_good:
-    value: 1.6
+    value: 1.5
     unit: degC
     status: placeholder
-    note: World multiplier is 1.0 at or below this warming.
+    note: World multiplier is 1.0 at or below this warming (1.5 degC goal, decided 2026-11-08).
   world_bad:
-    value: 2.6
+    value: 2.5
     unit: degC
     status: placeholder
     note: World multiplier reaches its floor at this warming.
@@ -369,10 +381,10 @@ scoring:
     status: placeholder
     note: Lowest world multiplier.
   good_world_warming:
-    value: 2.0
+    value: 1.5
     unit: degC
     status: placeholder
-    note: Final warming at or below this counts as a good world outcome for endings.
+    note: Final warming at or below this counts as a good world outcome for endings (the 1.5 degC goal).
   top_rank:
     value: 4
     status: placeholder
@@ -397,6 +409,9 @@ scoring:
 ai:
   personalities:
     green_leader:
+      retaliation: {value: 0.0, status: placeholder, note: "How readily this personality matches tariffs placed on it (0 = never)."}
+      credit_value: {value: 80, status: placeholder, note: "What a tonne of carbon credit is worth to this personality ($/tCO2): it sells above and buys below."}
+      deal_affinity: {value: 1.0, status: placeholder, note: "Extra utility for signing deals (scaled by w_deals)."}
       w_growth: {value: 1.0, status: placeholder, note: "Weight on estimated growth effects (per pp/yr)."}
       w_security: {value: 1.0, status: placeholder, note: "Weight on estimated energy-security effects (per pp of demand)."}
       w_emissions: {value: 1.5, status: placeholder, note: "Weight on estimated emissions cuts (per % of 2025 emissions/yr)."}
@@ -407,6 +422,9 @@ ai:
       follow_strength: {value: 0.0, status: placeholder, note: "How strongly peers' emission cuts raise the emissions weight (cautious follower)."}
       budget_appetite: {value: 1.5, status: placeholder, note: "Divides the capital-cost weight: higher spends more readily."}
     fossil_defender:
+      retaliation: {value: 1.0, status: placeholder, note: "How readily this personality matches tariffs placed on it (0 = never)."}
+      credit_value: {value: 15, status: placeholder, note: "What a tonne of carbon credit is worth to this personality ($/tCO2): it sells above and buys below."}
+      deal_affinity: {value: 0.3, status: placeholder, note: "Extra utility for signing deals (scaled by w_deals)."}
       w_growth: {value: 1.5, status: placeholder, note: "Weight on estimated growth effects (per pp/yr)."}
       w_security: {value: 1.5, status: placeholder, note: "Weight on estimated energy-security effects (per pp of demand)."}
       w_emissions: {value: 0.1, status: placeholder, note: "Weight on estimated emissions cuts (per % of 2025 emissions/yr)."}
@@ -417,6 +435,9 @@ ai:
       follow_strength: {value: 0.0, status: placeholder, note: "How strongly peers' emission cuts raise the emissions weight (cautious follower)."}
       budget_appetite: {value: 0.8, status: placeholder, note: "Divides the capital-cost weight: higher spends more readily."}
     opportunist:
+      retaliation: {value: 1.0, status: placeholder, note: "How readily this personality matches tariffs placed on it (0 = never)."}
+      credit_value: {value: 30, status: placeholder, note: "What a tonne of carbon credit is worth to this personality ($/tCO2): it sells above and buys below."}
+      deal_affinity: {value: 1.0, status: placeholder, note: "Extra utility for signing deals (scaled by w_deals)."}
       w_growth: {value: 1.5, status: placeholder, note: "Weight on estimated growth effects (per pp/yr)."}
       w_security: {value: 1.0, status: placeholder, note: "Weight on estimated energy-security effects (per pp of demand)."}
       w_emissions: {value: 0.4, status: placeholder, note: "Weight on estimated emissions cuts (per % of 2025 emissions/yr)."}
@@ -427,6 +448,9 @@ ai:
       follow_strength: {value: 0.0, status: placeholder, note: "How strongly peers' emission cuts raise the emissions weight (cautious follower)."}
       budget_appetite: {value: 1.0, status: placeholder, note: "Divides the capital-cost weight: higher spends more readily."}
     cautious_follower:
+      retaliation: {value: 0.3, status: placeholder, note: "How readily this personality matches tariffs placed on it (0 = never)."}
+      credit_value: {value: 50, status: placeholder, note: "What a tonne of carbon credit is worth to this personality ($/tCO2): it sells above and buys below."}
+      deal_affinity: {value: 0.5, status: placeholder, note: "Extra utility for signing deals (scaled by w_deals)."}
       w_growth: {value: 1.0, status: placeholder, note: "Weight on estimated growth effects (per pp/yr)."}
       w_security: {value: 1.2, status: placeholder, note: "Weight on estimated energy-security effects (per pp of demand)."}
       w_emissions: {value: 0.8, status: placeholder, note: "Weight on estimated emissions cuts (per % of 2025 emissions/yr)."}
@@ -451,3 +475,64 @@ ai:
   emissions_weight_floor: {value: 0.0, status: placeholder, note: "Emissions weight never falls below this share of its base value. Zero, so a nation well ahead of its target path stops pushing."}
   security_margin: {value: 0.05, status: placeholder, note: "Spare normal capacity (share of demand) below which building adds security."}
   min_utility: {value: 0.0, status: placeholder, note: "Candidates must score above this to be chosen."}
+  deal_share: {value: 0.2, status: placeholder, note: "Share of capital an AI financier puts into one deal."}
+  deal_reserve_years: {value: 0.5, status: placeholder, note: "An AI financier keeps this many years of capital income in reserve before offering deals."}
+  deal_rate_premium: {value: 0.05, status: placeholder, note: "Interest an AI financier asks above the discount rate, scaled by (1 - trust)."}
+  deal_duration: {value: 40, status: placeholder, note: "Quarters of payments in AI-proposed deals."}
+  deal_collateral: {value: 0.2, status: placeholder, note: "Collateral share in AI-proposed deals."}
+  deal_exit_penalty: {value: 0.3, status: placeholder, note: "Exit penalty share in AI-proposed deals."}
+  currency_risk_weight: {value: 2.0, status: placeholder, note: "How much hard-currency payments relative to FX reserves raise the bar to accept a deal."}
+  trust_weight: {value: 2.0, status: placeholder, note: "How much trust above neutral lowers the bar to accept a deal."}
+  counter_margin: {value: 0.5, status: placeholder, note: "A deal this close to acceptable gets a counter-offer instead of a refusal."}
+  counter_rate_factor: {value: 0.7, status: placeholder, note: "A counter asks for this share of the offered rate or price."}
+  credit_cover_share: {value: 0.2, status: placeholder, note: "Share of expected overshoot an AI buys in credits per order."}
+  club_affinity: {value: 0.5, status: placeholder, note: "Utility for joining the carbon club, scaled by w_trust."}
+  max_payment_share: {value: 0.5, status: placeholder, note: "Most of its yearly capital income an AI host will commit to one deal's payments; AI financiers size loans to fit."}
+
+trade:
+  world_gdp_2025: {value: 118.485, status: calibrated, note: "IMF WEO world GDP 2025, T$ (source imf_weo). The rest of the world is this minus the 16 nations."}
+  openness_floor: {value: 0.03, status: placeholder, note: "Lowest non-fossil goods export share of GDP (fossil exporters' goods trade)."}
+  tariff_elasticity: {value: 1.5, status: placeholder, note: "Share of exports to a partner lost per unit of that partner's tariff (a 20% tariff cuts them 30%)."}
+  export_growth_elasticity: {value: 0.3, status: placeholder, note: "Growth change per unit change in goods exports vs their no-tariff level, as a share of GDP."}
+  tariff_price_drag: {value: 0.3, status: placeholder, note: "Growth lost per unit of tariff paid on imports, as a share of GDP."}
+  cleantech_growth_elasticity: {value: 0.3, status: placeholder, note: "Growth change per unit change in clean-tech exports vs their baseline share, as a share of GDP."}
+  supplier_switching: {value: 3.0, status: placeholder, note: "How fast equipment buyers shift away from tariffed suppliers: share ~ (1 + tariff)^-x."}
+  tariff_max: {value: 0.5, status: placeholder, note: "Highest tariff an action can set."}
+
+diplomacy:
+  trust_start: {value: 0.5, status: placeholder, note: "Every pair starts neutral: a clean slate (decided 2026-11-08)."}
+  trust_reversion: {value: 0.05, status: placeholder, note: "Share of the gap to neutral closed per year."}
+  talks_influence_cost: {value: 5.0, status: placeholder, note: "Influence to open talks with one nation."}
+  talks_trust_gain: {value: 0.05, status: placeholder, note: "Trust the target gains in you from talks."}
+  tariff_trust_hit: {value: 0.5, status: placeholder, note: "Trust the target loses in you per unit of tariff raised."}
+  club_min_carbon_price: {value: 25.0, status: placeholder, note: "Effective carbon price ($/t) needed to join or stay in the carbon club."}
+  club_rate_discount: {value: 0.02, status: placeholder, note: "Interest rate cut on deals between carbon-club members."}
+
+deals:
+  proposal_expiry: {value: 4, status: placeholder, note: "Quarters a proposal stays open."}
+  max_duration: {value: 80, status: placeholder, note: "Longest deal, in quarters."}
+  currency_loss: {value: 0.5, status: placeholder, note: "Value a financier loses on local-currency payments per unit fall in the host's FX reserves below 2025."}
+  signing_trust_gain: {value: 0.03, status: placeholder, note: "Trust each side gains on signing."}
+  completion_trust_gain: {value: 0.05, status: placeholder, note: "Trust each side gains when a deal completes."}
+  default_trust_hit: {value: 0.3, status: placeholder, note: "Trust the financier loses in a defaulting host (others lose half)."}
+  exit_trust_hit: {value: 0.15, status: placeholder, note: "Trust the financier loses in a host that exits early."}
+  default_growth_hit: {value: 0.5, status: placeholder, note: "Share of defaulted debt lost from GDP (one-off, like a write-off)."}
+
+credits:
+  start_price: {value: 20.0, status: placeholder, note: "Opening carbon credit price, $/tCO2."}
+  drift: {value: 0.05, status: placeholder, note: "Price change per quarter when only buyers (up) or only sellers (down) post orders."}
+  min_price: {value: 1.0, status: placeholder, note: "Price floor, $/tCO2."}
+  weight_real: {value: 1.0, status: placeholder, note: "Score weight of a real domestic reduction (decided 2026-11-08)."}
+  weight_financed: {value: 0.75, status: placeholder, note: "Score weight of a cut you financed abroad through a deal."}
+  weight_exported: {value: 0.6, status: placeholder, note: "Score weight of a cut made with clean-tech equipment you exported."}
+  weight_purchased: {value: 0.25, status: placeholder, note: "Score weight of a purchased market credit."}
+
+stocktake:
+  target_warming: {value: 1.5, status: placeholder, note: "Warming goal that sets the remaining carbon budget (decided 2026-11-08)."}
+  budget_horizon_year: {value: 2050, status: placeholder, note: "The remaining budget is spread evenly over the years to this one."}
+  tolerance: {value: 0.05, status: placeholder, note: "Overshoot (share of 2025 emissions over the period) allowed before consequences."}
+  overshoot_trust_hit: {value: 0.2, status: placeholder, note: "Trust every nation loses in an overshooter, per unit of overshoot share."}
+  undershoot_trust_gain: {value: 0.05, status: placeholder, note: "Trust every nation gains in a nation under its allowance."}
+  coalition_tariff_per_overshoot: {value: 0.1, status: placeholder, note: "Coalition tariff per unit of overshoot share, applied by club members to non-members."}
+  coalition_tariff_max: {value: 0.15, status: placeholder, note: "Highest coalition tariff."}
+  pledge_trust: {value: 0.05, status: placeholder, note: "Trust gained for being on a pledge path, or lost for being off it, at a stocktake."}

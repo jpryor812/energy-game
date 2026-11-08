@@ -14,7 +14,9 @@ Shares and step sizes below are bot behaviour, not world tuning, so they live he
               coal as political capital allows.
 - balanced:   moderate carbon price, builds gas and the cheapest clean source, invests in
               efficiency and adaptation.
-- deal_maker: balanced, plus a pledge and influence buying. A stand-in until deals exist (M4).
+- deal_maker: balanced at home; abroad it offers equipment-on-credit deals to trusted,
+              high-emitting partners once a year, accepts offers it can afford, opens talks,
+              joins the carbon club when eligible, and pledges.
 - ai:         the AI plays the player's nation with its own personality (an AI-only world).
 """
 
@@ -149,15 +151,61 @@ def balanced(cfg: Config, world: World, nid: str) -> list[Action]:
     return pick(_balanced_domestic(cfg, world, n), slots(cfg, n, "domestic"))
 
 
+def _best_partner(world: World, nid: str) -> str | None:
+    from sim import diplomacy
+
+    busy = {d.host for d in world.deals.values() if d.financier == nid and d.status == "proposed"}
+    options = [
+        (diplomacy.trust(world, nid, pid) * m.emissions / m.gdp, pid)
+        for pid, m in sorted(world.nations.items())
+        if pid != nid and pid not in busy
+    ]
+    return max(options)[1] if options else None
+
+
 def deal_maker(cfg: Config, world: World, nid: str) -> list[Action]:
+    from sim import deals, diplomacy, trade
+
     n = world.nations[nid]
     domestic = _balanced_domestic(cfg, world, n)
     if world.t % 4 == 0:
         domestic.insert(1, spend("buy_influence", n, 0.05))
     out = pick(domestic, slots(cfg, n, "domestic"))
-    if world.t == 0 and slots(cfg, n, "diplomatic") > 0:
-        out.append({"type": "make_pledge", "target": 0.5, "year": 2050})
-    return out
+
+    diplomatic: list[Action | None] = []
+    if world.t == 0:
+        diplomatic.append({"type": "make_pledge", "target": 0.5, "year": 2050})
+    for did in sorted(world.deals):
+        d = world.deals[did]
+        if d.status == deals.OPEN and deals.responder(d) == nid and d.start_turn < world.t:
+            payment = deals.annual_payment(cfg, world, d)
+            income = cfg.tune("economy.capital_share_of_gdp") * n.gdp
+            ok = payment + deals.obligations(cfg, world, nid) <= 0.5 * income
+            diplomatic.append(
+                {"type": "respond_deal", "deal_id": did, "response": "accept" if ok else "refuse"}
+            )
+    if nid not in trade.club_members(world) and diplomacy.club_eligible(cfg, world, nid):
+        diplomatic.append({"type": "join_bloc", "bloc": trade.CLUB})
+    partner = _best_partner(world, nid)
+    if world.t % 4 == 1 and partner and n.capital > 0:
+        unit = tech.nation_unit_cost(cfg, world, n, "solar")
+        diplomatic.append(
+            {
+                "type": "propose_deal",
+                "target": partner,
+                "deal_type": "equipment_on_credit",
+                "source": "solar",
+                "amount": 0.2 * n.capital / unit,
+                "currency": "hard",
+                "rate": 0.08,
+                "duration": 40,
+                "collateral": 0.2,
+                "exit_penalty": 0.3,
+            }
+        )
+    if n.influence >= cfg.tune("diplomacy.talks_influence_cost") and partner:
+        diplomatic.append({"type": "open_talks", "target": partner})
+    return out + pick(diplomatic, slots(cfg, n, "diplomatic"))
 
 
 def ai_player(cfg: Config, world: World, nid: str) -> list[Action]:

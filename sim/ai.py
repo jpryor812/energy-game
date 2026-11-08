@@ -9,7 +9,9 @@ Each quarter an AI nation:
 3. scores it as personality-weighted effects minus costs (`utility`). The emissions weight
    rises with the gap between actual emissions and the nation's assumed target path
    (data/targets.yaml) and, for followers, with how much more its peers have cut;
-4. picks the best-scoring affordable candidates, at most one per action type, up to its slots.
+4. adds diplomatic candidates (`diplomatic`): answering deal proposals, matching or lifting
+   tariffs, joining the carbon club, offering a deal once a year, and trading carbon credits;
+5. picks the best-scoring affordable candidates, at most one per action type, up to its slots.
    Ties break by action type, then target. No randomness: this module never uses sim.rng.
 
 A public build displaces what the market would otherwise have built, so its emissions and
@@ -22,7 +24,7 @@ import math
 from dataclasses import dataclass
 from typing import Any
 
-from sim import actions, climate, construction, energy, tech
+from sim import actions, climate, construction, credits, deals, diplomacy, energy, tech, trade
 from sim.config import Config
 from sim.state import Nation, World
 
@@ -318,7 +320,178 @@ def utility(cfg: Config, personality: str, eff: Effects, w_em: float, income) ->
 
 
 def _target(act: Action) -> str:
-    return str(act.get("source") or act.get("kind") or act.get("tech") or "")
+    keys = ("source", "kind", "tech", "target", "deal_id", "bloc")
+    return str(next((act[k] for k in keys if k in act), ""))
+
+
+# --- diplomacy -----------------------------------------------------------------------------------
+
+
+def _imports_from(world: World, buyer: str, seller: str) -> float:
+    """Goods `buyer` imports from `seller` (T$/yr) under the gravity split, before tariffs."""
+    s = world.nations[seller]
+    others = sum(n.gdp for nid, n in world.nations.items() if nid != seller)
+    total = others + trade.row_gdp(world)
+    return s.base["goods_openness"] * s.gdp * world.nations[buyer].gdp / total
+
+
+def _tariff_cost_pp(cfg: Config, world: World, nid: str, partner: str, level: float) -> float:
+    """Growth (pp/yr) a nation loses paying its own tariff on a partner's goods."""
+    n = world.nations[nid]
+    paid = level * _imports_from(world, nid, partner)
+    return cfg.tune("trade.tariff_price_drag") * paid / n.gdp * 100
+
+
+def _value_deal_as_host(cfg, world, nid, deal, personality, ctx, w_em, income) -> float:
+    """Utility to the host of accepting `deal`, net of its payments, minus the bar to accept."""
+    n = ctx.n
+    build = {
+        "type": "build_capacity",
+        "source": deal.terms["source"],
+        "amount": deal.terms["amount"],
+    }
+    eff = estimate(cfg, world, nid, build, ctx)
+    benefit = (
+        _p(cfg, personality, "w_growth") * eff.growth
+        + _p(cfg, personality, "w_security") * eff.security
+        - w_em * eff.emissions
+    )
+    payment = deals.annual_payment(cfg, world, deal)
+    committed = deals.obligations(cfg, world, nid)
+    if payment + committed > _ai(cfg, "max_payment_share") * income[0]:
+        return -math.inf  # cannot afford the payments
+    cap_weight = _ai(cfg, "capital_cost_weight") / _p(cfg, personality, "budget_appetite")
+    value = benefit - cap_weight * payment / income[0]
+    bar = -_p(cfg, personality, "w_deals") * _p(cfg, personality, "deal_affinity")
+    bar -= _ai(cfg, "trust_weight") * (diplomacy.trust(world, nid, deal.financier) - 0.5)
+    if deal.terms["currency"] == "hard" and not cfg.nat_spec(nid)["hard_currency_issuer"]:
+        bar += _ai(cfg, "currency_risk_weight") * payment / max(n.fx_reserves, 1e-9)
+    return value - bar
+
+
+def _deal_offer(cfg, world, nid, personality, w_em, income) -> tuple[float, Action] | None:
+    """One deal this AI would offer as financier this quarter, if any."""
+    n = world.nations[nid]
+    if (world.t + sorted(world.nations).index(nid)) % 4:
+        return None  # each AI considers offering once a year, staggered across nations
+    if n.capital <= _ai(cfg, "deal_reserve_years") * income[0]:
+        return None
+    busy = {
+        d.host
+        for d in world.deals.values()
+        if d.financier == nid and (d.status == deals.OPEN or world.t - d.start_turn < 4)
+    }
+    hosts = []
+    for hid in sorted(world.nations):
+        h = world.nations[hid]
+        if hid == nid or hid in busy or h.emissions <= 0:
+            continue
+        hosts.append((diplomacy.trust(world, nid, hid) * h.emissions / h.gdp, hid))
+    if not hosts:
+        return None
+    _, hid = max(hosts)
+    host = world.nations[hid]
+    options = [s for s in ("solar", "wind", "other_renewables") if s in cfg.energy_source_ids]
+    source = min(options, key=lambda s: (tech.lcoe(cfg, world, host, s), s))
+    unit = tech.nation_unit_cost(cfg, world, n, source)
+    trust = diplomacy.trust(world, nid, hid)
+    rate = cfg.tune("market.discount_rate") + _ai(cfg, "deal_rate_premium") * (1 - trust)
+    years = _ai(cfg, "deal_duration") / 4
+    host_income = income_per_year(cfg, host)[0]
+    room = _ai(cfg, "max_payment_share") * host_income - deals.obligations(cfg, world, hid)
+    affordable = max(0.0, room) / (1 / years + rate)
+    amount = min(_ai(cfg, "deal_share") * n.capital, affordable) / unit
+    if amount <= 0:
+        return None
+    act = {
+        "type": "propose_deal",
+        "target": hid,
+        "deal_type": "equipment_on_credit",
+        "source": source,
+        "amount": amount,
+        "currency": "hard",
+        "rate": rate,
+        "duration": _ai(cfg, "deal_duration"),
+        "collateral": _ai(cfg, "deal_collateral"),
+        "exit_penalty": _ai(cfg, "deal_exit_penalty"),
+    }
+    cut = amount / cfg.src(source, "headroom") * trade.displaced_ef(cfg, host)
+    credit = cfg.tune("credits.weight_financed") * cut / max(n.base["emissions"], 1e-9) * 100
+    u = _p(cfg, personality, "w_deals") * _p(cfg, personality, "deal_affinity") + w_em * credit
+    return u, act
+
+
+def diplomatic(cfg, world, nid, personality, ctx, w_em, income) -> list[tuple[float, Action]]:
+    """Diplomatic candidates with their utilities."""
+    n = ctx.n
+    p = lambda k: _p(cfg, personality, k)  # noqa: E731
+    out: list[tuple[float, Action]] = []
+    members = set(trade.club_members(world))
+
+    for did in sorted(world.deals):
+        d = world.deals[did]
+        if d.status != deals.OPEN or deals.responder(d) != nid or d.start_turn >= world.t:
+            continue
+        if nid == d.host:
+            margin = _value_deal_as_host(cfg, world, nid, d, personality, ctx, w_em, income)
+            if margin > 0:
+                out.append(
+                    (margin + 1, {"type": "respond_deal", "deal_id": did, "response": "accept"})
+                )
+            elif margin > -_ai(cfg, "counter_margin") and d.terms["proposer"] == d.financier:
+                key = "rate" if d.type == "equipment_on_credit" else "price"
+                counter = d.terms[key] * _ai(cfg, "counter_rate_factor")
+                act = {"type": "respond_deal", "deal_id": did, "response": "counter", key: counter}
+                out.append((1.0, act))
+        else:  # a counter-offer back to us as financier
+            hurdle = cfg.tune("market.discount_rate")
+            ok = d.type != "equipment_on_credit" or d.terms["rate"] >= hurdle
+            if ok and deals.build_cost(cfg, world, d) <= n.capital:
+                out.append((1.0, {"type": "respond_deal", "deal_id": did, "response": "accept"}))
+
+    for pid in sorted(world.nations):
+        if pid == nid or (nid in members and pid in members):
+            continue
+        theirs = world.nations[pid].tariffs.get(nid, 0.0)
+        mine = n.tariffs.get(pid, 0.0)
+        if theirs > mine and p("retaliation") > 0:
+            u = p("retaliation") * theirs * 10
+            u -= p("w_growth") * _tariff_cost_pp(cfg, world, nid, pid, theirs)
+            out.append((u, {"type": "set_tariff", "target": pid, "level": theirs}))
+        elif mine > theirs:
+            u = p("w_growth") * _tariff_cost_pp(cfg, world, nid, pid, mine - theirs) + p("w_trust")
+            act = {"type": "set_tariff", "target": pid, "level": theirs}
+            out.append((u, act if theirs > 0 else {"type": "lift_tariff", "target": pid}))
+
+    if nid not in members and diplomacy.club_eligible(cfg, world, nid):
+        level = world.coalition_tariffs.get(nid, 0.0)
+        to_members = sum(_imports_from(world, m, nid) for m in members)
+        avoided = (
+            cfg.tune("trade.export_growth_elasticity") * cfg.tune("trade.tariff_elasticity")
+            * level * to_members / n.gdp * 100
+        )  # fmt: skip
+        u = p("w_growth") * avoided + p("w_trust") * _ai(cfg, "club_affinity")
+        out.append((u, {"type": "join_bloc", "bloc": trade.CLUB}))
+
+    offer = _deal_offer(cfg, world, nid, personality, w_em, income)
+    if offer:
+        out.append(offer)
+
+    value, price = p("credit_value"), world.credit_price
+    if n.credit_balance > 0 and price >= value:
+        act = {"type": "sell_credits", "amount": n.credit_balance, "min_price": value}
+        out.append(((price - value) / value + 0.1, act))
+    interval = cfg.tune("time.stocktake_interval")
+    quarters_left = interval - world.t % interval
+    projected = n.period_emissions + n.emissions * quarters_left / 4
+    short = projected - n.fair_share_budget - n.credit_balance
+    if short > 0 and price < value:
+        amount = _ai(cfg, "credit_cover_share") * short
+        amount = min(amount, 0.1 * n.capital / max(credits.cost(1.0, value), 1e-18))
+        if amount > 0:
+            u = w_em * (value - price) / value
+            out.append((u, {"type": "buy_credits", "amount": amount, "max_price": value}))
+    return out
 
 
 def scored(cfg: Config, world: World, nid: str) -> list[tuple[float, Action, dict[str, float]]]:
@@ -338,6 +511,12 @@ def scored(cfg: Config, world: World, nid: str) -> list[tuple[float, Action, dic
         else:
             u = utility(cfg, personality, estimate(cfg, world, nid, act, ctx), w_em, income)
         out.append((u, act, cost))
+    for u, act in diplomatic(cfg, world, nid, personality, ctx, w_em, income):
+        try:
+            cost = actions.cost(cfg, world, ctx.n, act)
+        except actions.Rejected:
+            continue
+        out.append((u, act, cost))
     out.sort(key=lambda x: (-x[0], x[1]["type"], _target(x[1])))
     return out
 
@@ -348,7 +527,9 @@ def decide(cfg: Config, world: World, nid: str) -> list[Action]:
     if cfg.nat_spec(nid).get("personality") is None:
         return []
     slots = dict(n.slots_banked)
-    capital, pc = n.capital, n.political_capital
+    # Keep the next six months of deal payments in hand before spending.
+    reserve = deals.obligations(cfg, world, nid) / 2
+    capital, pc = n.capital - reserve, n.political_capital
     chosen: list[Action] = []
     used_types: set[str] = set()
     for u, act, cost in scored(cfg, world, nid):

@@ -40,7 +40,7 @@ def test_endings(cfg, rank, warming, fallen, expected):
 def test_components_in_range_and_index_bounded(cfg, noop_world):
     for nid in noop_world.nations:
         comps = scoring.components(cfg, noop_world, nid)
-        assert set(comps) == {"income", "security", "welfare", "clean"}
+        assert set(comps) == {"income", "security", "welfare", "clean", "climate"}
         assert all(0.0 <= v <= 1.0 for v in comps.values())
         assert 0.0 <= scoring.nation_index(cfg, comps) <= 100.0
 

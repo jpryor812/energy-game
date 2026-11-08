@@ -8,7 +8,7 @@ as the reference point for the growth drags.
 
 from __future__ import annotations
 
-from sim import construction, energy, tech
+from sim import construction, diplomacy, energy, tech
 from sim.config import FUELS, Config
 from sim.state import Nation, World
 
@@ -83,8 +83,23 @@ def new_world(cfg: Config, seed: int) -> World:
                 "carbon_price": n.carbon_price,
                 "import_dependence": n.import_dependence,
                 "income_per_person": n.gdp / n.population,
+                "fx_reserves": n.fx_reserves,
+                "goods_openness": max(
+                    cfg.tune("trade.openness_floor"),
+                    cfg.nat(nid, "start.export_openness") - n.export_revenue / n.gdp,
+                ),
                 "gdp": n.gdp,
                 "population": n.population,
             }
         )
+    gdp_16 = sum(n.gdp for n in nations.values())
+    world.base["gdp_16"] = gdp_16
+    world.base["row_gdp"] = max(0.0, cfg.tune("trade.world_gdp_2025") - gdp_16)
+    diplomacy.init_trust(world, cfg)
+    diplomacy.init_club(world, cfg, FOUNDERS)
+    world.credit_price = cfg.tune("credits.start_price")
+    diplomacy.set_allowances(cfg, world)
     return world
+
+
+FOUNDERS = ["EUU"]  # the carbon club's founder (decided 2026-11-08)

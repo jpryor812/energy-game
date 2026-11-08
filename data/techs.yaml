@@ -13,6 +13,7 @@
 #   headroom         maximum output / normal output (spare capacity at t=0)
 #   global_installed 2025 world output (EJ/yr): the learning-curve starting point n0
 #   coverage_share   the 16 modelled nations' share of world use of that source
+#   equipment_share  share of build cost bought from manufacturers (solar, wind, storage only)
 
 sources:
   coal:
@@ -72,6 +73,7 @@ sources:
     coverage_share: {value: 0.7483, status: calibrated, note: "16 modelled nations' share of world use, 2024 (energy_institute)."}
   wind:
     category: variable_renewable
+    equipment_share: {value: 0.5, status: placeholder, note: "Share of build cost that is traded equipment (modules, turbines, cells). Unsourced approximate."}
     variable_cost: {value: 0.0, status: placeholder, note: "No fuel; O&M treated as fixed."}
     emission_factor: {value: 0.0, status: calibrated, note: "No direct CO2."}
     build_time: {value: 8, status: placeholder, note: "Typical 2-year build. Unsourced approximate."}
@@ -83,6 +85,7 @@ sources:
     coverage_share: {value: 0.9399, status: calibrated, note: "16 modelled nations' share of world use, 2024 (energy_institute)."}
   solar:
     category: variable_renewable
+    equipment_share: {value: 0.5, status: placeholder, note: "Share of build cost that is traded equipment (modules, turbines, cells). Unsourced approximate."}
     variable_cost: {value: 0.0, status: placeholder, note: "No fuel; O&M treated as fixed."}
     emission_factor: {value: 0.0, status: calibrated, note: "No direct CO2."}
     build_time: {value: 4, status: placeholder, note: "Typical 1-year build. Unsourced approximate."}
@@ -105,6 +108,7 @@ sources:
     coverage_share: {value: 0.8614, status: calibrated, note: "16 modelled nations' share of world use, 2024 (energy_institute)."}
   storage:
     category: enabler
+    equipment_share: {value: 0.6, status: placeholder, note: "Share of build cost that is traded equipment (modules, turbines, cells). Unsourced approximate."}
     build_time: {value: 2, status: placeholder, note: "Batteries build fast. Unsourced approximate."}
     lifespan: {value: 15, status: placeholder, note: "Typical battery life. Unsourced approximate."}
     capital_cost: {value: 0.05, status: placeholder, note: "Per EJ/yr of wind and solar it lets the grid absorb. Unsourced approximate."}

@@ -205,6 +205,78 @@ with the reason for each. Newest milestone last.
 57. **Seeds.** Nothing uses the RNG yet, so seeds give identical runs; the default batch uses
     one seed until events arrive.
 
+## M4: trade and diplomacy
+
+Decisions made with the user on 2026-11-08 are recorded in docs/DESIGN.md ("Decided
+2026-11-08"); the modelling choices below implement them.
+
+58. **Clean slate.** Every pair of nations starts at trust 0.5 with no tariffs; nothing from real
+    2025 trade restrictions carries over. Trust is directional (how much A trusts B) and drifts
+    back to neutral at 5%/yr.
+59. **Goods trade** is a gravity model: each nation exports its non-fossil export share of GDP
+    (World Bank exports/GDP minus its fossil export revenue; EU uses ~22% extra-EU), split across
+    the other nations and the rest of the world by GDP. No bilateral data, so no real trade
+    pattern is imposed. The growth effect counts only changes against the no-tariff level, as
+    with the other drags.
+60. **Tariffs** cut the target's exports to the imposer by 1.5x the tariff, cost the imposer the
+    tariff paid on its imports (a growth drag) and earn it the same as revenue (added to
+    capital), and cost trust. There is no trade diversion to third countries.
+61. **Clean-tech equipment** (solar, wind, batteries) is bought from manufacturers by approximate
+    real 2024 world shares, the rest of the world making the remainder; a buyer shifts away from
+    suppliers it tariffs ((1 + tariff)^-3) and pays its tariff on what it still buys, raising
+    its build cost. Manufacturing shares are fixed until M4b adds supply-chain levers. The
+    supplier's growth effect counts only sales above or below its base share.
+62. **Exported-tech credit.** A supplier earns credit for the emissions its equipment displaces
+    abroad (output x the buyer's average fossil emission factor), scored at 0.6.
+63. **Carbon club.** One bloc, founded by the EU in 2025 (its effective price, $32/t, clears the
+    $25/t bar); members cannot tariff each other, get a 2-point interest discount on deals with
+    each other, and are exempt from coalition tariffs. A member whose carbon price falls below
+    the bar is dropped at the next stocktake.
+64. **Deals.** Only clean capacity can be financed. The financier pays its own unit cost; the
+    host gets the capacity. Equipment-on-credit hosts carry the cost as hard or local debt,
+    repaid in equal principal plus interest once the plant is running. Energy-as-a-service hosts
+    pay per GJ of the plant's normal output. Hard-currency payments that capital and FX reserves
+    cannot cover are a default: collateral is seized, the remaining debt is written off, half of
+    it is lost from GDP (like a stranded asset), and trust falls. Local-currency payments never
+    default (the host borrows locally) but lose value to the financier as the host's FX reserves
+    fall below 2025. Proposals expire after 4 quarters; a counter-offer reopens the deal with
+    new terms for the other side to answer.
+65. **Emissions credit for deals.** The host's real emissions already show the cut (its 1:1
+    credit). The financier scores 0.75 x output x the host's average fossil emission factor at
+    signing, every quarter the plant runs. Credit never enters the atmosphere (tested).
+66. **Credit market.** Credits come from emissions below a nation's own target path each quarter
+    and from any surplus under its fair-share allowance at a stocktake (rare once the 1.5 degC
+    budget is spent). They are bought to cover stocktake overshoot (surrendered automatically)
+    and score at 0.25. One uniform-price call auction per quarter; one-sided markets drift 5%. A
+    nation may only buy or only sell in a quarter.
+67. **Stocktake.** The remaining 1.5 degC budget comes from the model's own warming rule (about
+    215 Gt from 2025, more than the published ~130 Gt because the model's single warming
+    coefficient differs from full climate models), split by share of current global emissions
+    and spread evenly to 2050. Overshoot is measured as a share of the nation's 2025 emissions
+    over the period; above 5% it costs trust with everyone and, for non-members, brings a
+    coalition tariff of 0.1 x the overshoot share (capped at 15%) from club members until the
+    next stocktake. Pledges are checked against a straight line from 2025 to the pledged level.
+68. **Nation Index, fifth component: climate.** Credit-weighted MtCO2 cut over the game per year
+    as a share of 2025 emissions, through a logistic (0.5 = no change). The five components
+    weigh 0.2 each.
+69. **World Multiplier and endings use 1.5 degC.** M is 1.0 at 1.5 degC and 0.1 at 2.5 degC; a
+    "good world" ending needs final warming at or below 1.5 degC. Until M4b adds cooling
+    technology, no run reaches it.
+70. **Best-deal bonus** (5 points) goes to both parties of the deal with the most credited cut.
+71. **AI diplomacy.** Each quarter an AI nation also considers: answering proposals (accept if
+    the capacity's estimated value, net of payments, clears a bar that rises with hard-currency
+    payments over FX reserves and falls with trust; counter at 70% of the rate if close);
+    matching tariffs placed on it (fossil defenders and opportunists) or lifting its own when
+    the other side lifts; joining the club when eligible; offering one deal a year to its most
+    trusted high-emitting partner, sized so the host's payments on all deals stay within half
+    its yearly capital income; and buying or selling credits against a personality value
+    ($15-80/t). AI hosts keep six months of deal payments in hand before spending.
+72. **`deal_maker` bot** now offers a yearly solar credit deal, accepts affordable offers, opens
+    talks, joins the club when eligible, and pledges.
+73. **Simultaneous moves can clash.** If another nation accepts your deal in the same quarter,
+    the financier's capital may be gone before its own actions resolve; those actions are
+    rejected and logged.
+
 ## Open questions
 
 - **Difficulty ordering (for M5).** Early bot runs score the US below India and Vietnam on the
@@ -213,5 +285,8 @@ with the reason for each. Newest milestone last.
 - **AI overshoot (for M5).** Cheap clean energy leads several low-ambition nations to cut far
   past their target paths, and the US and China drop sharply in the late 2040s
   (docs/CALIBRATION.md, "AI world").
+- **All-or-nothing fair share (for M5).** The 1.5 degC budget is spent by about 2030, after
+  which every nation overshoots a zero allowance; consider judging against target paths or
+  peers instead.
 - **Resolved in M2:** BAU builder vs. player builds (market runs for everyone), frozen-trend
   BAU (market follows cost), and slots (2 + 1).

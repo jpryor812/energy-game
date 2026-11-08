@@ -5,8 +5,8 @@ world. `t` counts quarters; `dt` is the number of quarters one call covers (1 no
 planned annual mode), so annual mode can reuse the same rules.
 
 Income, AI decisions, actions, construction (with the market builder for every nation),
-dispatch and trade, economy, climate, technology and the snapshot all run. Diplomacy and
-stocktake arrive in M4.
+dispatch and trade, economy (with goods trade), climate, technology, diplomacy (trust, deals,
+credit market), the five-yearly stocktake and the snapshot all run.
 """
 
 from __future__ import annotations
@@ -17,9 +17,10 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from sim import actions as acts
-from sim import ai, energy, events, tech
+from sim import ai, credits, deals, energy, events, tech, trade
 from sim import climate as climate_model
 from sim import construction as build
+from sim import diplomacy as diplo
 from sim import economy as econ
 from sim.config import Config
 from sim.state import World
@@ -35,6 +36,7 @@ class TurnContext:
     results: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
     completed: dict[str, float] = field(default_factory=dict)
     ai: bool = True
+    logs: dict[str, Any] = field(default_factory=dict)
 
 
 Stage = Callable[[World, Config, TurnContext], None]
@@ -104,13 +106,22 @@ def technology(world: World, cfg: Config, ctx: TurnContext) -> None:
 
 
 def diplomacy(world: World, cfg: Config, ctx: TurnContext) -> None:
-    """M4: proposals, trust, deal flows, tariffs, blocs."""
+    """Trust drifts back toward neutral, deals pay and earn credit, the credit market clears."""
+    diplo.revert_trust(world, cfg, ctx.dt)
+    deals.service(cfg, world, ctx.dt)
+    issued = credits.issue(cfg, world, ctx.dt)
+    ctx.logs["credit_market"] = credits.clear(cfg, world) | {"issued": issued}
+    for n in world.nations.values():
+        stock = n.exported_cut_rate * ctx.dt / 4 * cfg.tune("credits.weight_exported")
+        n.climate_credit["exported"] = n.climate_credit.get("exported", 0.0) + stock
 
 
 def stocktake(world: World, cfg: Config, ctx: TurnContext) -> None:
-    """M4: compare emissions with fair share and apply consequences. Runs only when due."""
+    """Compare each nation's emissions with its fair share and apply consequences. Runs every
+    five years."""
     if not ctx.stocktake:
         return
+    ctx.logs["stocktake"] = diplo.run_stocktake(cfg, world)
 
 
 def scoring_snapshot(world: World, cfg: Config, ctx: TurnContext) -> None:
@@ -119,7 +130,10 @@ def scoring_snapshot(world: World, cfg: Config, ctx: TurnContext) -> None:
         {
             "t": world.t,
             "label": quarter_label(world.t, start_year),
-            "stocktake": ctx.stocktake,
+            "stocktake": ctx.logs.get("stocktake") if ctx.stocktake else None,
+            "credit_market": ctx.logs.get("credit_market"),
+            "club": list(trade.club_members(world)),
+            "coalition_tariffs": dict(world.coalition_tariffs),
             "global_emissions": world.global_emissions,
             "global_cumulative_emissions": world.global_cumulative_emissions,
             "warming": world.warming,
@@ -139,6 +153,13 @@ def _nation_record(n, results: list[dict[str, Any]]) -> dict[str, Any]:
         "carbon_price": n.carbon_price,
         "import_dependence": n.import_dependence,
         "clean_built": n.clean_built,
+        "tariffs": dict(n.tariffs),
+        "goods_exports": n.goods_exports,
+        "cleantech_exports": n.cleantech_exports,
+        "credit_balance": n.credit_balance,
+        "climate_credit": dict(n.climate_credit),
+        "fair_share_budget": n.fair_share_budget,
+        "period_emissions": n.period_emissions,
         "gdp": n.gdp,
         "population": n.population,
         "growth": n.growth,

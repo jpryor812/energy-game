@@ -32,6 +32,7 @@ def _nation(playable, issuer, energy, production, gdp, mix, retire=None):
             "debt_hard": tun(0.1 * gdp),
             "debt_local": tun(0.4 * gdp),
             "carbon_price": tun(0.0),
+            "export_openness": tun(0.25),
             "energy": {s: tun(v) for s, v in energy.items()},
             "production": {f: tun(v) for f, v in production.items()},
         },

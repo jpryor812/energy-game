@@ -2,7 +2,7 @@
 
 Score = N x M(T) + bonuses.
 
-N (0-100) blends four components, each in 0..1 and each measured against the nation's own
+N (0-100) blends five components, each in 0..1 and each measured against the nation's own
 starting point, so a poor country is not judged against a rich one:
 
 - income: income per person vs. what baseline growth alone would have delivered
@@ -13,13 +13,16 @@ starting point, so a poor country is not judged against a rich one:
   2025 (0.5 = unchanged, higher is worse).
 - clean: the nation's share of clean capacity built by the 16 nations during the game vs. its
   share of their 2025 GDP (0.5 = fair share).
+- climate: credit-weighted emissions cut per year, as a share of 2025 emissions (0.5 = no
+  change): real domestic cuts count 1.0, cuts financed abroad 0.75, cuts made with exported
+  equipment 0.6, purchased credits 0.25 (`credits.weight_*`; decided 2026-11-08).
 
 M(T) is 1 at or below `world_good` warming and falls quadratically to `world_floor` at
 `world_bad`.
 
 Bonuses (flat points): first nation to reach net zero (emissions at or below `net_zero_share`
-of 2025), and the largest percentage cut in emissions from 2025 to the end. The breakthrough-
-technology and most-impactful-deal bonuses need M4-M5 systems.
+of 2025), the largest percentage cut in emissions from 2025 to the end, and the deal that cut the
+most emissions (both parties). The breakthrough-technology bonus waits for M4b.
 
 Endings, for the player: Fallen Government if stability fell below the threshold; otherwise a
 top finish (rank on N at or above `top_rank`) and a good world (final warming at or below
@@ -88,7 +91,35 @@ def components(cfg: Config, world: World, nid: str) -> dict[str, float]:
     else:
         clean = 0.5
 
-    return {"income": income, "security": security, "welfare": welfare, "clean": clean}
+    return {
+        "income": income,
+        "security": security,
+        "welfare": welfare,
+        "clean": clean,
+        "climate": climate_component(cfg, world, nid),
+    }
+
+
+def climate_contribution(cfg: Config, world: World, nid: str) -> float:
+    """Credit-weighted MtCO2 cut over the game (real cuts against the 2025 level, plus
+    weighted credits)."""
+    n = world.nations[nid]
+    base = n.base["emissions"]
+    real = sum(base - h["nations"][nid]["emissions"] for h in world.history) / 4
+    w = lambda k: cfg.tune(f"credits.weight_{k}")  # noqa: E731
+    return (
+        w("real") * real
+        + n.climate_credit.get("financed", 0.0)
+        + n.climate_credit.get("exported", 0.0)
+        + w("purchased") * n.credits_bought
+    )
+
+
+def climate_component(cfg: Config, world: World, nid: str) -> float:
+    n = world.nations[nid]
+    years = max(world.t / 4, 0.25)
+    per_year = climate_contribution(cfg, world, nid) / (n.base["emissions"] * years)
+    return logistic(per_year / _sc(cfg, "climate_scale"))
 
 
 def nation_index(cfg: Config, comps: dict[str, float]) -> float:
@@ -123,6 +154,13 @@ def bonuses(cfg: Config, world: World) -> dict[str, dict[str, float]]:
         best = min(cuts, key=lambda nid: (-cuts[nid], nid))
         if cuts[best] > 0:
             out[best]["largest_reduction"] = _sc(cfg, "bonus_largest_reduction")
+    credited = [(d.terms.get("credited", 0.0), d.id) for d in world.deals.values()]
+    credited = [c for c in credited if c[0] > 0]
+    if credited:
+        _, did = sorted(credited, key=lambda c: (-c[0], c[1]))[0]
+        deal = world.deals[did]
+        for nid in (deal.financier, deal.host):
+            out[nid]["best_deal"] = _sc(cfg, "bonus_best_deal")
     return out
 
 

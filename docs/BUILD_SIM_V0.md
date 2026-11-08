@@ -93,6 +93,7 @@ Run these in order for every nation each turn:
 - **Warming:** proportional to cumulative global emissions (a single coefficient).
 - **Activity cap (degrowth):** reduces energy-intensive output and emissions, and lowers GDP, capital, and approval. It must be viable but rarely the best option.
 - **Fair share:** each nation's share of the remaining carbon budget based on emissions, recomputed at each stocktake.
+  > **Changed 2026-11-08:** the budget is the remaining 1.5 degC budget; M4 also adds a goods and clean-tech trade layer and a carbon credit market, and M4b (new) adds the domestic economy, elections and late-game technology. See `docs/DESIGN.md`, "Decided 2026-11-08".
 - **Score:** `Score = N * M(T) + bonuses`
   - `N` = weighted blend of income growth per person, energy security, stability and welfare, clean competitiveness, each scaled to the nation's own starting point.
   - `M(T)` = near 1.0 for a good outcome, falling steeply as warming rises.
@@ -146,6 +147,7 @@ Each run writes `history.jsonl` (one line per turn), `summary.json` (final score
 | M2 | Actions, slots, bots, scoring, endings | Four bots play any playable nation; scores and endings are produced |
 | M3 | AI nations for all 16 with personalities | Full 16-nation world runs with AI-only and with a bot player; deterministic |
 | M4 | Trust, tariffs, one bloc, two deal types, emissions credit, stocktake | Deals change outcomes; credit test passes; stocktake consequences fire |
+| M4b | Domestic economy (taxes, tax credits, supply chains, employment, industrial policy), elections every four years, carbon removal, short-lived warming, responsive rest of world and land use | Elections fire and can be lost; warming can fall with excellent play; domestic levers change growth and emissions |
 | M5 | Four deal types, batch harness, auto-generated `docs/BALANCE_REPORT.md` | Acceptance criteria below measured and reported |
 
 ## Balance acceptance criteria
