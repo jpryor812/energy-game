@@ -244,18 +244,22 @@ Decisions made with the user on 2026-11-08 are recorded in docs/DESIGN.md ("Deci
 65. **Emissions credit for deals.** The host's real emissions already show the cut (its 1:1
     credit). The financier scores 0.75 x output x the host's average fossil emission factor at
     signing, every quarter the plant runs. Credit never enters the atmosphere (tested).
-66. **Credit market.** Credits come from emissions below a nation's own target path each quarter
-    and from any surplus under its fair-share allowance at a stocktake (rare once the 1.5 degC
-    budget is spent). They are bought to cover stocktake overshoot (surrendered automatically)
-    and score at 0.25. One uniform-price call auction per quarter; one-sided markets drift 5%. A
-    nation may only buy or only sell in a quarter.
-67. **Stocktake.** The remaining 1.5 degC budget comes from the model's own warming rule (about
-    215 Gt from 2025, more than the published ~130 Gt because the model's single warming
-    coefficient differs from full climate models), split by share of current global emissions
-    and spread evenly to 2050. Overshoot is measured as a share of the nation's 2025 emissions
-    over the period; above 5% it costs trust with everyone and, for non-members, brings a
-    coalition tariff of 0.1 x the overshoot share (capped at 15%) from club members until the
-    next stocktake. Pledges are checked against a straight line from 2025 to the pledged level.
+66. **Credit market.** Each quarter a nation earns credits for emissions below the 1.5 degC
+    pathway applied to its own 2025 emissions (item 67). Credits are bought to cover stocktake
+    overshoot (surrendered automatically) and score at 0.25. One uniform-price call auction per
+    quarter; one-sided markets drift 5%. A nation may only buy or only sell in a quarter.
+    (Changed 2026-11-08: credits first came from beating each nation's own target path, which
+    was too lenient and flooded the market.)
+67. **Stocktake against a 1.5 degC pathway** (decided with the user, 2026-11-08). Every nation's
+    allowance follows the same proportional pathway from its own 2025 emissions: 55% by 2030, 35%
+    by 2035, 20% by 2040, zero in 2050 (placeholders shaped like the IPCC AR6 1.5 degC
+    pathways). Overshoot is measured as a share of the nation's 2025 emissions over the period;
+    above 5% it costs trust with everyone and, for non-members, brings a coalition tariff of
+    0.1 x the overshoot share (capped at 15%) from club members until the next stocktake. Pledges
+    are checked against a straight line from 2025 to the pledged level. The first version split
+    the remaining 1.5 degC carbon budget (~215 Gt in this model) by emissions share; it was spent
+    by about 2030, after which every nation overshot a zero allowance and the test was
+    all-or-nothing. The remaining budget is still reported in each stocktake log.
 68. **Nation Index, fifth component: climate.** Credit-weighted MtCO2 cut over the game per year
     as a share of 2025 emissions, through a logistic (0.5 = no change). The five components
     weigh 0.2 each.
@@ -285,8 +289,7 @@ Decisions made with the user on 2026-11-08 are recorded in docs/DESIGN.md ("Deci
 - **AI overshoot (for M5).** Cheap clean energy leads several low-ambition nations to cut far
   past their target paths, and the US and China drop sharply in the late 2040s
   (docs/CALIBRATION.md, "AI world").
-- **All-or-nothing fair share (for M5).** The 1.5 degC budget is spent by about 2030, after
-  which every nation overshoots a zero allowance; consider judging against target paths or
-  peers instead.
+- **Resolved in M4:** all-or-nothing fair share (now a 1.5 degC pathway on each nation's own
+  emissions).
 - **Resolved in M2:** BAU builder vs. player builds (market runs for everyone), frozen-trend
   BAU (market follows cost), and slots (2 + 1).

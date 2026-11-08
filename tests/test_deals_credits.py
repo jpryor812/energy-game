@@ -183,11 +183,13 @@ def test_order_rules(cfg, world):
     assert not r["ok"]
 
 
-def test_beating_target_path_earns_credits(cfg, world):
+def test_beating_the_pathway_earns_credits(cfg, world):
     n = world.nations["AAA"]
+    credits.issue(cfg, world, 1)
+    assert n.credit_balance == 0  # at its 2025 level, on the pathway's start
     n.emissions = 0.5 * n.base["emissions"]
     credits.issue(cfg, world, 1)
-    assert n.credit_balance > 0
+    assert n.credit_balance == pytest.approx(0.5 * n.base["emissions"] / 4)
 
 
 # --- scoring and AI ------------------------------------------------------------------------------

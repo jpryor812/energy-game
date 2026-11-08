@@ -139,16 +139,31 @@ def test_stocktake_fires_on_schedule_with_consequences(cfg):
     assert w.trust["BBB"]["AAA"] < trust_before
 
 
-def test_credits_cover_overshoot_and_surplus_earns_credits(cfg):
+def test_credits_cover_overshoot_and_undershoot_gains_trust(cfg):
     w = new_world(cfg, seed=1)
     aaa, bbb = w.nations["AAA"], w.nations["BBB"]
     aaa.period_emissions = aaa.fair_share_budget + 50.0
     aaa.credit_balance = 1e6
     bbb.period_emissions = bbb.fair_share_budget - 30.0
+    trust_before = w.trust["AAA"]["BBB"]
     log = diplomacy.run_stocktake(cfg, w)
     assert log["nations"]["AAA"]["credits_surrendered"] == pytest.approx(50.0)
     assert log["nations"]["AAA"]["overshoot_share"] == pytest.approx(0.0)
-    assert log["nations"]["BBB"]["credits_issued"] == pytest.approx(30.0)
+    assert log["nations"]["BBB"]["overshoot_share"] < 0
+    assert w.trust["AAA"]["BBB"] > trust_before
+
+
+def test_allowance_follows_the_pathway(cfg):
+    w = new_world(cfg, seed=1)
+    n = w.nations["AAA"]
+    first = n.fair_share_budget
+    assert first < n.base["emissions"] * 5  # already cutting in 2025-2029
+    assert diplomacy.pathway_level(cfg, 2025) == 1.0
+    assert diplomacy.pathway_level(cfg, 2030) == pytest.approx(0.55)
+    assert diplomacy.pathway_level(cfg, 2049) > 0  # never zero before 2050
+    w.t = 80
+    diplomacy.set_allowances(cfg, w)
+    assert 0 < n.fair_share_budget < first
 
 
 def test_club_member_below_price_is_removed(cfg, world):

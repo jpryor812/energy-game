@@ -1,8 +1,7 @@
 """The carbon credit market.
 
-Supply: each quarter, a nation earns credits for emissions below its own target path
-(data/targets.yaml) in that quarter, and at a stocktake for any surplus under its fair-share
-allowance (MtCO2). Once the 1.5 degC budget is spent, beating your own path is the main source.
+Supply: each quarter, a nation earns credits (MtCO2) for emissions below the 1.5 degC pathway
+applied to its own 2025 emissions, the same yardstick the stocktake uses.
 Demand: nations buy credits to cover overshoot at the next stocktake (surrendered automatically)
 and to score (`credits.weight_purchased` per tonne, less than real reductions).
 
@@ -30,13 +29,15 @@ def cost(amount: float, price: float) -> float:
 
 
 def issue(cfg: Config, world: World, dt: int) -> float:
-    """Credit each nation's emissions below its target path this step; return the total."""
+    """Credit each nation's emissions below the 1.5 degC pathway this step; return the total."""
+    from sim.diplomacy import pathway_level
+
     year = cfg.tune("time.start_year") + world.t / 4
+    level = pathway_level(cfg, year)
     total = 0.0
     for nid in sorted(world.nations):
         n = world.nations[nid]
-        path = cfg.target_level(nid, year) * n.base["emissions"]
-        earned = max(0.0, path - n.emissions) * dt / 4
+        earned = max(0.0, level * n.base["emissions"] - n.emissions) * dt / 4
         n.credit_balance += earned
         total += earned
     return total

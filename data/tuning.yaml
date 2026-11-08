@@ -528,8 +528,9 @@ credits:
   weight_purchased: {value: 0.25, status: placeholder, note: "Score weight of a purchased market credit."}
 
 stocktake:
-  target_warming: {value: 1.5, status: placeholder, note: "Warming goal that sets the remaining carbon budget (decided 2026-11-08)."}
-  budget_horizon_year: {value: 2050, status: placeholder, note: "The remaining budget is spread evenly over the years to this one."}
+  target_warming: {value: 1.5, status: placeholder, note: "Warming goal (decided 2026-11-08); the remaining budget to it is reported at each stocktake."}
+  pathway_years: {value: [2030, 2035, 2040, 2050], status: placeholder, note: "Waypoints of the 1.5 degC-consistent pathway every nation's allowance follows (decided 2026-11-08)."}
+  pathway_levels: {value: [0.55, 0.35, 0.2, 0.0], status: placeholder, note: "Pathway levels as a share of each nation's 2025 emissions. Roughly the IPCC AR6 1.5 degC shape: CO2 about halved by 2030 and net zero around 2050. Approximate, not re-checked."}
   tolerance: {value: 0.05, status: placeholder, note: "Overshoot (share of 2025 emissions over the period) allowed before consequences."}
   overshoot_trust_hit: {value: 0.2, status: placeholder, note: "Trust every nation loses in an overshooter, per unit of overshoot share."}
   undershoot_trust_gain: {value: 0.05, status: placeholder, note: "Trust every nation gains in a nation under its allowance."}

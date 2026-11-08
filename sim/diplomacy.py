@@ -7,13 +7,14 @@ The carbon club is the one bloc. Members need an effective carbon price of at le
 `diplomacy.club_min_carbon_price`; they never tariff each other, get cheaper deal finance with
 each other, and jointly apply coalition tariffs to non-members that overshoot at a stocktake.
 
-Stocktake (every five years): the remaining carbon budget for `stocktake.target_warming` is
-split across nations by their share of current global emissions and spread evenly over the
-years to `budget_horizon_year`. Each nation's emissions over the past period are compared with
-its allowance. Overshooters first surrender carbon credits; any remaining overshoot (as a share
-of their 2025 emissions over the period) costs trust with everyone and brings coalition tariffs.
-Nations under their allowance earn the surplus as sellable credits and gain trust. Pledges are
-checked against a straight line from 2025 emissions to the pledged level.
+Stocktake (every five years): each nation's allowance follows a 1.5 degC-consistent pathway
+applied to its own 2025 emissions (`stocktake.pathway_*`: the same proportional cut for
+everyone, never zero before 2050). Each nation's emissions over the past period are compared
+with its allowance. Overshooters first surrender carbon credits; any remaining overshoot (as a
+share of their 2025 emissions over the period) costs trust with everyone and brings coalition
+tariffs. Nations under their allowance gain trust (they have already earned credits quarter by
+quarter, see sim.credits). Pledges are checked against a straight line from 2025 emissions to
+the pledged level. The remaining 1.5 degC carbon budget is reported for information.
 """
 
 from __future__ import annotations
@@ -96,29 +97,34 @@ def leave_club(world: World, nid: str) -> None:
 
 
 def remaining_budget(cfg: Config, world: World) -> float:
-    """MtCO2 left before `target_warming`, under the model's own warming rule."""
+    """MtCO2 left before `target_warming`, under the model's own warming rule (reported only)."""
     per_mt = climate.warming_from(cfg, 1.0) - climate.warming_from(cfg, 0.0)
     total = (_s(cfg, "target_warming") - cfg.tune("climate.warming_start")) / per_mt
     return total - world.global_cumulative_emissions
 
 
+def pathway_level(cfg: Config, year: float) -> float:
+    """1.5 degC-consistent emissions level at `year`, as a share of 2025: linear between the
+    `stocktake.pathway_*` waypoints from 1.0 in 2025, flat after the last."""
+    points = [(cfg.tune("time.start_year"), 1.0)]
+    points += list(zip(_s(cfg, "pathway_years"), _s(cfg, "pathway_levels"), strict=True))
+    if year >= points[-1][0]:
+        return points[-1][1]
+    for (y0, l0), (y1, l1) in zip(points, points[1:], strict=False):
+        if y0 <= year <= y1:
+            return l0 + (l1 - l0) * (year - y0) / (y1 - y0)
+    return 1.0
+
+
 def set_allowances(cfg: Config, world: World) -> None:
-    """Each nation's allowance (MtCO2) for the next five-year period."""
-    year = cfg.tune("time.start_year") + world.t / 4
-    years_left = max(1.0, _s(cfg, "budget_horizon_year") - year)
-    interval_years = cfg.tune("time.stocktake_interval") / 4
-    budget = max(0.0, remaining_budget(cfg, world))
-    global_rate = max(world.global_emissions, 1e-9)
-    if world.t == 0:
-        global_rate = max(
-            sum(n.emissions for n in world.nations.values())
-            + sum(climate.exogenous_co2(cfg, 0).values()),
-            1e-9,
-        )
+    """Each nation's allowance (MtCO2) for the next five-year period: its 2025 emissions
+    following the 1.5 degC pathway, summed quarter by quarter."""
+    start = cfg.tune("time.start_year") + world.t / 4
+    quarters = int(cfg.tune("time.stocktake_interval"))
+    path = sum(pathway_level(cfg, start + (q + 0.5) / 4) for q in range(quarters)) / 4
     for nid in sorted(world.nations):
         n = world.nations[nid]
-        share = n.emissions / global_rate
-        n.fair_share_budget = budget * share * min(1.0, interval_years / years_left)
+        n.fair_share_budget = n.base["emissions"] * path
         n.period_emissions = 0.0
 
 
@@ -170,8 +176,6 @@ def run_stocktake(cfg: Config, world: World) -> dict[str, Any]:
         else:
             world.coalition_tariffs.pop(nid, None)
             if over < 0:
-                n.credit_balance += -over
-                entry["credits_issued"] = -over
                 adjust_all(world, nid, _s(cfg, "undershoot_trust_gain"))
         on_track = pledge_on_track(cfg, world, nid)
         if on_track is not None:

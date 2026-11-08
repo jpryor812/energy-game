@@ -365,6 +365,7 @@ The design depends most on four areas that need more work before building, and t
 - Domestic economy carries as much weight as trade: taxes, tax credits, supply chains and manufacturing, employment and retraining, and industrial policy (M4b).
 - Elections every four years for the player, in every playable nation. Losing one does not end the game: an opposition (the AI with the nation's default personality) governs for one term, then the player returns. AI-led nations keep the same leaders. Fallen Government (stability collapse) still ends the game.
 - The Nation Index gains a fifth component, climate contribution, scored with the credit weights above.
+- Fair share at the stocktake: every nation's allowance follows the same 1.5 degC-consistent pathway applied to its own 2025 emissions (about halved by 2030, zero by 2050), rather than a share of the remaining global budget, which runs out around 2030. Credits are earned for emissions below the same pathway.
 
 **To tune in the simulation**
 
