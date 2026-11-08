@@ -399,23 +399,65 @@ planning)").
 102. **Parallel runs** are independent and deterministic; results come back in job order, so
      they do not depend on the number of workers (tested).
 
+## M6: mechanics pass
+
+103. **Absolute income** is a straight line in log income per person from 0.05x to 8x the
+     16-nation average (`scoring.abs_income_low`, `abs_income_high`). The M5 S-curve was flat
+     for poor nations, so a 9% income loss cost India almost nothing while clean share swung 30
+     points.
+104. **Scoring weights move toward the economy:** relative income 0.25 -> 0.35, relative
+     climate 0.15 -> 0.1, absolute income 0.3 -> 0.4, absolute clean share and emissions
+     0.15 -> 0.075 each; all bonuses 3 -> 2 points. Without bonuses India's strategies were
+     already within 5%; the clean-gain bonus (x1.3) alone made all-clean its best. Climate now
+     counts mainly through the shared World Multiplier.
+105. **World Multiplier** falls in a straight line from 1.0 at 1.5 degC to 0.1 at 2.5 degC (was
+     quadratic). A 1.65 degC world now pays 0.87 instead of 0.98, so the range where games end
+     carries real stakes.
+106. **Disasters:** chance 0.12 per quarter per degC above 1.0 degC at vulnerability 1 (was
+     0.03), costing 1.5% of GDP on average (was 1%), and more severe by 100% per degC of warming
+     since 2025 (`shocks.disaster_warming_growth`). Baseline growth already reflects the average
+     loss at 2025 warming, so the growth term credits it back
+     (`economy.baseline_disaster_loss`); only losses above today's count.
+107. **World difficulty** adds `damage` (climate-damage multiplier: 0.5 / 1 / 2) and
+     `disruption_length` (0.75 / 1 / 1.5); disaster frequency is now 0.25 / 1 / 2.
+     Balanced-bot score: easy 64.7, normal 61.9, hard 60.3 (M5: 73.7 / 73.5 / 73.3).
+108. **Blackouts erode stability directly:** 4.0 stability per year per unit of the shortfall
+     growth drag (`politics.stability_shortfall_hit`), on top of the pull toward approval. A
+     sustained 40% shortfall topples a government within three years (tested).
+109. **Criterion 7 reinterpreted.** Reckless play almost never causes blackouts (political
+     capital limits closures and the market backfills with clean power), so it is punished at
+     the ballot box: it loses 80% of the elections it contests, against 16-24% for other bots.
+     The criterion now passes if reckless play is removed from office more than any other
+     strategy and no other bot falls (note in docs/BUILD_SIM_V0.md).
+110. **Calibration worlds run without shocks** (`report.without_shocks`), so BAU and AI-world
+     checks test the deterministic core; one unlucky disaster should not move a calibration
+     band. The balance report plays with shocks on.
+111. **Bots check affordability** (`bots.affordable`). The reckless bot splits what is left
+     after its first moves between the carbon price and plant closures. Rejected bot actions
+     fell from about 1,200 to 39 across the balance grid.
+
 ## Open questions
 
-- **Difficulty ordering (for M5).** Early bot runs score the US below India and Vietnam on the
-  same bot, the reverse of the design intent, because each Nation Index component is relative
-  to the nation's own start. Tune in the balance pass.
-- **AI overshoot (for M5).** Cheap clean energy leads several low-ambition nations to cut far
-  past their target paths, and the US and China drop sharply in the late 2040s
-  (docs/CALIBRATION.md, "AI world").
-- **All-clean in hard, coal-heavy nations.** After M5 tuning, three strategies are within 5% for
-  China, the EU, Russia and the US, but all_clean stays ~7% ahead in India and Vietnam: climate
-  gains still outweigh its real growth cost there (criterion 3, TUNE).
-- **Fallen Government is rare.** Political capital limits how fast a government can shut plants,
-  so even the reckless bot topples only Vietnam's government (17% of its runs; criterion 7, TUNE).
-- **World difficulty barely moves scores** (easy 73.7, hard 73.3 for balanced): disasters and
-  disruptions are too mild to matter yet.
-- **Many rejected bot actions** (about 1,200 across the balance grid), mostly bots asking for
-  more political capital or capital than they have; harmless, but worth tidying in the bots.
+- **AI overshoot.** Cheap clean energy leads several low-ambition nations to cut far past their
+  target paths, and the US and China drop sharply in the late 2040s (docs/CALIBRATION.md, "AI
+  world").
+- **A recession scores as a climate cut.** Lower GDP lowers emissions, which raises the climate
+  and emissions components and offsets part of the income loss. The M6 weights shrink the
+  effect but do not remove it; measuring cuts against a nation's own business-as-usual path
+  would.
+- **The score is weakly sensitive to GDP.** The relative income component is an S-curve on the
+  log ratio to baseline (scale 0.1) and most bots sit in its lower half, so a further 20% GDP
+  loss costs only about 3-5% of score. This also caps how much world difficulty can matter.
+- **Losing an election can help.** The AI governs a nation that loses an election for one term,
+  and plays well: in Vietnam the reckless bot, out of office about half the game, outscores
+  every scripted bot (57.3 vs 56.0). Losing should probably carry a cost of its own.
+- **No bot world reaches 1.5 degC.** Every balance run ends at about 1.63-1.75 degC, so endings
+  are almost all Shared Failure or Prosperous but Doomed. Champion needs coordinated play the
+  bots do not attempt; agent playtesting should probe it.
+- **Fallen Government is rare by design now.** It needs a sustained blackout or an approval
+  collapse; neglect is punished mainly through lost elections.
+- **Resolved in M6:** all-clean dominance in India and Vietnam, weak world difficulty, rejected
+  bot actions (1,200 -> 39), and criterion 7 (reinterpreted, item 109).
 - **Resolved in M5:** construction-job swings (construction jobs now saturate), the difficulty
   order (checked on the absolute index), and dominant all-clean play in most nations.
 - **Resolved in M4:** all-or-nothing fair share (now a 1.5 degC pathway on each nation's own

@@ -2,13 +2,13 @@
 
 import pytest
 
-from sim import runner, scoring
+from sim import report, runner, scoring
 from sim.scenario import new_world
 
 
 @pytest.fixture(scope="module")
 def noop_world(cfg):
-    return runner.play(cfg, 1, "AAA", "noop")
+    return runner.play(report.without_shocks(cfg), 1, "AAA", "noop")
 
 
 def test_world_multiplier_shape(cfg):

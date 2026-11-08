@@ -29,7 +29,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from sim import tech
+from sim import actions, tech
 from sim.config import Config
 from sim.state import Nation, World
 
@@ -95,6 +95,27 @@ def raise_carbon(n: Nation, step: float, cap: float) -> Action | None:
 def pick(candidates: list[Action | None], limit: int) -> list[Action]:
     """The first `limit` real actions, in priority order."""
     return [a for a in candidates if a is not None][:limit]
+
+
+def affordable(
+    cfg: Config, world: World, n: Nation, candidates: list[Action | None]
+) -> list[Action | None]:
+    """Drop actions the nation cannot pay for out of what it holds now, in priority order.
+    Conservative: this quarter's income, which arrives before actions resolve, is not counted."""
+    left = {res: getattr(n, res) for res in actions.RESOURCES}
+    kept: list[Action | None] = []
+    for act in candidates:
+        if act is None:
+            continue
+        try:
+            costs = actions.cost(cfg, world, n, act)
+        except actions.Rejected:
+            continue
+        if all(costs.get(res, 0.0) <= left[res] + 1e-12 for res in left):
+            for res in left:
+                left[res] -= costs.get(res, 0.0)
+            kept.append(act)
+    return kept
 
 
 # --- bots ----------------------------------------------------------------------------------------
@@ -235,27 +256,39 @@ def deal_maker(cfg: Config, world: World, nid: str) -> list[Action]:
     return out + pick(diplomatic, slots(cfg, n, "diplomatic"))
 
 
+def pc_spent(cfg: Config, world: World, n: Nation, acts: list[Action | None]) -> float:
+    return sum(
+        actions.cost(cfg, world, n, a).get("political_capital", 0.0) for a in acts if a is not None
+    )
+
+
 def reckless(cfg: Config, world: World, nid: str) -> list[Action]:
-    """Ignores energy security: bans new fossil plants, retires its biggest fossil source as fast
-    as political capital allows, and maxes out taxes and the carbon price. Used to check
-    that neglecting security can bring the government down."""
+    """Ignores energy security: bans new fossil plants, maxes out taxes, and splits the political
+    capital left between raising the carbon price and retiring its biggest fossil source. Used to
+    check that neglecting security can bring the government down."""
     n = world.nations[nid]
     wanted: list[Action | None] = []
     if not n.fossil_ban and n.political_capital >= cfg.tune("actions.fossil_ban_pc") and world.t:
         wanted.append({"type": "set_fossil_ban", "on": True})
+    if world.t == 0:
+        wanted.append({"type": "set_tax_rate", "level": cfg.tune("tax.max_change")})
+    wanted = affordable(cfg, world, n, wanted)
+    spent = pc_spent(cfg, world, n, wanted)
+    # Half of what is left raises the carbon price as far as it reaches; the rest retires plants.
+    step = 0.5 * (n.political_capital - spent) / cfg.tune("actions.carbon_pc_per_dollar")
+    if step >= 1.0:
+        wanted.append(raise_carbon(n, min(50.0, step), cfg.tune("actions.carbon_price_max")))
+    spent = pc_spent(cfg, world, n, wanted)
     fossil = [f for f in ("coal", "gas", "oil") if n.capacity.get(f, 0.0) > 0]
     if fossil:
         f = max(fossil, key=lambda x: (n.capacity[x], x))
         per_ej = cfg.tune("actions.retire_pc_per_ej")
         if f == "coal":
             per_ej *= cfg.tune("actions.retire_coal_multiplier")
-        amount = min(0.25 * n.capacity[f], n.political_capital / per_ej)
+        amount = min(0.25 * n.capacity[f], (n.political_capital - spent) / per_ej)
         if amount > 0:
             wanted.append({"type": "retire_capacity", "source": f, "amount": amount})
-    if world.t == 0:
-        wanted.append({"type": "set_tax_rate", "level": cfg.tune("tax.max_change")})
-    wanted.append(raise_carbon(n, 50.0, cfg.tune("actions.carbon_price_max")))
-    return pick(wanted, slots(cfg, n, "domestic"))
+    return pick(affordable(cfg, world, n, wanted), slots(cfg, n, "domestic"))
 
 
 def ai_player(cfg: Config, world: World, nid: str) -> list[Action]:

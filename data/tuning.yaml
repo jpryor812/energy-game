@@ -148,6 +148,10 @@ politics:
     value: 0.6
     status: placeholder
     note: Fraction of the gap between stability and approval closed per year. Raised in M5 (from 0.25) so a collapse in approval can topple a government before an election.
+  stability_shortfall_hit:
+    value: 4.0
+    status: placeholder
+    note: Stability lost per year per unit of shortfall growth drag S (M6). Blackouts cause unrest directly instead of only through approval, which recovers, so a government that cannot keep the lights on can fall between elections.
 
 climate:
   warming_start:
@@ -369,9 +373,9 @@ actions:
 
 scoring:
   weight_income:
-    value: 0.25
+    value: 0.35
     status: placeholder
-    note: Nation Index weight. Tuned in M5 (income 0.25, climate 0.15, others 0.2) so economic costs weigh against climate gains (criterion 3).
+    note: Nation Index weight. Tuned in M5 (income 0.25, climate 0.15, others 0.2) so economic costs weigh against climate gains (criterion 3). Raised from 0.25 to 0.35 in M6 so the economy outweighs any single other component and a deep recession shows in the score.
   weight_security:
     value: 0.2
     status: placeholder
@@ -385,17 +389,17 @@ scoring:
     status: placeholder
     note: Nation Index weight.
   weight_climate:
-    value: 0.15
+    value: 0.1
     status: placeholder
-    note: Nation Index weight for climate contribution (added 2026-11-08).
+    note: Nation Index weight for climate contribution (added 2026-11-08; 0.15 -> 0.1 in M6). In M6 climate now counts mainly through the steeper World Multiplier, so its weight inside the nation's own index fell.
   climate_scale:
     value: 0.2
     status: placeholder
     note: Credit-weighted average yearly cut (share of 2025 emissions) that moves the climate score from 0.5 to 0.73.
   bonus_best_deal:
-    value: 3.0
+    value: 2.0
     status: placeholder
-    note: Flat bonus to both parties of the deal that cut the most emissions.
+    note: Flat bonus to both parties of the deal that cut the most emissions. 3 -> 2 in M6; at 3 (x1.3) the clean-gain bonus alone made all-clean India's best strategy.
   weight_absolute:
     value: 0.5
     status: placeholder
@@ -405,17 +409,17 @@ scoring:
     status: placeholder
     note: Weight of the relative index (x country difficulty) in the score.
   abs_weight_income:
-    value: 0.3
+    value: 0.4
     status: placeholder
-    note: Absolute index weight. Tuned in M5 so economic outcomes balance climate ones (criterion 3).
+    note: Absolute index weight. Tuned in M5 so economic outcomes balance climate ones (criterion 3); 0.3 -> 0.4 in M6.
   abs_weight_clean_share:
-    value: 0.15
+    value: 0.075
     status: placeholder
-    note: Absolute index weight.
+    note: Absolute index weight (0.15 -> 0.075 in M6). In M6 climate now counts mainly through the steeper World Multiplier, so its weight inside the nation's own index fell.
   abs_weight_emissions:
-    value: 0.15
+    value: 0.075
     status: placeholder
-    note: Absolute index weight.
+    note: Absolute index weight (0.15 -> 0.075 in M6). In M6 climate now counts mainly through the steeper World Multiplier, so its weight inside the nation's own index fell.
   abs_weight_security:
     value: 0.2
     status: placeholder
@@ -424,10 +428,14 @@ scoring:
     value: 0.2
     status: placeholder
     note: Absolute index weight.
-  abs_income_scale:
-    value: 1.0
+  abs_income_low:
+    value: 0.05
     status: placeholder
-    note: log(income per person / 16-nation average) that moves the absolute income score from 0.5 to 0.73.
+    note: Income per person, as a multiple of the 16-nation average, that scores 0 on the absolute income component. The score rises in a straight line with log income up to abs_income_high, so a given percentage loss counts the same for every nation (M6; replaced an S-curve that was flat for poor nations). Nigeria starts at 0.06.
+  abs_income_high:
+    value: 8.0
+    status: placeholder
+    note: Income per person, as a multiple of the 16-nation average, that scores 1 on the absolute income component. The US starts at 4.7.
   difficulty_easy:
     value: 1.0
     status: placeholder
@@ -445,13 +453,13 @@ scoring:
     status: placeholder
     note: Country difficulty multiplier.
   bonus_largest_cut:
-    value: 3.0
+    value: 2.0
     status: placeholder
-    note: Absolute bonus for the largest cut in tonnes.
+    note: Absolute bonus for the largest cut in tonnes. 3 -> 2 in M6; at 3 (x1.3) the clean-gain bonus alone made all-clean India's best strategy.
   bonus_clean_gain:
-    value: 3.0
+    value: 2.0
     status: placeholder
-    note: Relative bonus (x difficulty) for the largest gain in clean share of energy.
+    note: Relative bonus (x difficulty) for the largest gain in clean share of energy. 3 -> 2 in M6; at 3 (x1.3) the clean-gain bonus alone made all-clean India's best strategy.
   income_scale:
     value: 0.1
     status: placeholder
@@ -508,13 +516,13 @@ scoring:
     status: placeholder
     note: Emissions at or below this share of 2025 count as net zero.
   bonus_first_net_zero:
-    value: 3.0
+    value: 2.0
     status: placeholder
-    note: Flat bonus points.
+    note: Flat bonus points. 3 -> 2 in M6; at 3 (x1.3) the clean-gain bonus alone made all-clean India's best strategy.
   bonus_largest_reduction:
-    value: 3.0
+    value: 2.0
     status: placeholder
-    note: Flat bonus points.
+    note: Flat bonus points. 3 -> 2 in M6; at 3 (x1.3) the clean-gain bonus alone made all-clean India's best strategy.
 
 ai:
   personalities:
@@ -721,22 +729,29 @@ difficulty:
   levels:
     easy:
       net_zero_year: {value: 2060, status: placeholder, note: "The stocktake pathway reaches net zero this year (decided 2026-11-08)."}
-      disasters: {value: 0.5, status: placeholder, note: "Multiplier on climate disaster frequency."}
+      disasters: {value: 0.25, status: placeholder, note: "Multiplier on climate disaster frequency (0.5 -> 0.25 in M6)."}
       disruptions: {value: 0.5, status: placeholder, note: "Multiplier on foreign factory disruptions."}
+      disruption_length: {value: 0.75, status: placeholder, note: "Multiplier on how long a factory disruption lasts (M6)."}
+      damage: {value: 0.5, status: placeholder, note: "Multiplier on the growth drag from climate damage (M6)."}
     normal:
       net_zero_year: {value: 2050, status: placeholder, note: "The stocktake pathway reaches net zero this year."}
       disasters: {value: 1.0, status: placeholder, note: "Multiplier on climate disaster frequency."}
       disruptions: {value: 1.0, status: placeholder, note: "Multiplier on foreign factory disruptions."}
+      disruption_length: {value: 1.0, status: placeholder, note: "Multiplier on how long a factory disruption lasts (M6)."}
+      damage: {value: 1.0, status: placeholder, note: "Multiplier on the growth drag from climate damage (M6)."}
     hard:
       net_zero_year: {value: 2045, status: placeholder, note: "The stocktake pathway reaches net zero this year."}
-      disasters: {value: 1.5, status: placeholder, note: "Multiplier on climate disaster frequency."}
+      disasters: {value: 2.0, status: placeholder, note: "Multiplier on climate disaster frequency (1.5 -> 2.0 in M6)."}
       disruptions: {value: 1.5, status: placeholder, note: "Multiplier on foreign factory disruptions."}
+      disruption_length: {value: 1.5, status: placeholder, note: "Multiplier on how long a factory disruption lasts (M6)."}
+      damage: {value: 2.0, status: placeholder, note: "Multiplier on the growth drag from climate damage (M6)."}
 
 shocks:
-  disaster_rate: {value: 0.03, status: placeholder, note: "Chance per quarter of a climate disaster per degC above disaster_threshold, at vulnerability 1 (seeded)."}
+  disaster_rate: {value: 0.12, status: placeholder, note: "0.03 -> 0.12 in M6, with a smaller loss per disaster, so disasters matter without one unlucky draw dominating. Chance per quarter of a climate disaster per degC above disaster_threshold, at vulnerability 1 (seeded)."}
   disaster_threshold: {value: 1.0, status: placeholder, note: "Warming (degC) below which disasters do not happen in the game."}
-  disaster_gdp_loss: {value: 0.01, status: placeholder, note: "One-off GDP loss of an average disaster (share of GDP), cut by adaptation."}
+  disaster_gdp_loss: {value: 0.015, status: placeholder, note: "0.01 -> 0.015 in M6. One-off GDP loss of an average disaster (share of GDP), cut by adaptation."}
   disaster_capacity_loss: {value: 0.05, status: placeholder, note: "Share of one energy source's capacity an average disaster destroys."}
+  disaster_warming_growth: {value: 1.0, status: placeholder, note: "Disasters grow this much more severe per degC of warming since 2025 (M6)."}
   disaster_approval_hit: {value: 0.03, status: placeholder, note: "Approval lost in an average disaster."}
   disruption_rate: {value: 0.01, status: placeholder, note: "Chance per quarter that one of a nation's clean-tech factory lines is disrupted (seeded)."}
   disruption_severity: {value: 0.5, status: placeholder, note: "Share of a disrupted line's output lost."}

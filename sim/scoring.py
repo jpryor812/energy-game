@@ -2,7 +2,9 @@
 
 Score = (w_abs x A + w_rel x N x difficulty) x M(T) + absolute bonuses + relative bonuses x
 difficulty (decided 2026-11-08). A, the absolute index (0-100), compares where nations end up:
-income per person against the 16-nation average, clean share of energy, emissions per person
+income per person against the 16-nation average (a straight line in log income from
+`abs_income_low` to `abs_income_high` times the average, so a given percentage loss costs every
+nation the same; M6), clean share of energy, emissions per person
 against twice the 2025 average, energy security, and average approval. Wealthy, cleaner nations
 score higher on it. N, the relative index, is multiplied by the country's difficulty (easy 1.0,
 easy-to-medium 1.1, medium 1.15, hard 1.3) so the same improvement is worth more for a harder
@@ -24,8 +26,8 @@ starting point, so a poor country is not judged against a rich one:
   change): real domestic cuts count 1.0, cuts financed abroad 0.75, cuts made with exported
   equipment 0.6, purchased credits 0.25 (`credits.weight_*`; decided 2026-11-08).
 
-M(T) is 1 at or below `world_good` warming and falls quadratically to `world_floor` at
-`world_bad`.
+M(T) is 1 at or below `world_good` warming and falls in a straight line to `world_floor` at
+`world_bad` (M6; it was quadratic, which left 1.6-1.7 degC worlds almost unpenalised).
 
 Bonuses (flat points). Absolute: first nation to reach net zero (emissions at or below
 `net_zero_share` of 2025), largest cut in tonnes, and the deal that cut the most emissions (both
@@ -157,7 +159,7 @@ def nation_index(cfg: Config, comps: dict[str, float]) -> float:
 def world_multiplier(cfg: Config, warming: float) -> float:
     good, bad, floor = _sc(cfg, "world_good"), _sc(cfg, "world_bad"), _sc(cfg, "world_floor")
     x = min(1.0, max(0.0, (warming - good) / (bad - good)))
-    return 1.0 - (1.0 - floor) * x**2
+    return 1.0 - (1.0 - floor) * x
 
 
 def bonuses(cfg: Config, world: World) -> dict[str, dict[str, float]]:
@@ -234,9 +236,9 @@ def absolute_components(cfg: Config, world: World, nid: str) -> dict[str, float]
     n = world.nations[nid]
     nations = world.nations.values()
     avg_income = sum(m.gdp for m in nations) / sum(m.population for m in nations)
-    income = logistic(
-        math.log(max(n.gdp / n.population, 1e-12) / avg_income) / _sc(cfg, "abs_income_scale")
-    )
+    low, high = math.log(_sc(cfg, "abs_income_low")), math.log(_sc(cfg, "abs_income_high"))
+    ratio = math.log(max(n.gdp / n.population, 1e-12) / avg_income)
+    income = min(1.0, max(0.0, (ratio - low) / (high - low)))
     delivered = sum(n.supply.values())
     clean = sum(v for s, v in n.supply.items() if cfg.category(s) != "fossil")
     clean_share = clean / delivered if delivered > 0 else 0.0

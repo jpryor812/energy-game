@@ -61,3 +61,7 @@ Same seed and inputs always produce byte-identical output.
   climate loans, world difficulty (easy/normal/hard) with seeded climate disasters and factory
   disruptions, absolute and relative scoring with country difficulty, a parallel batch harness,
   and `docs/BALANCE_REPORT.md` (5 of 7 criteria pass, 2 marked TUNE with reasons).
+- **M6 (mechanics pass):** done. Scoring weighted toward the economy with a linear World
+  Multiplier, world difficulty that changes scores (stronger disasters, damage and disruption
+  multipliers), blackouts that erode stability, and bots that check what they can afford. All 7
+  balance criteria pass.

@@ -34,6 +34,16 @@ def baseline_growth(cfg: Config, nid: str, t: int) -> float:
     return start + (end - start) * frac
 
 
+def baseline_disaster_loss(cfg: Config, nid: str) -> float:
+    """Expected annual GDP loss from disasters at 2025 warming on normal difficulty (mean
+    severity 1, no adaptation). Baseline growth already includes it, so the growth term H only
+    counts losses above it: more warming, or a harder world."""
+    s = "shocks."
+    above = max(0.0, cfg.tune("climate.warming_start") - cfg.tune(s + "disaster_threshold"))
+    chance = cfg.tune(s + "disaster_rate") * above * cfg.nat(nid, "climate.vulnerability")
+    return min(1.0, chance) * 4 * cfg.tune(s + "disaster_gdp_loss")
+
+
 def growth_terms(cfg: Config, nid: str, n: Nation, t: int, dt: int = 1) -> dict[str, float]:
     share_short = n.shortfall / n.demand if n.demand > 0 else 0.0
     base_price = n.base.get("energy_price", 0.0)
@@ -57,8 +67,9 @@ def growth_terms(cfg: Config, nid: str, n: Nation, t: int, dt: int = 1) -> dict[
         "D": cfg.tune("economy.debt_drag") * debt_rise,
         # Fiscal: discretionary tax above (or below) 2025 slows (or speeds) growth.
         "F": cfg.tune("tax.growth_drag") * n.tax_change,
-        # Hazards: one-off GDP loss from climate disasters last quarter, as an annual rate.
-        "H": n.disaster_loss * 4 / dt,
+        # Hazards: one-off GDP loss from climate disasters last quarter, as an annual rate, less
+        # the average loss at 2025 warming, which baseline growth already reflects.
+        "H": n.disaster_loss * 4 / dt - baseline_disaster_loss(cfg, nid),
         "C": n.climate_damage,
     }
 
@@ -161,4 +172,7 @@ def apply_growth(world: World, cfg: Config, dt: int) -> None:
         pull = 1 - (1 - reversion) ** years
         n.approval = min(1.0, max(0.0, n.approval + pull * (baseline - n.approval) - hit * years))
         s_pull = 1 - (1 - cfg.tune(pol + "stability_reversion")) ** years
-        n.stability = min(1.0, max(0.0, n.stability + s_pull * (n.approval - n.stability)))
+        # Blackouts erode stability directly (unrest), on top of the pull toward approval, so
+        # a government that cannot keep the lights on can fall between elections.
+        unrest = cfg.tune(pol + "stability_shortfall_hit") * terms["S"] * years
+        n.stability = min(1.0, max(0.0, n.stability + s_pull * (n.approval - n.stability) - unrest))

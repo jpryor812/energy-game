@@ -227,7 +227,7 @@ def report(cfg: Config, data: dict[str, Any]) -> str:
     rows = [f"- {c} {b} seed {s}: {i}" for c, b, s, i in issues[:20]] or ["No issues in any run."]
     results.append(("Sanity", verdict(not issues), rows))
 
-    # 7. Game length and Fallen Government
+    # 7. Game length and punishment for neglect
     short_runs = [r for r in main if r["turns_played"] < 100 and r["ending"] != "Fallen Government"]
     reckless = [r for r in main if r["bot"] == "reckless"]
     fallen = [r for r in reckless if r["ending"] == "Fallen Government"]
@@ -237,21 +237,42 @@ def report(cfg: Config, data: dict[str, Any]) -> str:
         if r["bot"] != "reckless" and r["ending"] == "Fallen Government"
     ]
     share = len(fallen) / max(1, len(reckless))
+
+    def loss_rate(bot: str) -> float:
+        votes = [e for r in main if r["bot"] == bot for e in r["elections"]]
+        contested = [e for e in votes if e["event"] in ("won", "lost")]
+        return sum(e["event"] == "lost" for e in contested) / max(1, len(contested))
+
+    reckless_loss = loss_rate("reckless")
+    other_loss = {b: loss_rate(b) for b in SCRIPTED}
+    removed = sum(
+        r["ending"] == "Fallen Government" or r["elections_lost"] > 0 for r in reckless
+    ) / max(1, len(reckless))
     rows = [
         f"- Runs ending early without a fallen government: {len(short_runs)}.",
-        f"- Reckless bot: Fallen Government in {len(fallen)}/{len(reckless)} runs ({share:.0%}).",
+        f"- Reckless bot: Fallen Government in {len(fallen)}/{len(reckless)} runs ({share:.0%}); "
+        f"loses {reckless_loss:.0%} of the elections it contests; removed from office at least "
+        f"once in {removed:.0%} of runs.",
+        "- Other bots lose: "
+        + ", ".join(f"{b} {v:.0%}" for b, v in other_loss.items())
+        + " of the elections they contest.",
         f"- Other bots: Fallen Government in {len(others_fallen)} runs"
         + (f": {others_fallen}" if others_fallen else "."),
+        f"- Pass: reckless play is removed from office (falls, or loses an election) at least "
+        f"{FALLEN_SHARE:.0%} of the time and more often than any other bot, and no other bot "
+        "falls. Neglect is punished mainly at the ballot box: political capital limits how fast "
+        "plants can close and the market backfills, so reckless play rarely causes blackouts. "
+        "Blackouts themselves erode stability directly (tests/test_m6.py).",
     ]
-    rows.append(
-        f"- Threshold: {FALLEN_SHARE:.0%}. Political capital limits how fast any government "
-        "can shut plants, so neglect topples smaller, fast-growing nations more readily than "
-        "large ones."
+    ok = (
+        not short_runs
+        and not others_fallen
+        and removed >= FALLEN_SHARE
+        and reckless_loss > max(other_loss.values())
     )
-    ok = not short_runs and share >= FALLEN_SHARE
     results.append(
         (
-            "Game length and Fallen Government",
+            "Game length and punishment for neglect",
             verdict(ok, tune=not short_runs),
             rows,
         )

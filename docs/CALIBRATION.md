@@ -23,34 +23,36 @@ Regenerate the tables with `python -m sim.report bau`. The loose checks below ar
 
 ## Results (seed 1)
 
-No nation takes actions and AI is off; the market, trade and stocktakes still run.
+No nation takes actions and AI is off; the market, trade and stocktakes still run. Since M6 both
+calibration worlds (BAU and AI) run without seeded shocks, so they check the deterministic core;
+the balance report plays with disasters and disruptions on.
 
 ### World
 
 | Metric | 2025 | 2030 | 2040 | 2049 |
 |---|---|---|---|---|
-| Global CO2 (Gt/yr) | 43.6 | 41.8 | 39.4 | 38.2 |
+| Global CO2 (Gt/yr) | 43.6 | 41.8 | 39.4 | 38.7 |
 | Warming, end of year (degC) | 1.39 | 1.53 | 1.77 | 1.96 |
 
 ### Nations
 
 | Nation | GDP 2025 (T$) | GDP 2049 | Growth 2025-49 (%/yr) | CO2 2025 (Mt) | CO2 2030 | CO2 2040 | CO2 2049 | Fossil share 2025 | 2049 | Max shortfall |
 |---|---|---|---|---|---|---|---|---|---|---|
-| AUS | 1.86 | 2.71 | 1.6 | 363 | 321 | 251 | 216 | 84% | 48% | 0.0% |
-| BRA | 2.31 | 3.55 | 1.8 | 435 | 432 | 427 | 447 | 48% | 28% | 0.1% |
-| CAN | 2.34 | 3.23 | 1.3 | 502 | 446 | 359 | 300 | 66% | 49% | 0.0% |
-| CHN | 20.12 | 42.83 | 3.2 | 11,531 | 11,283 | 10,715 | 9,949 | 79% | 53% | 0.0% |
-| EUU | 21.49 | 28.71 | 1.2 | 2,288 | 1,882 | 1,224 | 858 | 66% | 35% | 0.0% |
-| GBR | 4.05 | 5.41 | 1.2 | 300 | 242 | 164 | 119 | 72% | 43% | 0.0% |
-| IDN | 1.49 | 3.79 | 4.0 | 788 | 909 | 1,228 | 1,630 | 88% | 57% | 0.0% |
-| IND | 4.08 | 14.24 | 5.3 | 3,036 | 3,389 | 4,189 | 4,915 | 88% | 59% | 0.0% |
-| JPN | 4.47 | 5.15 | 0.6 | 926 | 802 | 606 | 467 | 82% | 54% | 0.0% |
-| MEX | 1.85 | 2.48 | 1.2 | 428 | 385 | 333 | 292 | 89% | 58% | 0.0% |
-| NGA | 0.30 | 0.61 | 3.0 | 113 | 114 | 127 | 150 | 94% | 55% | 0.0% |
-| RUS | 2.59 | 3.02 | 0.6 | 1,674 | 1,620 | 1,511 | 1,403 | 87% | 66% | 0.0% |
-| SAU | 1.30 | 2.34 | 2.5 | 655 | 645 | 614 | 586 | 98% | 70% | 0.0% |
+| AUS | 1.86 | 2.77 | 1.7 | 363 | 321 | 256 | 218 | 84% | 48% | 0.0% |
+| BRA | 2.31 | 3.65 | 1.9 | 435 | 432 | 427 | 476 | 48% | 29% | 0.0% |
+| CAN | 2.34 | 3.27 | 1.4 | 502 | 446 | 359 | 303 | 66% | 49% | 0.0% |
+| CHN | 20.12 | 43.60 | 3.3 | 11,531 | 11,286 | 10,720 | 10,169 | 79% | 54% | 0.0% |
+| EUU | 21.49 | 28.70 | 1.2 | 2,288 | 1,882 | 1,223 | 858 | 66% | 35% | 0.0% |
+| GBR | 4.05 | 5.48 | 1.3 | 300 | 247 | 168 | 121 | 72% | 44% | 0.0% |
+| IDN | 1.49 | 3.85 | 4.0 | 788 | 909 | 1,235 | 1,652 | 88% | 57% | 0.0% |
+| IND | 4.08 | 14.49 | 5.4 | 3,036 | 3,387 | 4,222 | 4,997 | 88% | 59% | 0.0% |
+| JPN | 4.47 | 5.19 | 0.6 | 926 | 811 | 612 | 471 | 82% | 54% | 0.0% |
+| MEX | 1.85 | 2.62 | 1.5 | 428 | 393 | 338 | 304 | 89% | 57% | 0.0% |
+| NGA | 0.30 | 0.63 | 3.2 | 113 | 115 | 130 | 156 | 94% | 55% | 0.0% |
+| RUS | 2.59 | 3.06 | 0.7 | 1,674 | 1,620 | 1,512 | 1,421 | 87% | 66% | 0.0% |
+| SAU | 1.30 | 2.41 | 2.6 | 655 | 645 | 622 | 604 | 98% | 70% | 0.0% |
 | USA | 31.27 | 48.75 | 1.9 | 4,629 | 4,019 | 3,101 | 2,542 | 79% | 49% | 0.0% |
-| VNM | 0.52 | 1.57 | 4.7 | 330 | 385 | 545 | 794 | 76% | 42% | 0.0% |
+| VNM | 0.52 | 1.63 | 4.9 | 330 | 385 | 554 | 814 | 76% | 41% | 0.0% |
 | ZAF | 0.43 | 0.58 | 1.2 | 433 | 392 | 314 | 260 | 94% | 59% | 0.0% |
 
 ## Against references
@@ -92,31 +94,31 @@ M4b also builds factories, abates methane, funds forests and builds carbon remov
 
 | Metric | 2025 | 2030 | 2040 | 2049 |
 |---|---|---|---|---|
-| Global CO2 (Gt/yr) | 43.0 | 33.1 | 22.5 | 14.2 |
-| Warming, end of year (degC) | 1.38 | 1.49 | 1.58 | 1.63 |
+| Global CO2 (Gt/yr) | 43.0 | 33.0 | 23.0 | 12.9 |
+| Warming, end of year (degC) | 1.38 | 1.49 | 1.58 | 1.64 |
 
 ### Nations
 
 | Nation | GDP 2025 (T$) | GDP 2049 | Growth 2025-49 (%/yr) | CO2 2025 (Mt) | CO2 2030 | CO2 2040 | CO2 2049 | Fossil share 2025 | 2049 | Max shortfall |
 |---|---|---|---|---|---|---|---|---|---|---|
-| AUS | 1.86 | 2.78 | 1.7 | 363 | 235 | 104 | -74 | 84% | 6% | 0.0% |
-| BRA | 2.31 | 3.65 | 1.9 | 435 | 338 | 184 | -59 | 48% | 5% | 0.0% |
-| CAN | 2.34 | 3.18 | 1.3 | 502 | 334 | 232 | 44 | 66% | 17% | 0.0% |
-| CHN | 20.12 | 42.84 | 3.2 | 11,531 | 10,017 | 7,336 | 5,212 | 79% | 31% | 0.0% |
-| EUU | 21.44 | 29.00 | 1.3 | 2,285 | 1,289 | 456 | -655 | 66% | 0% | 0.0% |
-| GBR | 4.05 | 5.44 | 1.2 | 300 | 135 | 50 | 0 | 72% | 0% | 0.0% |
-| IDN | 1.49 | 3.90 | 4.1 | 788 | 720 | 749 | 513 | 88% | 31% | 0.0% |
-| IND | 4.08 | 14.63 | 5.5 | 3,036 | 2,816 | 2,666 | 1,886 | 88% | 27% | 0.0% |
-| JPN | 4.47 | 5.31 | 0.7 | 926 | 574 | 181 | 64 | 82% | 8% | 0.0% |
-| MEX | 1.85 | 2.63 | 1.5 | 428 | 309 | 76 | 22 | 89% | 6% | 0.0% |
-| NGA | 0.30 | 0.60 | 3.0 | 113 | 96 | 86 | 74 | 94% | 32% | 0.0% |
-| RUS | 2.59 | 2.96 | 0.6 | 1,674 | 1,325 | 899 | 612 | 87% | 27% | 0.0% |
-| SAU | 1.30 | 2.28 | 2.4 | 655 | 504 | 336 | 259 | 98% | 39% | 0.0% |
-| USA | 31.27 | 49.50 | 1.9 | 4,629 | 3,468 | 1,250 | 252 | 79% | 8% | 0.0% |
-| VNM | 0.52 | 1.63 | 4.9 | 325 | 323 | 277 | 315 | 75% | 25% | 2.0% |
-| ZAF | 0.43 | 0.56 | 1.1 | 433 | 334 | 215 | 68 | 94% | 19% | 0.0% |
+| AUS | 1.86 | 2.81 | 1.7 | 363 | 235 | 105 | -3 | 84% | 13% | 0.0% |
+| BRA | 2.31 | 3.71 | 2.0 | 435 | 334 | 104 | -140 | 48% | 0% | 0.0% |
+| CAN | 2.34 | 3.23 | 1.3 | 502 | 334 | 233 | 49 | 66% | 18% | 0.0% |
+| CHN | 20.12 | 43.56 | 3.3 | 11,531 | 10,019 | 7,429 | 4,108 | 79% | 25% | 0.0% |
+| EUU | 21.45 | 28.99 | 1.3 | 2,285 | 1,298 | 457 | -655 | 66% | 0% | 0.0% |
+| GBR | 4.05 | 5.51 | 1.3 | 300 | 137 | 50 | 0 | 72% | 0% | 0.0% |
+| IDN | 1.49 | 3.99 | 4.2 | 788 | 720 | 747 | 519 | 88% | 29% | 0.0% |
+| IND | 4.08 | 14.89 | 5.5 | 3,036 | 2,815 | 2,695 | 1,994 | 88% | 28% | 0.0% |
+| JPN | 4.47 | 5.36 | 0.8 | 926 | 580 | 182 | 61 | 82% | 7% | 0.0% |
+| MEX | 1.85 | 2.72 | 1.6 | 428 | 317 | 77 | 28 | 89% | 7% | 0.0% |
+| NGA | 0.30 | 0.62 | 3.1 | 113 | 97 | 92 | 62 | 94% | 26% | 0.0% |
+| RUS | 2.59 | 2.96 | 0.6 | 1,674 | 1,325 | 916 | 783 | 87% | 37% | 0.0% |
+| SAU | 1.30 | 2.32 | 2.4 | 655 | 505 | 327 | 248 | 98% | 37% | 0.0% |
+| USA | 31.27 | 49.51 | 1.9 | 4,629 | 3,468 | 1,565 | 204 | 79% | 6% | 0.0% |
+| VNM | 0.52 | 1.67 | 5.0 | 325 | 322 | 278 | 336 | 75% | 26% | 0.8% |
+| ZAF | 0.43 | 0.56 | 1.1 | 433 | 334 | 223 | 33 | 94% | 10% | 0.0% |
 
-Warming reaches 1.63 degC in 2049 (seed 1, normal difficulty, M5), against 1.96 degC with no
+Warming reaches 1.64 degC in 2049 (seed 1, no shocks, M6), against 1.96 degC with no
 action. By 2049 methane is down to
 about half its 2025 level, aerosols (and their cooling) are nearly gone, the forest fund has
 turned land use slightly negative, and AI nations run about 3.5 Gt/yr of carbon removal.
@@ -140,7 +142,10 @@ turned land use slightly negative, and AI nations run about 3.5 Gt/yr of carbon 
 | VNM | opportunist | 0.32 | 0.61 |
 | ZAF | cautious_follower | 0.31 | 0.25 |
 
-Diplomacy in this run:
+Target paths and diplomacy below are from the M5 run (with shocks); the M6 changes moved
+warming by 0.01 degC.
+
+Diplomacy in that run:
 
 - **Deals (M5):** 136 signed: 87 equipment on credit, 26 climate loans, 33 equity deals (10 of
   which failed when hosts became unreliable); none defaulted.
@@ -160,9 +165,27 @@ land-use sink, and about 33 Gt/yr of carbon removal by 2049. **That removal scal
 current physical estimates** (around 10 Gt/yr is an optimistic mid-century figure); it is a game
 design choice so that excellent global play can cool the planet (decided 2026-11-08).
 
-## Balance (M5)
+## Balance (M5, M6)
 
 The acceptance criteria are measured in `docs/BALANCE_REPORT.md` (`python -m sim.balance`).
+After the M6 mechanics pass all seven pass on 3 seeds. M6 changes, in short:
+
+- **Scoring.** The absolute income score is a straight line in log income (0.05x to 8x the
+  16-nation average) instead of an S-curve that was flat for poor nations. Weights moved toward
+  the economy: relative income 0.25 -> 0.35, relative climate 0.15 -> 0.1, absolute income
+  0.3 -> 0.4, absolute clean share and emissions 0.15 -> 0.075 each. Bonuses 3 -> 2 points.
+  The World Multiplier falls in a straight line (was quadratic), so a 1.65 degC world pays 0.87
+  instead of 0.98: climate counts mainly through the shared multiplier.
+- **World difficulty.** Disasters are four times as frequent at half the cost each, grow more
+  severe with warming, and their frequency multiplier is 0.25 / 1 / 2. Hard also doubles climate
+  damage and lengthens factory disruptions. Balanced-bot score: easy 64.7, normal 61.9,
+  hard 60.3 (was 73.7 / 73.5 / 73.3). Baseline growth is credited the expected disaster loss at
+  2025 warming, so only losses above today's count.
+- **Blackouts** erode stability directly (`politics.stability_shortfall_hit`).
+- **Criterion 7** now checks that reckless play is removed from office, at the ballot box or by
+  collapse, more than any other strategy: it loses 80% of the elections it contests (others
+  16-24%). It rarely causes blackouts, because political capital limits closures and the market
+  backfills, so Fallen Government stays rare.
 
 ## Placeholders that matter most for balance
 

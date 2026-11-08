@@ -195,7 +195,8 @@ REQUIRED_TUNING = (
     "scoring.weight_climate",
     "scoring.weight_absolute",
     "scoring.weight_relative",
-    "scoring.abs_income_scale",
+    "scoring.abs_income_low",
+    "scoring.abs_income_high",
     "scoring.abs_weight_income",
     "scoring.abs_weight_clean_share",
     "scoring.abs_weight_emissions",
@@ -577,7 +578,7 @@ def _validate_difficulty(cfg: Config) -> None:
     for level in DIFFICULTIES:
         _require(
             spec.get("levels", {}).get(level, {}),
-            ["net_zero_year", "disasters", "disruptions"],
+            ["net_zero_year", "disasters", "disruptions", "disruption_length", "damage"],
             f"tuning.difficulty.levels.{level}",
         )
 

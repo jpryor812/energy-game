@@ -3,11 +3,15 @@
     python -m sim.report bau            # print the BAU calibration tables (markdown)
     python -m sim.report ai             # the same tables for the AI-only world
 
-BALANCE_REPORT.md generation arrives in M5.
+Both calibration worlds run without seeded shocks (disasters and factory disruptions), so they
+check the deterministic core against published references; one unlucky disaster should not move
+a calibration band. The balance report (sim.balance) plays with shocks on.
 """
 
 from __future__ import annotations
 
+import copy
+import dataclasses
 import sys
 from typing import Any
 
@@ -26,12 +30,20 @@ def annual(history: list[dict[str, Any]], year: int, key: str, nid: str | None =
     return sum(h["nations"][nid][key] for h in recs) / len(recs)
 
 
+def without_shocks(cfg: Config) -> Config:
+    """The same configuration with no disasters or factory disruptions."""
+    tuning = copy.deepcopy(cfg.tuning)
+    for key in ("disaster_rate", "disruption_rate"):
+        tuning["shocks"][key]["value"] = 0.0
+    return dataclasses.replace(cfg, tuning=tuning)
+
+
 def bau_world(cfg: Config, seed: int = 1) -> World:
-    return runner.play(cfg, seed, cfg.playable_ids[0], "noop", ai=False)
+    return runner.play(without_shocks(cfg), seed, cfg.playable_ids[0], "noop", ai=False)
 
 
 def ai_world(cfg: Config, seed: int = 1) -> World:
-    return runner.play(cfg, seed, cfg.playable_ids[0], "ai")
+    return runner.play(without_shocks(cfg), seed, cfg.playable_ids[0], "ai")
 
 
 def bau_tables(cfg: Config, world: World) -> str:

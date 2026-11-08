@@ -166,7 +166,11 @@ def apply(world: World, cfg: Config, dt: int) -> None:
     for nid in sorted(world.nations):
         n = world.nations[nid]
         vuln = cfg.nat(nid, "climate.vulnerability")
-        n.climate_damage = damage(cfg, vuln, world.warming) * adaptation_factor(cfg, n)
+        n.climate_damage = (
+            damage(cfg, vuln, world.warming)
+            * adaptation_factor(cfg, n)
+            * cfg.level(world.difficulty, "damage")
+        )
 
 
 def damage(cfg: Config, vulnerability: float, warming: float) -> float:

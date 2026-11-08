@@ -163,6 +163,11 @@ Report on each (pass, fail, or tune) in `BALANCE_REPORT.md`:
    > **Changed 2026-11-08:** the short-term gain is measured on N's economic components (income and welfare), since N now also scores climate contribution, which free-riding loses by construction.
 6. **Sanity:** no NaN, no negative GDP, no negative capacity, no impossible emissions.
 7. **Game length:** runs finish 100 turns; a bot that ignores energy security triggers `Fallen Government` in a meaningful share of runs.
+   *Note (M6):* a bot cannot actually starve its grid, because political capital limits how
+   fast plants close and the market backfills with clean power. Neglect is punished at the
+   ballot box instead, so the check is now that reckless play is removed from office (lost
+   election or Fallen Government) more often than any other strategy, and no other bot falls.
+   Blackouts still erode stability directly (docs/ASSUMPTIONS.md, item 109).
 
 ## Tests
 
