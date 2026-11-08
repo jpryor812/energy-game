@@ -68,6 +68,17 @@ python -m sim.play turn games/ind1 '[{"type": "set_carbon_price", "level": 20}, 
 `turn` with no actions (or `'[]'`) plays the quarter without acting. Rejected actions cost
 nothing; the reason is printed. Use `check` when unsure.
 
+- **`"amount": "max"`** spends all you can afford on that action, after the actions before it in
+  the same list (for builds, spending, research and plant closures).
+- **`--brief`** on `show`, `turn` or `wait` leaves out costs, capacity, relations and the list of
+  active deals.
+- **THIS QUARTER** on the screen lists what changed: new offers, answers to your offers and
+  counter-offers, deals signed (and what you paid), plants coming online, credits issued or sold,
+  stocktake results (including whether your pledge is on track), and bonuses gained or lost.
+- **Timing.** Income arrives before your actions, so the screen shows what you can spend. But if
+  another nation accepts an offer you made, the deal's cost leaves your capital that same
+  quarter, possibly before your own actions resolve.
+
 ## How to play the test
 
 - Play only through the commands above and this guide. Do not read the source code or the data

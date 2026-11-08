@@ -26,6 +26,8 @@ def catalogue(cfg: Config) -> dict[str, dict[str, Any]]:
     equipment = list(trade.EQUIPMENT)
     others = "another nation's id"
     pc = "political capital"
+    from sim.session import LINEAR
+
     entries: dict[str, dict[str, Any]] = {
         "build_capacity": {
             "summary": "Order new generating capacity; it comes online after the source's build "
@@ -288,4 +290,7 @@ def catalogue(cfg: Config) -> dict[str, dict[str, Any]]:
     }
     for name, entry in entries.items():
         entry["slot"] = actions.SPECS[name].slot
+        if name in LINEAR:
+            base = entry["params"]["amount"]
+            entry["params"]["amount"] = f'{base}, or "max" (all you can afford)'
     return {name: entries[name] for name in actions.SPECS}

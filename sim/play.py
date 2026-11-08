@@ -11,6 +11,8 @@ does one thing, and saves again, so each move is a single shell call.
     python -m sim.play log games/ind1 [--last 8]
 
 Actions are a JSON list of objects (see `actions`); pass `@file.json` to read them from a file.
+For actions with an amount, `"amount": "max"` spends all that is left this quarter after the
+actions before it. Add `--brief` to `show`, `turn` or `wait` for a shorter screen.
 A turn spends at most the slots you have (2 domestic and 1 diplomatic arrive each quarter;
 unused slots are banked). Losing an election, or stability falling below the threshold, ends the
 game.
@@ -45,7 +47,9 @@ def _results(results: list[dict[str, Any]]) -> list[str]:
         a = r["action"]
         if r["ok"]:
             cost = ", ".join(f"{k} {v:.4g}" for k, v in r.get("cost", {}).items() if v) or "free"
-            out.append(f"  ok        {a.get('type')} ({cost})")
+            note = f"; {r['note']}" if r.get("note") else ""
+            amount = f" amount {a['amount']:.6g}" if isinstance(a.get("amount"), float) else ""
+            out.append(f"  ok        {a.get('type')}{amount} ({cost}{note})")
         else:
             out.append(f"  REJECTED  {a.get('type')}: {r['reason']}")
     return out
@@ -57,6 +61,7 @@ def _quarter(rep: dict[str, Any]) -> list[str]:
     if rep["election"]:
         e = rep["election"]
         lines.append(f"  ELECTION: {e['event']} with {e['vote']:.3f} of the vote")
+    lines += [f"  {x}" for x in rep.get("notices", [])]
     return lines
 
 
@@ -72,14 +77,17 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("show", help="the game screen")
     p.add_argument("save", type=Path)
     p.add_argument("--json", action="store_true")
+    p.add_argument("--brief", action="store_true", help="leave out costs, relations, deal list")
     sub.add_parser("actions", help="every action, its parameters and cost")
     for name, helptext in (("check", "test actions without playing"), ("turn", "play a quarter")):
         p = sub.add_parser(name, help=helptext)
         p.add_argument("save", type=Path)
         p.add_argument("actions", nargs="?", default="[]")
+        p.add_argument("--brief", action="store_true")
     p = sub.add_parser("wait", help="play quarters without acting")
     p.add_argument("save", type=Path)
     p.add_argument("quarters", type=int)
+    p.add_argument("--brief", action="store_true")
     p = sub.add_parser("score", help="current (or final) score")
     p.add_argument("save", type=Path)
     p = sub.add_parser("log", help="moves and results so far")
@@ -104,7 +112,7 @@ def main(argv: list[str] | None = None) -> int:
         game = Game.load(cfg, args.save)
         if args.cmd == "show":
             obs = view.observe(game)
-            print(json.dumps(obs, indent=1) if args.json else view.render(obs))
+            print(json.dumps(obs, indent=1) if args.json else view.render(obs, args.brief))
         elif args.cmd == "check":
             print("\n".join(_results(game.check(_actions(args.actions)))) or "  (no actions)")
         elif args.cmd == "turn":
@@ -113,12 +121,12 @@ def main(argv: list[str] | None = None) -> int:
                 return 1
             rep = game.turn(_actions(args.actions))
             game.save(args.save)
-            print("\n".join(_quarter(rep)) + "\n\n" + view.render(view.observe(game)))
+            print("\n".join(_quarter(rep)) + "\n\n" + view.render(view.observe(game), args.brief))
         elif args.cmd == "wait":
             reps = game.wait(args.quarters)
             game.save(args.save)
             lines = [line for rep in reps for line in _quarter(rep)]
-            print("\n".join(lines) + "\n\n" + view.render(view.observe(game)))
+            print("\n".join(lines) + "\n\n" + view.render(view.observe(game), args.brief))
         elif args.cmd == "score":
             print(json.dumps(view.observe(game)["score"], indent=1))
         elif args.cmd == "log":

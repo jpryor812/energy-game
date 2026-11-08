@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from sim import deals, diplomacy, elections, scoring, tech, trade, turn
+from sim import deals, diplomacy, elections, energy, scoring, tech, trade, turn
 from sim.catalogue import catalogue
 from sim.session import Game
 
@@ -56,6 +56,12 @@ def observe(game: Game) -> dict[str, Any]:
         }
         if w.t - int(w.term_start["t"]) >= FORECAST_AFTER:
             parts = {k: v for k, v in elections.vote(cfg, w).items() if k != "swing"}
+            weight = cfg.tune("elections.growth_weight")
+            t0 = int(w.term_start["t"])
+            years = max(0.25, (w.t + 1 - t0) / 4)
+            growth = (n.gdp / w.term_start["gdp"]) ** (1 / years) - 1
+            election["growth_this_term"] = _r(growth, 4)
+            election["growth_expected"] = _r(growth - parts["growth"] / weight / 100, 4)
             election["expected_vote"] = _r(sum(parts.values()))
             election["parts"] = {k: _r(v) for k, v in parts.items()}
             election["note"] = "expected vote if held now, before a random swing"
@@ -64,14 +70,18 @@ def observe(game: Game) -> dict[str, Any]:
     delivered = sum(n.supply.values())
     supply = {s: _r(v) for s, v in sorted(n.supply.items()) if v > 1e-6}
     capacity = {s: _r(v) for s, v in sorted(n.capacity.items()) if v > 1e-6}
-    building: dict[str, dict[str, float]] = {}
+    arrivals: dict[str, dict[int, float]] = {}
     for c in n.pipeline:
-        b = building.setdefault(c.source, {"amount": 0.0, "first_done": c.complete_turn})
-        b["amount"] += c.amount
-        b["first_done"] = min(b["first_done"], c.complete_turn)
+        by_q = arrivals.setdefault(c.source, {})
+        by_q[c.complete_turn] = by_q.get(c.complete_turn, 0.0) + c.amount
     pipeline = {
-        s: {"amount": _r(v["amount"]), "first_online": _label(game, int(v["first_done"]))}
-        for s, v in sorted(building.items())
+        s: {
+            "total": _r(sum(q.values())),
+            "arrivals": [
+                {"online": _label(game, t), "amount": _r(v, 4)} for t, v in sorted(q.items())
+            ],
+        }
+        for s, q in sorted(arrivals.items())
     }
     costs = {
         s: {
@@ -79,6 +89,22 @@ def observe(game: Game) -> dict[str, Any]:
             "lcoe": _r(tech.lcoe(cfg, w, n, s), 2) if s in cfg.energy_source_ids else None,
         }
         for s in cfg.source_ids
+    }
+
+    # Why clean power is curtailed: the limits dispatch applies (sim.energy).
+    t_last = max(0, w.t - 1)
+    base_absorb = cfg.tune("energy.vre_base_absorb_share") * n.demand
+    enablers = {
+        s: _r(n.capacity.get(s, 0.0)) for s in cfg.source_ids if cfg.category(s) == "enabler"
+    }
+    integration = {
+        "wind_solar_available": _r(sum(n.capacity.get(s, 0.0) for s in cfg.vre_ids)),
+        "wind_solar_usable": _r(energy.vre_absorb_limit(cfg, n, n.demand, t_last)),
+        "base_absorb": _r(base_absorb),
+        "enablers": enablers,
+        "electrifiable_cap": _r(energy.vre_max_share(cfg, t_last, n) * n.demand),
+        "clean_cap": _r(energy.clean_max_share(cfg, t_last, n) * n.demand),
+        "electrification_bonus": _r(energy.electrification_bonus(cfg, n)),
     }
 
     # Emissions and targets
@@ -123,6 +149,8 @@ def observe(game: Game) -> dict[str, Any]:
             "status": d.status,
             "terms": {k: (_r(v) if isinstance(v, float) else v) for k, v in d.terms.items()},
         }
+        if "end_turn" in d.terms:
+            row["terms"]["end_label"] = _label(game, int(d.terms["end_turn"]))
         if d.status == deals.OPEN and deals.responder(d) == me:
             row["can_answer"] = w.t > d.start_turn
             inbox.append(row)
@@ -144,6 +172,14 @@ def observe(game: Game) -> dict[str, Any]:
 
     lost = game.lost
     result = scoring.score(cfg, w, me, lost=lost) if w.history else None
+    leaders = (
+        [
+            {"nation": nid, "score": _r(v["score"], 1), "rank": v["rank"]}
+            for nid, v in sorted(result["all_nations"].items(), key=lambda kv: -kv[1]["score"])
+        ]
+        if result
+        else []
+    )
     return {
         "quarter": _label(game, w.t) if not game.over else _label(game, w.t - 1),
         "turn": w.t,
@@ -189,6 +225,7 @@ def observe(game: Game) -> dict[str, Any]:
             "capacity": capacity,
             "building": pipeline,
             "costs": costs,
+            "integration": integration,
         },
         "emissions": emissions,
         "world": {
@@ -201,6 +238,8 @@ def observe(game: Game) -> dict[str, Any]:
         },
         "relations": relations,
         "deals": {"inbox": inbox, "active": mine},
+        "notices": list(game.notices),
+        "leaders": leaders,
         "last_quarter": {
             "results": last["nations"][me]["actions"] if last else [],
             "events": events,
@@ -234,8 +273,9 @@ def _kv(d: dict[str, Any], fmt: str = "{:g}") -> str:
     return ", ".join(f"{k} {fmt.format(v)}" for k, v in d.items()) or "none"
 
 
-def render(obs: dict[str, Any]) -> str:
-    """A compact text screen (about 60 lines)."""
+def render(obs: dict[str, Any], brief: bool = False) -> str:
+    """A compact text screen. `brief` leaves out costs, capacity, relations and the list of
+    active deals."""
     o = obs
     e, r, ec, en, em, wd = (
         o["election"],
@@ -245,9 +285,8 @@ def render(obs: dict[str, Any]) -> str:
         o["emissions"],
         o["world"],
     )
-    lines = [
-        f"== {o['country']}  {o['quarter']}  (turn {o['turn']}/{o['turns']}, {o['difficulty']}) ==",
-    ]
+    when = "final" if o["over"] else f"turn {o['turn']}/{o['turns']}"
+    lines = [f"== {o['country']}  {o['quarter']}  ({when}, {o['difficulty']}) =="]
     if o["over"]:
         final = o["score"]["score"] if o["score"] else 0
         lines.append(f"GAME OVER: {o['lost'] or o['score']['ending']}. Final score {final}.")
@@ -259,14 +298,28 @@ def render(obs: dict[str, Any]) -> str:
     elif e["next"]:
         lines.append(
             f"Election {e['next']} (in {e['quarters_away']} q): expected vote "
-            f"{e['expected_vote']:.3f}, need {e['needed']} [{_kv(e['parts'], '{:+.3f}')}]"
+            f"{e['expected_vote']:.3f}, need {e['needed']} [{_kv(e['parts'], '{:+.3f}')}]; "
+            f"growth this term {e['growth_this_term'] * 100:.2f}%/yr vs expected "
+            f"{e['growth_expected'] * 100:.2f}%/yr"
         )
+    if o["notices"]:
+        lines += ["", "THIS QUARTER:"] + [f"  {x}" for x in o["notices"]]
+    lq = o["last_quarter"]
+    if lq["results"] or lq["events"]:
+        lines.append("")
+        lines.append("YOUR ACTIONS AND EVENTS:")
+        for res in lq["results"]:
+            a = res["action"]
+            status = "ok" if res["ok"] else f"REJECTED ({res['reason']})"
+            lines.append(f"  {a.get('type')}: {status}")
+        for ev in lq["events"]:
+            lines.append("  event: " + _event(ev))
     lines += [
         "",
-        f"RESOURCES (this quarter): capital {r['capital']:.4f} T$ (${r['capital'] * 1000:.1f}B) "
-        f"| political capital "
-        f"{r['political_capital']:.2f} | influence {r['influence']:.2f} | slots "
-        f"domestic {r['slots'].get('domestic', 0)}, diplomatic {r['slots'].get('diplomatic', 0)}",
+        f"RESOURCES (this quarter): capital {r['capital']:.6g} T$ (${r['capital'] * 1000:.2f}B) "
+        f"| political capital {r['political_capital']:.2f} | influence {r['influence']:.2f} | "
+        f"slots domestic {r['slots'].get('domestic', 0)}, diplomatic "
+        f"{r['slots'].get('diplomatic', 0)}",
         "",
         f"ECONOMY: GDP {ec['gdp']:.3f} T$ ({_pct(ec['gdp_vs_2025'])} vs 2025), growth "
         f"{ec['growth_annual'] * 100:.2f}%/yr | approval {ec['approval']:.2f} | stability "
@@ -283,46 +336,56 @@ def render(obs: dict[str, Any]) -> str:
         f"  carbon price {en['carbon_price']:.0f} $/t, rebate {en['rebate']:.2f}, fossil ban "
         f"{'on' if en['fossil_ban'] else 'off'}, subsidies {_kv(en['subsidies'])}",
         f"  supply: {_kv(en['supply'], '{:.2f}')}",
-        f"  capacity: {_kv(en['capacity'], '{:.2f}')}",
-        "  building (yours and the market's): "
-        + (
-            ", ".join(
-                f"{s} {b['amount']:.2f} (from {b['first_online']})"
-                for s, b in en["building"].items()
+        _integration(en["integration"]),
+    ]
+    if not brief:
+        lines.append(f"  capacity: {_kv(en['capacity'], '{:.2f}')}")
+    lines.append("  building (yours and the market's; total, then the next arrivals):")
+    for s, b in en["building"].items():
+        nxt = ", ".join(f"{a['amount']:.3g} {a['online']}" for a in b["arrivals"][:4])
+        more = f", +{len(b['arrivals']) - 4} more" if len(b["arrivals"]) > 4 else ""
+        lines.append(f"    {s} {b['total']:.3g}: {nxt}{more}")
+    if not en["building"]:
+        lines.append("    none")
+    if not brief:
+        lines.append(
+            "  costs (unit T$ per EJ/yr, removal per Mt/yr | LCOE $/GJ): "
+            + ", ".join(
+                f"{s} {c['unit_cost']:.4g}" + (f"|{c['lcoe']:.1f}" if c["lcoe"] is not None else "")
+                for s, c in en["costs"].items()
             )
-            or "none"
-        ),
-        "  costs (unit T$ per EJ/yr, removal per Mt/yr | LCOE $/GJ): "
-        + ", ".join(
-            f"{s} {c['unit_cost']:.3f}" + (f"|{c['lcoe']:.1f}" if c["lcoe"] is not None else "")
-            for s, c in en["costs"].items()
-        ),
+        )
+    lines += [
         "",
-        f"EMISSIONS: {em['now']:.0f} Mt/yr ({_pct(em['vs_2025'])} vs 2025) | target path now "
-        f"{em['target_path_now']:.0f} | 1.5C pathway now {em['pathway_1_5c_now']:.0f} | "
-        f"removals {em['removals']:.0f} | credits held {em['credit_balance']:.0f} Mt | pledge "
+        f"EMISSIONS (net of removals): {em['now']:.0f} Mt/yr ({_pct(em['vs_2025'])} vs 2025) | "
+        f"target path now {em['target_path_now']:.0f} | 1.5C pathway now "
+        f"{em['pathway_1_5c_now']:.0f} | removals {em['removals']:.0f} | credits held "
+        f"{em['credit_balance']:.0f} Mt | pledge "
         + (
             f"{em['pledge']['target']:.0f} Mt by {em['pledge']['year']}" if em["pledge"] else "none"
         ),
         f"WORLD: warming {wd['warming']:.3f} C, multiplier {wd['world_multiplier']:.2f} | "
         "global CO2 "
         + (f"{wd['global_emissions'] / 1000:.1f}" if wd["global_emissions"] is not None else "-")
-        + " Gt/yr | credit price "
-        f"{wd['credit_price']:.0f} $/t | club: {', '.join(wd['club']) or 'none'} | coalition "
-        f"tariff on you {wd['coalition_tariff_on_you']:.2f}",
-        "",
-        "RELATIONS (their trust in you; tariffs yours/theirs; * = club):",
-        "  "
-        + "  ".join(
-            f"{k}{'*' if v['club'] else ''} {v['their_trust_in_you']:.2f}"
-            + (
-                f" t{v['your_tariff']:.2f}/{v['their_tariff']:.2f}"
-                if v["your_tariff"] or v["their_tariff"]
-                else ""
-            )
-            for k, v in o["relations"].items()
-        ),
+        + f" Gt/yr | credit price {wd['credit_price']:.0f} $/t | club: "
+        f"{', '.join(wd['club']) or 'none'} | coalition tariff on you "
+        f"{wd['coalition_tariff_on_you']:.2f}",
     ]
+    if not brief:
+        lines += [
+            "",
+            "RELATIONS (their trust in you; tariffs yours/theirs; * = club):",
+            "  "
+            + "  ".join(
+                f"{k}{'*' if v['club'] else ''} {v['their_trust_in_you']:.2f}"
+                + (
+                    f" t{v['your_tariff']:.2f}/{v['their_tariff']:.2f}"
+                    if v["your_tariff"] or v["their_tariff"]
+                    else ""
+                )
+                for k, v in o["relations"].items()
+            ),
+        ]
     inbox, active = o["deals"]["inbox"], o["deals"]["active"]
     lines.append("")
     lines.append(f"DEALS: inbox {len(inbox)}, active {len(active)}")
@@ -331,19 +394,14 @@ def render(obs: dict[str, Any]) -> str:
             f"  OFFER {d['id']} {d['type']} {d['financier']}->{d['host']} "
             f"{_terms(d['terms'])}" + ("" if d["can_answer"] else " (answer next quarter)")
         )
-    for d in active:
-        lines.append(f"  ACTIVE {d['id']} {d['type']} {d['financier']}->{d['host']} "
-                     f"{_terms(d['terms'])}")  # fmt: skip
-    lq = o["last_quarter"]
-    if lq["results"] or lq["events"]:
-        lines.append("")
-        lines.append("LAST QUARTER:")
-        for res in lq["results"]:
-            a = res["action"]
-            status = "ok" if res["ok"] else f"REJECTED ({res['reason']})"
-            lines.append(f"  {a.get('type')}: {status}")
-        for ev in lq["events"]:
-            lines.append("  event: " + _event(ev))
+    if not brief:
+        for d in active:
+            t = d["terms"]
+            ends = f" until {t['end_label']}" if "end_label" in t else ""
+            lines.append(
+                f"  ACTIVE {d['id']} {d['type']} {d['financier']}->{d['host']} "
+                f"{t.get('source')} {t.get('capacity', t.get('amount', 0)):.3g} EJ{ends}"
+            )
     s = o["score"]
     lines.append("")
     if s is None:
@@ -355,7 +413,25 @@ def render(obs: dict[str, Any]) -> str:
             f"{s['world_multiplier']:.2f}) | {_kv(s['components'], '{:.2f}')}"
             + (f" | bonuses {_kv(s['bonuses'])}" if s["bonuses"] else "")
         )
+        top = o["leaders"][:5]
+        mine = next((x for x in o["leaders"] if x["nation"] == o["country"]), None)
+        board = ", ".join(f"{x['nation']} {x['score']:.1f}" for x in top)
+        if mine and mine not in top:
+            board += f" ... you {mine['score']:.1f}"
+        lines.append(f"  leaders (score now): {board}")
     return "\n".join(lines)
+
+
+def _integration(g: dict[str, Any]) -> str:
+    """Why wind and solar are curtailed, in one line."""
+    grid = " + ".join(f"{k} {v:.2f}" for k, v in g["enablers"].items())
+    return (
+        f"  wind+solar: {g['wind_solar_available']:.2f} EJ available, usable up to "
+        f"{g['wind_solar_usable']:.2f} = base {g['base_absorb']:.2f} + {grid}, capped by the "
+        f"electrifiable share {g['electrifiable_cap']:.2f}; all clean sources capped at "
+        f"{g['clean_cap']:.2f} (electrification raises both caps, now "
+        f"+{g['electrification_bonus'] * 100:.0f} pts)"
+    )
 
 
 def _terms(t: dict[str, Any]) -> str:

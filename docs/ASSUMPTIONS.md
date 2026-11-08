@@ -459,6 +459,13 @@ planning)").
      swing and is shown from the second year of a term. Saves refuse to load with changed data
      files.
 
+117. **Interface additions after the pilot playtest** (docs/PLAYTEST_REPORT.md):
+     `"amount": "max"` (resolved by the session to the most this quarter's resources allow
+     after earlier actions; the move log records the number, so replays are unchanged),
+     quarterly notices computed by comparing the world before and after a turn, construction
+     listed by arrival quarter, a leaderboard, the vote's expected growth, the clean-power
+     integration limits, and a brief screen. None changes the rules.
+
 ## Open questions
 
 - **AI overshoot.** Cheap clean energy leads several low-ambition nations to cut far past their
@@ -482,6 +489,9 @@ planning)").
   bots do not attempt; agent playtesting should probe it.
 - **Fallen Government is rare by design now.** It needs a sustained blackout or an approval
   collapse; neglect is punished mainly through lost elections.
+- **Pilot playtest findings** for the next mechanics pass are listed in
+  docs/PLAYTEST_REPORT.md (tax-timing exploit, free inbound equity, cheap factories, dead
+  diplomacy late game, a season-flickering bonus, Champion out of reach).
 - **Resolved in M7:** losing an election helping (it now ends the game).
 - **Resolved in M6:** all-clean dominance in India and Vietnam, weak world difficulty, rejected
   bot actions (1,200 -> 39), and criterion 7 (reinterpreted, item 109).
