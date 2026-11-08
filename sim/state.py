@@ -11,7 +11,6 @@ from dataclasses import asdict, dataclass, field
 from typing import Any
 
 from sim import canonical
-from sim.config import Config
 
 STATE_VERSION = 1
 
@@ -97,11 +96,28 @@ class Nation:
     fair_share_budget: float = 0.0
     slots_banked: dict[str, int] = field(default_factory=dict)
     pledge: Pledge | None = None
+    # M1 energy and economy outputs (rates are per year; see docs/ASSUMPTIONS.md "Units").
+    supply: dict[str, float] = field(default_factory=dict)
+    shortfall: float = 0.0
+    curtailment: float = 0.0
+    energy_price: float = 0.0
+    fossil_production: dict[str, float] = field(default_factory=dict)
+    fossil_exports: dict[str, float] = field(default_factory=dict)
+    fossil_imports: dict[str, float] = field(default_factory=dict)
+    export_revenue: float = 0.0
+    growth: float = 0.0
+    climate_damage: float = 0.0
+    base: dict[str, float] = field(default_factory=dict)
 
     _FLOATS = (
         "gdp", "population", "capital", "political_capital", "influence", "tech_points",
         "fx_reserves", "debt_hard", "debt_local", "approval", "stability", "energy_intensity",
         "demand", "carbon_price", "emissions", "cumulative_emissions", "fair_share_budget",
+        "shortfall", "curtailment", "energy_price", "export_revenue", "growth", "climate_damage",
+    )  # fmt: skip
+    _FLOAT_MAPS = (
+        "capacity", "subsidies", "tariffs", "supply", "fossil_production", "fossil_exports",
+        "fossil_imports", "base",
     )  # fmt: skip
 
     @classmethod
@@ -111,10 +127,8 @@ class Nation:
             playable=bool(d["playable"]),
             personality=d["personality"],
             **{name: float(d[name]) for name in cls._FLOATS},
-            capacity={k: float(v) for k, v in d["capacity"].items()},
+            **{name: {k: float(v) for k, v in d[name].items()} for name in cls._FLOAT_MAPS},
             pipeline=[Construction.from_dict(c) for c in d["pipeline"]],
-            subsidies={k: float(v) for k, v in d["subsidies"].items()},
-            tariffs={k: float(v) for k, v in d["tariffs"].items()},
             slots_banked={k: int(v) for k, v in d["slots_banked"].items()},
             pledge=Pledge.from_dict(d["pledge"]) if d["pledge"] is not None else None,
         )
@@ -126,7 +140,9 @@ class World:
     seed: int
     nations: dict[str, Nation]
     global_cumulative_emissions: float = 0.0
+    global_emissions: float = 0.0
     warming: float = 0.0
+    base: dict[str, float] = field(default_factory=dict)
     tech_state: dict[str, float] = field(default_factory=dict)
     blocs: dict[str, list[str]] = field(default_factory=dict)
     deals: dict[str, Deal] = field(default_factory=dict)
@@ -147,7 +163,9 @@ class World:
             seed=int(d["seed"]),
             nations={k: Nation.from_dict(v) for k, v in d["nations"].items()},
             global_cumulative_emissions=float(d["global_cumulative_emissions"]),
+            global_emissions=float(d["global_emissions"]),
             warming=float(d["warming"]),
+            base={k: float(v) for k, v in d["base"].items()},
             tech_state={k: float(v) for k, v in d["tech_state"].items()},
             blocs={k: list(v) for k, v in d["blocs"].items()},
             deals={k: Deal.from_dict(v) for k, v in d["deals"].items()},
@@ -164,23 +182,3 @@ class World:
 
     def hash(self) -> str:
         return canonical.digest(self.to_dict())
-
-
-def new_world(cfg: Config, seed: int) -> World:
-    """The world at t=0 built from the data files.
-
-    M0: nations carry only structural data (id, playable, personality). Starting economic and
-    energy values arrive in M1 with sources, so every number is zero for now.
-    """
-    sources = cfg.source_ids
-    nations = {}
-    for nid in cfg.nation_ids:
-        spec = cfg.countries["nations"][nid]
-        nations[nid] = Nation(
-            id=nid,
-            playable=spec["playable"],
-            personality=spec["personality"],
-            capacity={s: 0.0 for s in sources},
-            slots_banked={"domestic": 0, "diplomatic": 0},
-        )
-    return World(t=0, seed=seed, nations=nations, tech_state={s: 0.0 for s in sources})

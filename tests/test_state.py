@@ -2,39 +2,38 @@ import json
 
 import pytest
 
-from sim import config
-from sim.state import Construction, Deal, Pledge, World, new_world
+from sim.scenario import new_world
+from sim.state import Construction, Deal, Pledge, World
 
 
 @pytest.fixture
-def world() -> World:
-    w = new_world(config.load(), seed=7)
-    ind = w.nations["IND"]
+def world(cfg) -> World:
+    w = new_world(cfg, seed=7)
+    ind = w.nations["AAA"]
     ind.gdp = 1.25
     ind.pipeline.append(Construction(source="solar", amount=3.0, complete_turn=6))
     ind.pledge = Pledge(target_emissions=0.5, year=2070, made_turn=0)
-    ind.tariffs["CHN"] = 0.1
+    ind.tariffs["BBB"] = 0.1
     w.deals["d1"] = Deal(
         id="d1",
         type="climate_loan",
-        financier="USA",
-        host="IND",
+        financier="BBB",
+        host="AAA",
         terms={"currency": "hard", "duration": 20},
         status="active",
         start_turn=0,
     )
-    w.trust = {"IND": {"USA": 0.5}}
-    w.blocs = {"carbon_club": ["EUU"]}
+    w.trust = {"AAA": {"BBB": 0.5}}
+    w.blocs = {"carbon_club": ["BBB"]}
     w.history.append({"t": 0, "note": "x"})
     return w
 
 
-def test_new_world_has_all_nations():
-    cfg = config.load()
+def test_new_world_has_all_nations(cfg):
     w = new_world(cfg, seed=1)
     assert sorted(w.nations) == cfg.nation_ids
-    assert w.nations["IND"].playable and not w.nations["GBR"].playable
-    assert set(w.nations["IND"].capacity) == set(cfg.source_ids)
+    assert w.nations["AAA"].playable and not w.nations["BBB"].playable
+    assert set(w.nations["AAA"].capacity) == set(cfg.source_ids)
 
 
 def test_round_trip_dict(world):
@@ -51,7 +50,7 @@ def test_round_trip_json(world):
 
 def test_hash_changes_with_state(world):
     before = world.hash()
-    world.nations["IND"].gdp += 0.01
+    world.nations["AAA"].gdp += 0.01
     assert world.hash() != before
 
 

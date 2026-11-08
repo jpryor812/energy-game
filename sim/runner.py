@@ -20,9 +20,10 @@ import yaml
 
 from sim import bots, canonical, config, turn
 from sim.config import Config
-from sim.state import World, new_world
+from sim.scenario import new_world
+from sim.state import World
 
-MILESTONE = "M0"
+MILESTONE = "M1"
 
 
 def play(

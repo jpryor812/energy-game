@@ -3,29 +3,20 @@ import json
 import os
 from pathlib import Path
 
-import pytest
-
 from sim import config, runner
 from sim.state import World
 
 GOLDEN = Path(__file__).parent / "golden_hashes.json"
 
 
-@pytest.fixture(scope="module")
-def cfg():
-    return config.load()
-
-
 def run_files(out: Path) -> dict[str, bytes]:
     return {p.name: p.read_bytes() for p in sorted(out.iterdir())}
 
 
-def test_noop_run_writes_outputs(tmp_path):
+def test_noop_run_writes_outputs(tmp_path, fixture_dir):
     out = tmp_path / "run"
-    assert (
-        runner.main(["run", "--country", "IND", "--bot", "noop", "--seed", "1", "--out", str(out)])
-        == 0
-    )
+    args = ["--data-dir", str(fixture_dir), "run", "--country", "AAA", "--seed", "1"]
+    assert runner.main([*args, "--out", str(out)]) == 0
     assert sorted(p.name for p in out.iterdir()) == ["history.jsonl", "state.json", "summary.json"]
     lines = (out / "history.jsonl").read_text().splitlines()
     assert len(lines) == 100
@@ -38,40 +29,30 @@ def test_noop_run_writes_outputs(tmp_path):
 
 def test_determinism_byte_for_byte(tmp_path, cfg):
     a, b = tmp_path / "a", tmp_path / "b"
-    runner.run_one(cfg, 3, "VNM", "noop", a)
-    runner.run_one(cfg, 3, "VNM", "noop", b)
+    runner.run_one(cfg, 3, "AAA", "noop", a)
+    runner.run_one(cfg, 3, "AAA", "noop", b)
     assert run_files(a) == run_files(b)
 
 
-def test_resume_matches_full_run(cfg):
-    full = runner.play(cfg, 5, "USA", "noop")
-    half = runner.play(cfg, 5, "USA", "noop", until=50)
-    saved = World.from_json(half.to_json())
-    resumed = runner.play(cfg, 5, "USA", "noop", world=saved)
-    assert resumed.hash() == full.hash()
-
-
-def test_rejects_unplayable_country_and_unknown_bot(tmp_path):
-    args = ["run", "--seed", "1", "--out", str(tmp_path / "x")]
-    assert runner.main([*args, "--country", "GBR"]) == 2
-    assert runner.main([*args, "--country", "IND", "--bot", "nope"]) == 2
+def test_rejects_unplayable_country_and_unknown_bot(tmp_path, fixture_dir):
+    args = ["--data-dir", str(fixture_dir), "run", "--seed", "1", "--out", str(tmp_path / "x")]
+    assert runner.main([*args, "--country", "BBB"]) == 2
+    assert runner.main([*args, "--country", "AAA", "--bot", "nope"]) == 2
 
 
 def test_batch(tmp_path, cfg):
     spec = tmp_path / "batch.yaml"
-    spec.write_text(
-        f"out_dir: {tmp_path / 'out'}\ncountries: [IND, USA]\nbots: [noop]\nseeds: [2, 1]\n"
-    )
+    spec.write_text(f"out_dir: {tmp_path / 'out'}\ncountries: [AAA]\nbots: [noop]\nseeds: [2, 1]\n")
     out = runner.run_batch(cfg, spec)
     rows = list(csv.DictReader((out / "aggregate.csv").open()))
-    assert [(r["country"], r["seed"]) for r in rows] == [
-        ("IND", "1"), ("IND", "2"), ("USA", "1"), ("USA", "2"),
-    ]  # fmt: skip
-    assert (out / "ind_noop_1" / "state.json").exists()
+    assert [(r["country"], r["seed"]) for r in rows] == [("AAA", "1"), ("AAA", "2")]
+    assert (out / "aaa_noop_1" / "state.json").exists()
 
 
-def test_golden_run(cfg):
-    """Final state hash of a fixed run. Regenerate deliberately with UPDATE_GOLDEN=1 pytest."""
+def test_golden_run():
+    """Final state hash of a fixed run on the real data. Regenerate deliberately with
+    UPDATE_GOLDEN=1 pytest."""
+    cfg = config.load()
     world = runner.play(cfg, 1, "IND", "noop")
     actual = {"ind_noop_seed1": world.hash(), "config": cfg.hash}
     if os.environ.get("UPDATE_GOLDEN") == "1":

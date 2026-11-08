@@ -1,12 +1,7 @@
 import pytest
 
-from sim import config, turn
-from sim.state import new_world
-
-
-@pytest.fixture(scope="module")
-def cfg():
-    return config.load()
+from sim import turn
+from sim.scenario import new_world
 
 
 def test_quarter_labels():
@@ -43,7 +38,7 @@ def test_step_dt(cfg):
 
 def test_actions_not_yet_supported(cfg):
     with pytest.raises(NotImplementedError):
-        turn.step(new_world(cfg, seed=1), cfg, actions={"IND": [{"type": "build_capacity"}]})
+        turn.step(new_world(cfg, seed=1), cfg, actions={"AAA": [{"type": "build_capacity"}]})
 
 
 def test_stage_order_matches_build_doc():

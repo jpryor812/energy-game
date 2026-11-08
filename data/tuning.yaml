@@ -1,5 +1,6 @@
 # Global tunables. Every number is a tunable: value, status (placeholder | calibrated), note.
-# "calibrated" here also covers values fixed by the design doc rather than by data.
+# "calibrated" also covers values fixed by the design doc or taken directly from a cited source.
+# Source keys refer to data/SOURCES.md. Units are listed in docs/ASSUMPTIONS.md ("Units").
 
 time:
   start_year:
@@ -14,3 +15,155 @@ time:
     value: 20
     status: calibrated
     note: Fixed by docs/DESIGN.md (global stocktake every five years, when t % 20 == 19).
+
+seasonality:
+  demand_factor:
+    value: [1.03, 0.97, 1.01, 0.99]
+    status: placeholder
+    note: Q1..Q4 demand multipliers (mean 1). Northern-hemisphere winter peak, smaller summer peak.
+
+energy:
+  vre_base_absorb_share:
+    value: 0.25
+    status: placeholder
+    note: Share of total primary demand wind and solar can supply before grid or storage is needed.
+  fuel_price:
+    coal:
+      value: 4.2
+      unit: $/GJ
+      status: placeholder
+      note: About $105/t Newcastle 2025 at 25 GJ/t. Unsourced approximate.
+    oil:
+      value: 11.8
+      unit: $/GJ
+      status: placeholder
+      note: About $69/bbl Brent 2025 average at 5.8 GJ/bbl. Unsourced approximate.
+    gas:
+      value: 10.5
+      unit: $/GJ
+      status: placeholder
+      note: Between Henry Hub (~$3.5/MMBtu) and TTF/JKM (~$12/MMBtu) 2025, LNG-weighted. Unsourced approximate.
+
+economy:
+  capital_share_of_gdp:
+    value: 0.02
+    unit: fraction of GDP per year
+    status: placeholder
+    note: Discretionary capital for energy strategy, not total tax revenue (M1 decision 4).
+  fossil_revenue_take:
+    value: 0.5
+    status: placeholder
+    note: Share of fossil export revenue reaching the government as discretionary capital.
+  interest_rate_hard:
+    value: 0.06
+    status: placeholder
+    note: Annual rate on hard-currency debt taken on during the game.
+  interest_rate_local:
+    value: 0.05
+    status: placeholder
+    note: Annual rate on local-currency debt taken on during the game.
+  shortfall_drag:
+    value: 0.5
+    status: placeholder
+    note: Growth lost per unit of unmet-demand share (10% shortfall -> -5 pp/yr).
+  price_drag:
+    value: 0.05
+    status: placeholder
+    note: Growth lost per unit of energy-price rise above 2025 (doubling -> -5 pp/yr).
+  trade_elasticity:
+    value: 0.1
+    status: placeholder
+    note: Growth change per unit change in fossil export value since 2025, as a share of GDP.
+  fx_passthrough:
+    value: 0.25
+    status: placeholder
+    note: Share of the change in fossil trade balance since 2025 that moves FX reserves; the exchange rate absorbs the rest.
+  debt_drag:
+    value: 0.05
+    status: placeholder
+    note: Growth lost per unit rise in hard-currency debt / GDP above the 2025 ratio.
+
+politics:
+  approval_start:
+    value: 0.55
+    status: placeholder
+    note: Same for every nation in M1; leaders are abstract.
+  approval_baseline:
+    value: 0.55
+    status: placeholder
+    note: Level approval drifts back to when nothing is going wrong.
+  approval_reversion:
+    value: 0.2
+    status: placeholder
+    note: Fraction of the gap to baseline closed per year.
+  approval_shortfall_hit:
+    value: 2.0
+    status: placeholder
+    note: Approval lost per year per unit of shortfall growth drag S.
+  approval_price_hit:
+    value: 2.0
+    status: placeholder
+    note: Approval lost per year per unit of price growth drag E.
+  approval_damage_hit:
+    value: 1.0
+    status: placeholder
+    note: Approval lost per year per unit of climate damage drag C.
+  stability_reversion:
+    value: 0.25
+    status: placeholder
+    note: Fraction of the gap between stability and approval closed per year.
+
+climate:
+  warming_start:
+    value: 1.36
+    unit: degC above 1850-1900
+    status: calibrated
+    source: forster2025
+    note: Human-induced warming for 2024 (Indicators of Global Climate Change 2024).
+  tcre:
+    value: 0.45
+    unit: degC per 1000 GtCO2
+    status: calibrated
+    source: ipcc_ar6_wg1
+    note: AR6 WG1 best estimate 1.65 degC per 1000 PgC = 0.45 degC per 1000 GtCO2.
+  nonco2_multiplier:
+    value: 0.45
+    status: placeholder
+    note: Extra warming from non-CO2 forcers and falling aerosols, as a fraction of CO2 warming. Set so ~41 GtCO2/yr gives ~0.27 degC/decade, the observed rate (forster2025).
+  damage_coefficient:
+    value: 0.006
+    unit: growth drag per degC^2 at vulnerability 1
+    status: placeholder
+    note: +0.7 degC above 2025 costs a vulnerability-1 nation ~0.3 pp/yr of growth.
+  rest_of_world_co2:
+    value: 7867.8
+    unit: MtCO2/yr
+    status: calibrated
+    source: gcb
+    note: World fossil-fuel CO2 2024 minus the 16 modelled nations' fossil-fuel CO2.
+  rest_of_world_growth:
+    value: 0.01
+    status: placeholder
+    note: Annual growth of energy CO2 outside the 16 modelled nations.
+  land_use_co2:
+    value: 5025.6
+    unit: MtCO2/yr
+    status: calibrated
+    source: gcb
+    note: Mean land-use-change CO2 2015-2024 (annual values are noisy).
+  land_use_trend:
+    value: -0.01
+    status: placeholder
+    note: Annual change in global land-use CO2.
+  other_fossil_co2:
+    value: 2312.9
+    unit: MtCO2/yr
+    status: calibrated
+    source: gcb
+    note: Cement, flaring and other industry CO2, 2024. Held constant.
+
+bau:
+  reserve_margin:
+    value: 0.0
+    status: placeholder
+    note: BAU plans normal output this far above projected demand, to cover the seasonal peak.

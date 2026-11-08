@@ -1,24 +1,119 @@
-# Energy sources and enablers. Categories come from docs/BUILD_SIM_V0.md ("Sources").
+# Energy sources and enablers. Categories come from docs/BUILD_SIM_V0.md ("Sources"), plus
+# other_renewables (bioenergy, geothermal, other), which the data needs; see ASSUMPTIONS.md.
 #
-# M0: structure only. Build cost, build time, lifespan, capacity factor, emissions per unit and
-# the learning-curve exponent b are added in M1 as tunables, each with a note and source.
+# Units: energy is primary energy, input-equivalent ("substitution method") for non-fossil
+# sources, as in the Energy Institute / OWID data. Capacity is maximum output in EJ/yr.
+#   variable_cost    $/GJ primary (fuel + variable O&M)
+#   emission_factor  MtCO2/EJ (= kg/GJ)
+#   build_time       quarters
+#   lifespan         years
+#   capital_cost     T$ per EJ/yr of capacity, derived from $/kW, capacity factor and a 40%
+#                    input-equivalent efficiency for non-fossil power
+#   learning_rate    cost reduction per doubling of global deployment
+#   headroom         maximum output / normal output (spare capacity at t=0)
+#   global_installed 2025 world output (EJ/yr): the learning-curve starting point n0
+#   coverage_share   the 16 modelled nations' share of world use of that source
 
 sources:
   coal:
     category: fossil
+    variable_cost: {value: 4.7, status: placeholder, note: "Fuel 4.2 + O&M 0.5. Unsourced approximate."}
+    emission_factor: {value: 95.7535, status: calibrated, note: "World fuel CO2 / world fuel use, 2024 (gcb, energy_institute). Oil is low because of non-energy use."}
+    build_time: {value: 16, status: placeholder, note: "Typical 4-year build. Unsourced approximate."}
+    lifespan: {value: 40, status: placeholder, note: "Typical coal plant life. Unsourced approximate."}
+    capital_cost: {value: 0.035, status: placeholder, note: "~$1,600/kW, CF 0.55, 38% efficiency. Unsourced approximate."}
+    learning_rate: {value: 0.0, status: placeholder, note: "Mature technology."}
+    headroom: {value: 1.15, status: placeholder, note: "Spare fossil capacity at t=0."}
+    global_installed: {value: 165.062, status: calibrated, note: "World primary energy use 2024 (energy_institute)."}
+    coverage_share: {value: 0.9062, status: calibrated, note: "16 modelled nations' share of world use, 2024 (energy_institute)."}
   oil:
     category: fossil
+    variable_cost: {value: 12.3, status: placeholder, note: "Fuel 11.8 + refining/O&M 0.5. Unsourced approximate."}
+    emission_factor: {value: 62.6501, status: calibrated, note: "World fuel CO2 / world fuel use, 2024 (gcb, energy_institute). Oil is low because of non-energy use."}
+    build_time: {value: 8, status: placeholder, note: "Abstract supply capacity. Unsourced approximate."}
+    lifespan: {value: 30, status: placeholder, note: "Abstract supply capacity. Unsourced approximate."}
+    capital_cost: {value: 0.03, status: placeholder, note: "Abstract; oil capacity is not a plant. Unsourced approximate."}
+    learning_rate: {value: 0.0, status: placeholder, note: "Mature technology."}
+    headroom: {value: 1.15, status: placeholder, note: "Spare fossil capacity at t=0."}
+    global_installed: {value: 199.0515, status: calibrated, note: "World primary energy use 2024 (energy_institute)."}
+    coverage_share: {value: 0.7383, status: calibrated, note: "16 modelled nations' share of world use, 2024 (energy_institute)."}
   gas:
     category: fossil
+    variable_cost: {value: 11.0, status: placeholder, note: "Fuel 10.5 + O&M 0.5. Unsourced approximate."}
+    emission_factor: {value: 53.9013, status: calibrated, note: "World fuel CO2 / world fuel use, 2024 (gcb, energy_institute). Oil is low because of non-energy use."}
+    build_time: {value: 8, status: placeholder, note: "Typical 2-year CCGT build. Unsourced approximate."}
+    lifespan: {value: 30, status: placeholder, note: "Typical gas plant life. Unsourced approximate."}
+    capital_cost: {value: 0.02, status: placeholder, note: "~$1,000/kW, CF 0.5, 50% efficiency. Unsourced approximate."}
+    learning_rate: {value: 0.02, status: placeholder, note: "Near-mature technology."}
+    headroom: {value: 1.15, status: placeholder, note: "Spare fossil capacity at t=0."}
+    global_installed: {value: 148.6018, status: calibrated, note: "World primary energy use 2024 (energy_institute)."}
+    coverage_share: {value: 0.6922, status: calibrated, note: "16 modelled nations' share of world use, 2024 (energy_institute)."}
   nuclear:
     category: clean_dispatchable
+    variable_cost: {value: 2.5, status: placeholder, note: "~$25/MWh fuel+O&M at 40% input-equivalent. Unsourced approximate."}
+    emission_factor: {value: 0.0, status: calibrated, note: "No direct CO2."}
+    build_time: {value: 32, status: placeholder, note: "Typical 8-year build. Unsourced approximate."}
+    lifespan: {value: 50, status: placeholder, note: "Typical life with extensions. Unsourced approximate."}
+    capital_cost: {value: 0.085, status: placeholder, note: "~$6,000/kW, CF 0.9. Unsourced approximate."}
+    learning_rate: {value: 0.0, status: placeholder, note: "Historically flat or negative."}
+    headroom: {value: 1.05, status: placeholder, note: "Little spare nuclear output."}
+    global_installed: {value: 24.7386, status: calibrated, note: "World primary energy use 2024 (energy_institute)."}
+    coverage_share: {value: 0.8663, status: calibrated, note: "16 modelled nations' share of world use, 2024 (energy_institute)."}
   hydro:
     category: clean_dispatchable
+    variable_cost: {value: 0.5, status: placeholder, note: "O&M only. Unsourced approximate."}
+    emission_factor: {value: 0.0, status: calibrated, note: "No direct CO2."}
+    build_time: {value: 24, status: placeholder, note: "Typical 6-year build. Unsourced approximate."}
+    lifespan: {value: 80, status: placeholder, note: "Typical dam life. Unsourced approximate."}
+    capital_cost: {value: 0.08, status: placeholder, note: "~$2,500/kW, CF 0.4. Unsourced approximate."}
+    learning_rate: {value: 0.0, status: placeholder, note: "Mature technology."}
+    headroom: {value: 1.0, status: placeholder, note: "Output set by water, no spare at t=0."}
+    global_installed: {value: 39.0987, status: calibrated, note: "World primary energy use 2024 (energy_institute)."}
+    coverage_share: {value: 0.7483, status: calibrated, note: "16 modelled nations' share of world use, 2024 (energy_institute)."}
   wind:
     category: variable_renewable
+    variable_cost: {value: 0.0, status: placeholder, note: "No fuel; O&M treated as fixed."}
+    emission_factor: {value: 0.0, status: calibrated, note: "No direct CO2."}
+    build_time: {value: 8, status: placeholder, note: "Typical 2-year build. Unsourced approximate."}
+    lifespan: {value: 25, status: placeholder, note: "Typical turbine life. Unsourced approximate."}
+    capital_cost: {value: 0.04, status: placeholder, note: "~$1,100/kW onshore, CF 0.35. Unsourced approximate."}
+    learning_rate: {value: 0.12, status: placeholder, note: "Literature range ~10-15% per doubling. Unsourced approximate."}
+    headroom: {value: 1.0, status: placeholder, note: "Output set by weather."}
+    global_installed: {value: 22.0481, status: calibrated, note: "World primary energy use 2024 (energy_institute)."}
+    coverage_share: {value: 0.9399, status: calibrated, note: "16 modelled nations' share of world use, 2024 (energy_institute)."}
   solar:
     category: variable_renewable
+    variable_cost: {value: 0.0, status: placeholder, note: "No fuel; O&M treated as fixed."}
+    emission_factor: {value: 0.0, status: calibrated, note: "No direct CO2."}
+    build_time: {value: 4, status: placeholder, note: "Typical 1-year build. Unsourced approximate."}
+    lifespan: {value: 30, status: placeholder, note: "Typical panel life. Unsourced approximate."}
+    capital_cost: {value: 0.06, status: placeholder, note: "~$700/kW utility-scale, CF 0.15. Unsourced approximate."}
+    learning_rate: {value: 0.2, status: placeholder, note: "Literature range ~20-24% per doubling. Unsourced approximate."}
+    headroom: {value: 1.0, status: placeholder, note: "Output set by weather."}
+    global_installed: {value: 18.542, status: calibrated, note: "World primary energy use 2024 (energy_institute)."}
+    coverage_share: {value: 0.8987, status: calibrated, note: "16 modelled nations' share of world use, 2024 (energy_institute)."}
+  other_renewables:
+    category: clean_dispatchable
+    variable_cost: {value: 3.0, status: placeholder, note: "Mostly biomass fuel cost. Unsourced approximate."}
+    emission_factor: {value: 0.0, status: placeholder, note: "Biogenic CO2 counted as zero, as in energy CO2 inventories."}
+    build_time: {value: 8, status: placeholder, note: "Unsourced approximate."}
+    lifespan: {value: 25, status: placeholder, note: "Unsourced approximate."}
+    capital_cost: {value: 0.06, status: placeholder, note: "Unsourced approximate."}
+    learning_rate: {value: 0.05, status: placeholder, note: "Unsourced approximate."}
+    headroom: {value: 1.0, status: placeholder, note: "No spare at t=0."}
+    global_installed: {value: 19.1109, status: calibrated, note: "World primary energy use 2024 (energy_institute)."}
+    coverage_share: {value: 0.8614, status: calibrated, note: "16 modelled nations' share of world use, 2024 (energy_institute)."}
   storage:
     category: enabler
+    build_time: {value: 2, status: placeholder, note: "Batteries build fast. Unsourced approximate."}
+    lifespan: {value: 15, status: placeholder, note: "Typical battery life. Unsourced approximate."}
+    capital_cost: {value: 0.05, status: placeholder, note: "Per EJ/yr of wind and solar it lets the grid absorb. Unsourced approximate."}
+    learning_rate: {value: 0.18, status: placeholder, note: "Battery literature ~18% per doubling. Unsourced approximate."}
+    global_installed: {value: 1.0, status: placeholder, note: "Abstract integration units; learning starting point."}
   grid:
     category: enabler
+    build_time: {value: 12, status: placeholder, note: "Transmission builds are slow. Unsourced approximate."}
+    lifespan: {value: 50, status: placeholder, note: "Unsourced approximate."}
+    capital_cost: {value: 0.03, status: placeholder, note: "Per EJ/yr of wind and solar it lets the grid absorb. Unsourced approximate."}
+    learning_rate: {value: 0.0, status: placeholder, note: "Mature technology."}
+    global_installed: {value: 1.0, status: placeholder, note: "Abstract integration units; learning starting point."}

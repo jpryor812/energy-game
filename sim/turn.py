@@ -4,7 +4,8 @@
 world. `t` counts quarters; `dt` is the number of quarters one call covers (1 now; 4 for the
 planned annual mode), so annual mode can reuse the same rules.
 
-In M0 every stage is a no-op except the scoring snapshot, which appends a history record.
+M1 runs income, construction (with the BAU builder for every nation), dispatch and trade,
+economy, climate, technology and the snapshot. Actions, diplomacy and stocktake arrive later.
 """
 
 from __future__ import annotations
@@ -14,7 +15,10 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-from sim import events
+from sim import climate as climate_model
+from sim import construction as build
+from sim import economy as econ
+from sim import energy, events, tech
 from sim.config import Config
 from sim.state import World
 
@@ -26,6 +30,8 @@ class TurnContext:
     dt: int
     actions: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
     stocktake: bool = False
+    bau_nations: set[str] = field(default_factory=set)
+    completed: dict[str, float] = field(default_factory=dict)
 
 
 Stage = Callable[[World, Config, TurnContext], None]
@@ -44,7 +50,8 @@ def stocktake_due(t: int, dt: int, interval: int) -> bool:
 
 
 def income_and_slots(world: World, cfg: Config, ctx: TurnContext) -> None:
-    """M2: capital from GDP, deals, exports minus debt service; bank action slots."""
+    """Capital from GDP and fossil exports minus debt service. Slot banking arrives in M2."""
+    econ.apply_income(world, cfg, ctx.dt)
 
 
 def collect_actions(world: World, cfg: Config, ctx: TurnContext) -> None:
@@ -59,23 +66,29 @@ def resolve_actions(world: World, cfg: Config, ctx: TurnContext) -> None:
 
 
 def construction(world: World, cfg: Config, ctx: TurnContext) -> None:
-    """M1: advance pipelines, bring capacity online, retire plants."""
+    """Retire plants, bring finished capacity online, run the BAU builder."""
+    ctx.completed = build.apply(world, cfg, ctx.dt, ctx.bau_nations)
 
 
 def energy_dispatch(world: World, cfg: Config, ctx: TurnContext) -> None:
-    """M1: merit-order dispatch; shortfall, imports, curtailment, emissions."""
+    """Dispatch (shortfall, curtailment, emissions), then fossil trade."""
+    energy.apply_dispatch(world, cfg, ctx.dt)
+    energy.apply_trade(world, cfg)
 
 
 def economy(world: World, cfg: Config, ctx: TurnContext) -> None:
-    """M1: GDP growth, approval, stability."""
+    """GDP growth, population, energy intensity, FX, approval, stability."""
+    econ.apply_growth(world, cfg, ctx.dt)
 
 
 def climate(world: World, cfg: Config, ctx: TurnContext) -> None:
-    """M1: global emissions -> warming -> damage per nation."""
+    """Global emissions -> warming -> damage per nation."""
+    climate_model.apply(world, cfg, ctx.dt)
 
 
 def technology(world: World, cfg: Config, ctx: TurnContext) -> None:
-    """M1: cumulative deployment, learning curves, research."""
+    """Cumulative global deployment for learning curves. Research arrives in M2."""
+    tech.apply(world, cfg, ctx.completed)
 
 
 def diplomacy(world: World, cfg: Config, ctx: TurnContext) -> None:
@@ -95,14 +108,32 @@ def scoring_snapshot(world: World, cfg: Config, ctx: TurnContext) -> None:
             "t": world.t,
             "label": quarter_label(world.t, start_year),
             "stocktake": ctx.stocktake,
+            "global_emissions": world.global_emissions,
             "global_cumulative_emissions": world.global_cumulative_emissions,
             "warming": world.warming,
-            "nations": {
-                nid: {"gdp": n.gdp, "capital": n.capital, "emissions": n.emissions}
-                for nid, n in sorted(world.nations.items())
-            },
+            "nations": {nid: _nation_record(n) for nid, n in sorted(world.nations.items())},
         }
     )
+
+
+def _nation_record(n) -> dict[str, Any]:
+    return {
+        "gdp": n.gdp,
+        "population": n.population,
+        "growth": n.growth,
+        "capital": n.capital,
+        "demand": n.demand,
+        "supply": dict(n.supply),
+        "shortfall": n.shortfall,
+        "curtailment": n.curtailment,
+        "energy_price": n.energy_price,
+        "emissions": n.emissions,
+        "export_revenue": n.export_revenue,
+        "fx_reserves": n.fx_reserves,
+        "approval": n.approval,
+        "stability": n.stability,
+        "climate_damage": n.climate_damage,
+    }
 
 
 def events_hook(world: World, cfg: Config, ctx: TurnContext) -> None:
@@ -130,6 +161,7 @@ def step(
     cfg: Config,
     actions: dict[str, list[dict[str, Any]]] | None = None,
     dt: int = 1,
+    bau_nations: set[str] | None = None,
 ) -> World:
     """Advance the world by `dt` quarters and return the new world. The input is not modified."""
     if dt < 1:
@@ -140,6 +172,7 @@ def step(
         dt=dt,
         actions=copy.deepcopy(actions or {}),
         stocktake=stocktake_due(new.t, dt, interval),
+        bau_nations=set(new.nations) if bau_nations is None else set(bau_nations),
     )
     for _name, stage in STAGES:
         stage(new, cfg, ctx)

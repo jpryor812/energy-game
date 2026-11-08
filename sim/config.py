@@ -10,10 +10,14 @@ Rule: every number in a data file must be a *tunable*, a mapping of the form
 
 Strings, booleans and nulls are structural (names, flags, categories) and may appear bare. A bare
 number anywhere is a validation error, so magic numbers cannot slip into the data.
+
+The loader also checks that every tunable the model reads is present, so a missing value fails at
+load time rather than mid-run.
 """
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -29,7 +33,74 @@ TUNABLE_STATUSES = frozenset({"placeholder", "calibrated"})
 TUNABLE_KEYS = frozenset({"value", "status", "note", "source", "unit"})
 PERSONALITIES = frozenset({"green_leader", "fossil_defender", "opportunist", "cautious_follower"})
 SOURCE_CATEGORIES = frozenset({"fossil", "clean_dispatchable", "variable_renewable", "enabler"})
-COUNTRY_REQUIRED = ("name", "playable", "archetype", "difficulty", "personality")
+FUELS = ("coal", "gas", "oil")
+COUNTRY_REQUIRED = (
+    "name",
+    "playable",
+    "archetype",
+    "difficulty",
+    "personality",
+    "hard_currency_issuer",
+)
+
+# Tunables the model reads. Paths are relative to the file (tuning) or to one entry (techs,
+# countries); "{source}" and "{fuel}" expand over the relevant ids.
+REQUIRED_TUNING = (
+    "time.start_year",
+    "time.turns",
+    "time.stocktake_interval",
+    "seasonality.demand_factor",
+    "energy.vre_base_absorb_share",
+    "energy.fuel_price.{fuel}",
+    "economy.capital_share_of_gdp",
+    "economy.fossil_revenue_take",
+    "economy.interest_rate_hard",
+    "economy.interest_rate_local",
+    "economy.shortfall_drag",
+    "economy.price_drag",
+    "economy.trade_elasticity",
+    "economy.debt_drag",
+    "economy.fx_passthrough",
+    "politics.approval_start",
+    "politics.approval_baseline",
+    "politics.approval_reversion",
+    "politics.approval_shortfall_hit",
+    "politics.approval_price_hit",
+    "politics.approval_damage_hit",
+    "politics.stability_reversion",
+    "climate.warming_start",
+    "climate.tcre",
+    "climate.nonco2_multiplier",
+    "climate.damage_coefficient",
+    "climate.rest_of_world_co2",
+    "climate.rest_of_world_growth",
+    "climate.land_use_co2",
+    "climate.land_use_trend",
+    "climate.other_fossil_co2",
+    "bau.reserve_margin",
+)
+REQUIRED_SOURCE = {
+    "all": ("build_time", "lifespan", "capital_cost", "learning_rate", "global_installed"),
+    "fossil": ("variable_cost", "emission_factor", "headroom", "coverage_share"),
+    "clean_dispatchable": ("variable_cost", "emission_factor", "headroom", "coverage_share"),
+    "variable_renewable": ("variable_cost", "emission_factor", "headroom", "coverage_share"),
+    "enabler": (),
+}
+REQUIRED_NATION = (
+    "start.gdp",
+    "start.population",
+    "start.fx_reserves",
+    "start.debt_hard",
+    "start.debt_local",
+    "start.carbon_price",
+    "start.energy.{energy_source}",
+    "start.production.{fuel}",
+    "trend.g0_start",
+    "trend.g0_end",
+    "trend.population_growth",
+    "trend.intensity_decline",
+    "climate.vulnerability",
+)
 
 
 class ConfigError(ValueError):
@@ -53,14 +124,19 @@ class Config:
 
     def value(self, section: str, dotted_path: str) -> Any:
         """Return the `value` of the tunable at `dotted_path` in `section`."""
-        node: Any = getattr(self, section)
-        for part in dotted_path.split("."):
-            if not isinstance(node, dict) or part not in node:
-                raise KeyError(f"{section}: no entry at '{dotted_path}'")
-            node = node[part]
-        if not _is_tunable(node):
-            raise KeyError(f"{section}: '{dotted_path}' is not a tunable")
-        return node["value"]
+        return _lookup(getattr(self, section), dotted_path, section)
+
+    def tune(self, dotted_path: str) -> Any:
+        return _lookup(self.tuning, dotted_path, "tuning")
+
+    def src(self, source: str, key: str) -> Any:
+        return _lookup(self.techs["sources"][source], key, f"techs.{source}")
+
+    def nat(self, nation: str, dotted_path: str) -> Any:
+        return _lookup(self.countries["nations"][nation], dotted_path, f"countries.{nation}")
+
+    def nat_spec(self, nation: str) -> dict[str, Any]:
+        return self.countries["nations"][nation]
 
     @property
     def nation_ids(self) -> list[str]:
@@ -73,6 +149,28 @@ class Config:
     @property
     def source_ids(self) -> list[str]:
         return sorted(self.techs["sources"])
+
+    def category(self, source: str) -> str:
+        return self.techs["sources"][source]["category"]
+
+    @property
+    def energy_source_ids(self) -> list[str]:
+        """Sources that deliver energy (everything except enablers)."""
+        return [s for s in self.source_ids if self.category(s) != "enabler"]
+
+    @property
+    def vre_ids(self) -> list[str]:
+        return [s for s in self.source_ids if self.category(s) == "variable_renewable"]
+
+
+def _lookup(node: Any, dotted_path: str, where: str) -> Any:
+    for part in dotted_path.split("."):
+        if not isinstance(node, dict) or part not in node:
+            raise KeyError(f"{where}: no entry at '{dotted_path}'")
+        node = node[part]
+    if not _is_tunable(node):
+        raise KeyError(f"{where}: '{dotted_path}' is not a tunable")
+    return node["value"]
 
 
 def load(data_dir: Path | str = DEFAULT_DATA_DIR) -> Config:
@@ -91,8 +189,9 @@ def load(data_dir: Path | str = DEFAULT_DATA_DIR) -> Config:
         validate_tunables(content, path.name)
         raw[name] = content
     cfg = Config(**raw)
-    _validate_countries(cfg)
     _validate_techs(cfg)
+    _validate_countries(cfg)
+    _validate_tuning(cfg)
     return cfg
 
 
@@ -115,8 +214,12 @@ def validate_tunables(node: Any, path: str) -> None:
         note = node.get("note")
         if not isinstance(note, str) or not note.strip():
             raise ConfigError(f"{path}: tunable needs a non-empty note")
-        if isinstance(node["value"], dict):
+        value = node["value"]
+        if isinstance(value, dict):
             raise ConfigError(f"{path}: tunable value cannot be a mapping")
+        for v in value if isinstance(value, list) else [value]:
+            if _is_number(v) and not math.isfinite(v):
+                raise ConfigError(f"{path}: value must be finite")
         return
     if isinstance(node, dict):
         for key, child in node.items():
@@ -130,21 +233,24 @@ def validate_tunables(node: Any, path: str) -> None:
         )
 
 
-def _validate_countries(cfg: Config) -> None:
-    nations = cfg.countries.get("nations")
-    if not isinstance(nations, dict) or not nations:
-        raise ConfigError("countries.yaml: 'nations' must be a non-empty mapping")
-    for nid, spec in nations.items():
-        if not isinstance(spec, dict):
-            raise ConfigError(f"countries.yaml: {nid} must be a mapping")
-        missing = [k for k in COUNTRY_REQUIRED if k not in spec]
-        if missing:
-            raise ConfigError(f"countries.yaml: {nid} missing {missing}")
-        if not isinstance(spec["playable"], bool):
-            raise ConfigError(f"countries.yaml: {nid}.playable must be true or false")
-        personality = spec["personality"]
-        if personality is not None and personality not in PERSONALITIES:
-            raise ConfigError(f"countries.yaml: {nid}.personality '{personality}' is unknown")
+def _expand(paths: tuple[str, ...], cfg: Config) -> list[str]:
+    out = []
+    for p in paths:
+        if "{fuel}" in p:
+            out.extend(p.replace("{fuel}", f) for f in FUELS)
+        elif "{energy_source}" in p:
+            out.extend(p.replace("{energy_source}", s) for s in cfg.energy_source_ids)
+        else:
+            out.append(p)
+    return out
+
+
+def _require(node: Any, paths: list[str], where: str) -> None:
+    for p in paths:
+        try:
+            _lookup(node, p, where)
+        except KeyError as exc:
+            raise ConfigError(str(exc)) from None
 
 
 def _validate_techs(cfg: Config) -> None:
@@ -157,3 +263,51 @@ def _validate_techs(cfg: Config) -> None:
             raise ConfigError(
                 f"techs.yaml: {sid}.category must be one of {sorted(SOURCE_CATEGORIES)}"
             )
+        keys = REQUIRED_SOURCE["all"] + REQUIRED_SOURCE[category]
+        _require(spec, list(keys), f"techs.{sid}")
+    for fuel in FUELS:
+        if sources.get(fuel, {}).get("category") != "fossil":
+            raise ConfigError(f"techs.yaml: fossil source '{fuel}' is required")
+
+
+def _validate_countries(cfg: Config) -> None:
+    nations = cfg.countries.get("nations")
+    if not isinstance(nations, dict) or not nations:
+        raise ConfigError("countries.yaml: 'nations' must be a non-empty mapping")
+    required = _expand(REQUIRED_NATION, cfg)
+    for nid, spec in nations.items():
+        if not isinstance(spec, dict):
+            raise ConfigError(f"countries.yaml: {nid} must be a mapping")
+        missing = [k for k in COUNTRY_REQUIRED if k not in spec]
+        if missing:
+            raise ConfigError(f"countries.yaml: {nid} missing {missing}")
+        for flag in ("playable", "hard_currency_issuer"):
+            if not isinstance(spec[flag], bool):
+                raise ConfigError(f"countries.yaml: {nid}.{flag} must be true or false")
+        personality = spec["personality"]
+        if personality is not None and personality not in PERSONALITIES:
+            raise ConfigError(f"countries.yaml: {nid}.personality '{personality}' is unknown")
+        _require(spec, required, f"countries.{nid}")
+        _validate_bau(cfg, nid, spec)
+
+
+def _validate_bau(cfg: Config, nid: str, spec: dict[str, Any]) -> None:
+    mix = spec.get("bau", {}).get("mix")
+    if not isinstance(mix, dict) or not mix:
+        raise ConfigError(f"countries.{nid}: bau.mix must be a non-empty mapping")
+    for s in mix:
+        if s not in cfg.energy_source_ids:
+            raise ConfigError(f"countries.{nid}: bau.mix has unknown energy source '{s}'")
+    total = sum(_lookup(mix, s, f"countries.{nid}.bau.mix") for s in mix)
+    if abs(total - 1.0) > 1e-6:
+        raise ConfigError(f"countries.{nid}: bau.mix shares sum to {total}, not 1")
+    for s in spec["bau"].get("retire_rate", {}) or {}:
+        if s not in cfg.source_ids:
+            raise ConfigError(f"countries.{nid}: bau.retire_rate has unknown source '{s}'")
+
+
+def _validate_tuning(cfg: Config) -> None:
+    _require(cfg.tuning, _expand(REQUIRED_TUNING, cfg), "tuning")
+    factors = cfg.tune("seasonality.demand_factor")
+    if not isinstance(factors, list) or len(factors) != 4:
+        raise ConfigError("tuning: seasonality.demand_factor must list four quarterly factors")
