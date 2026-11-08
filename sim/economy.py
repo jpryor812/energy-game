@@ -133,7 +133,8 @@ def apply_income(world: World, cfg: Config, dt: int) -> None:
         n.political_capital = max(0.0, n.political_capital + pc * years)
         for slot in ("domestic", "diplomatic"):
             per_quarter = cfg.tune(f"slots.{slot}_per_quarter")
-            n.slots_banked[slot] = n.slots_banked.get(slot, 0) + per_quarter * dt
+            cap = cfg.tune(f"slots.{slot}_bank_cap")  # M8: unused slots bank only up to a cap
+            n.slots_banked[slot] = min(cap, n.slots_banked.get(slot, 0) + per_quarter * dt)
 
 
 def apply_growth(world: World, cfg: Config, dt: int) -> None:

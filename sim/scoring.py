@@ -165,8 +165,15 @@ def world_multiplier(cfg: Config, warming: float) -> float:
     return 1.0 - (1.0 - floor) * x
 
 
-def bonuses(cfg: Config, world: World) -> dict[str, dict[str, float]]:
-    out: dict[str, dict[str, float]] = {nid: {} for nid in world.nations}
+def annual_emissions(world: World, nid: str) -> float:
+    """Net emissions averaged over the last four quarters, MtCO2/yr (current rate before any
+    quarter has been played)."""
+    recs = [h["nations"][nid]["emissions"] for h in world.history[-4:]]
+    return sum(recs) / len(recs) if recs else world.nations[nid].emissions
+
+
+def first_net_zero(cfg: Config, world: World) -> tuple[str, str] | None:
+    """(nation, quarter label) of the first nation to reach net zero, if any has."""
     share = _sc(cfg, "net_zero_share")
     for h in world.history:
         reached = sorted(
@@ -175,28 +182,55 @@ def bonuses(cfg: Config, world: World) -> dict[str, dict[str, float]]:
             if r["emissions"] <= share * world.nations[nid].base["emissions"]
         )
         if reached:
-            out[reached[0]]["first_net_zero"] = _sc(cfg, "bonus_first_net_zero")
-            break
-    cuts = {
-        nid: 1 - n.emissions / n.base["emissions"]
-        for nid, n in world.nations.items()
-        if n.base["emissions"] > 0
+            return reached[0], h["label"]
+    return None
+
+
+def race_metrics(cfg: Config, world: World) -> dict[str, dict[str, float]]:
+    """What each end-of-game bonus race is decided on, per nation (higher is better). Emissions
+    and clean share are four-quarter averages (M8), so seasons do not flip the lead."""
+    nations = world.nations
+    out = {
+        "largest_reduction": {
+            nid: 1 - annual_emissions(world, nid) / n.base["emissions"]
+            for nid, n in nations.items()
+            if n.base["emissions"] > 0
+        },
+        "largest_cut_tonnes": {
+            nid: n.base["emissions"] - annual_emissions(world, nid) for nid, n in nations.items()
+        },
+        "largest_clean_gain": {
+            nid: annual_clean_share(cfg, world, nid) - n.base.get("clean_share", 0.0)
+            for nid, n in nations.items()
+        },
+        "best_deal": {nid: 0.0 for nid in nations},
     }
-    if cuts:
-        best = min(cuts, key=lambda nid: (-cuts[nid], nid))
-        if cuts[best] > 0:
-            out[best]["largest_reduction"] = _sc(cfg, "bonus_largest_reduction")
-    tonnes = {nid: n.base["emissions"] - n.emissions for nid, n in world.nations.items()}
-    best = min(tonnes, key=lambda nid: (-tonnes[nid], nid))
-    if tonnes[best] > 0:
-        out[best]["largest_cut_tonnes"] = _sc(cfg, "bonus_largest_cut")
-    gains = {
-        nid: clean_share(cfg, n) - n.base.get("clean_share", 0.0)
-        for nid, n in world.nations.items()
-    }
-    best = min(gains, key=lambda nid: (-gains[nid], nid))
-    if gains[best] > 0:
-        out[best]["largest_clean_gain"] = _sc(cfg, "bonus_clean_gain")
+    for d in world.deals.values():
+        c = d.terms.get("credited", 0.0)
+        for nid in (d.financier, d.host):
+            out["best_deal"][nid] = max(out["best_deal"][nid], c)
+    return out
+
+
+BONUS_KEYS = {
+    "largest_reduction": "bonus_largest_reduction",
+    "largest_cut_tonnes": "bonus_largest_cut",
+    "largest_clean_gain": "bonus_clean_gain",
+}
+
+
+def bonuses(cfg: Config, world: World) -> dict[str, dict[str, float]]:
+    out: dict[str, dict[str, float]] = {nid: {} for nid in world.nations}
+    first = first_net_zero(cfg, world)
+    if first:
+        out[first[0]]["first_net_zero"] = _sc(cfg, "bonus_first_net_zero")
+    metrics = race_metrics(cfg, world)
+    for race, key in BONUS_KEYS.items():
+        vals = metrics[race]
+        if vals:
+            best = min(vals, key=lambda nid: (-vals[nid], nid))
+            if vals[best] > 0:
+                out[best][race] = _sc(cfg, key)
     credited = [(d.terms.get("credited", 0.0), d.id) for d in world.deals.values()]
     credited = [c for c in credited if c[0] > 0]
     if credited:
@@ -207,20 +241,85 @@ def bonuses(cfg: Config, world: World) -> dict[str, dict[str, float]]:
     return out
 
 
+def races(cfg: Config, world: World, me: str) -> list[dict[str, Any]]:
+    """Each bonus race as the player sees it: who leads (or has claimed it), on what, and where
+    the player stands."""
+    out = []
+    first = first_net_zero(cfg, world)
+    share = _sc(cfg, "net_zero_share")
+    mine = annual_emissions(world, me) / max(world.nations[me].base["emissions"], 1e-9)
+    out.append(
+        {
+            "race": "first_net_zero",
+            "leader": first[0] if first else None,
+            "claimed": first[1] if first else None,
+            "measure": f"net emissions at or below {share:.0%} of 2025",
+            "you": mine,
+        }
+    )
+    metrics = race_metrics(cfg, world)
+    measures = {
+        "largest_reduction": "share of 2025 emissions cut",
+        "largest_cut_tonnes": "MtCO2/yr cut from 2025",
+        "largest_clean_gain": "clean share gained since 2025",
+        "best_deal": "MtCO2 credited to one deal",
+    }
+    for race, vals in metrics.items():
+        best = min(vals, key=lambda nid: (-vals[nid], nid)) if vals else None
+        out.append(
+            {
+                "race": race,
+                "leader": best if best and vals[best] > 0 else None,
+                "lead": vals.get(best, 0.0) if best else 0.0,
+                "measure": measures[race],
+                "you": vals.get(me, 0.0),
+            }
+        )
+    return out
+
+
 RELATIVE_BONUSES = ("largest_reduction", "largest_clean_gain")  # x country difficulty
 
 
+def _clean(cfg: Config, supply: dict[str, float]) -> tuple[float, float]:
+    return sum(v for s, v in supply.items() if cfg.category(s) != "fossil"), sum(supply.values())
+
+
 def clean_share(cfg: Config, n) -> float:
-    delivered = sum(n.supply.values())
-    clean = sum(v for s, v in n.supply.items() if cfg.category(s) != "fossil")
+    """Clean share of this quarter's supply."""
+    clean, delivered = _clean(cfg, n.supply)
     return clean / delivered if delivered > 0 else 0.0
 
 
-def ending(cfg: Config, rank: int, warming: float, loss: str | None = None) -> str:
+def annual_clean_share(cfg: Config, world: World, nid: str) -> float:
+    """Clean share of supply over the last four quarters (M8), so seasonal swings in demand do
+    not flip scores or bonuses from one quarter to the next. Falls back to this quarter's supply
+    before any quarter has been played."""
+    recs = [h["nations"][nid]["supply"] for h in world.history[-4:]]
+    if not recs:
+        return clean_share(cfg, world.nations[nid])
+    parts = [_clean(cfg, r) for r in recs]
+    delivered = sum(d for _, d in parts)
+    return sum(c for c, _ in parts) / delivered if delivered > 0 else 0.0
+
+
+def warming_falling(cfg: Config, world: World) -> bool | None:
+    """Whether warming is lower now than `falling_years` ago (None before that much history)."""
+    back = int(_sc(cfg, "falling_years") * 4)
+    if len(world.history) <= back:
+        return None
+    return world.warming < world.history[-1 - back]["warming"]
+
+
+def ending(
+    cfg: Config, rank: int, warming: float, loss: str | None = None, falling: bool | None = True
+) -> str:
+    """Endings. A good world (M8) ends at or below `good_world_warming` with warming falling
+    over the last `falling_years` (`falling` None = not enough history, counted as falling)."""
     if loss:
         return loss
     top = rank <= _sc(cfg, "top_rank")
-    good = warming <= _sc(cfg, "good_world_warming")
+    good = warming <= _sc(cfg, "good_world_warming") and falling is not False
     if top and good:
         return CHAMPION
     if top:
@@ -252,9 +351,7 @@ def absolute_components(cfg: Config, world: World, nid: str) -> dict[str, float]
     low, high = math.log(_sc(cfg, "abs_income_low")), math.log(_sc(cfg, "abs_income_high"))
     ratio = math.log(max(n.gdp / n.population, 1e-12) / avg_income)
     income = min(1.0, max(0.0, (ratio - low) / (high - low)))
-    delivered = sum(n.supply.values())
-    clean = sum(v for s, v in n.supply.items() if cfg.category(s) != "fossil")
-    clean_share = clean / delivered if delivered > 0 else 0.0
+    clean_share = annual_clean_share(cfg, world, nid)
     avg_em_2025 = sum(m.base["emissions"] for m in nations) / sum(
         m.base["population"] for m in nations
     )
@@ -328,7 +425,7 @@ def score(cfg: Config, world: World, player: str, lost: str | None = None) -> di
         "warming": world.warming,
         "rank": ranks[player],
         "bonuses": bonus[player],
-        "ending": ending(cfg, ranks[player], world.warming, lost),
+        "ending": ending(cfg, ranks[player], world.warming, lost, warming_falling(cfg, world)),
         "all_nations": {
             nid: {
                 "nation_index": relative[nid],

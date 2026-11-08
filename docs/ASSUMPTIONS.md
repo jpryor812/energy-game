@@ -466,6 +466,64 @@ planning)").
      listed by arrival quarter, a leaderboard, the vote's expected growth, the clean-power
      integration limits, and a brief screen. None changes the rules.
 
+## M8: mechanics pass after the pilot playtest
+
+118. **Clean share and bonus races use four-quarter averages** (`scoring.annual_clean_share`,
+     `scoring.annual_emissions`). The largest-clean-gain bonus switched owner from quarter to
+     quarter because seasonal demand changes how much fossil fills the gap. The absolute
+     clean-share component uses the same average. The 2025 base is still the first quarter's
+     mix (Q1 demand is 3% above average, so gains are very slightly flattered).
+119. **Bonus races are shown on the screen** (`scoring.races`): the leader of each race, the
+     player's standing, and who claimed first-to-net-zero and when. The pilot's missing
+     net-zero bonus was not a bug: Canada reached net zero in 2043Q2, India in 2046Q2.
+120. **A fossil ban cancels fossil projects not yet under construction** (start = arrival minus
+     build time). The market orders all sources for delivery at its horizon (the slowest build
+     time, 32 quarters with nuclear), so coal ordered in 2025 was arriving in 2033. Plants
+     already being built finish. Unstarted fossil projects the player ordered are cancelled
+     too, without refund (a player who bans fossil after ordering it is rare), and new fossil
+     orders are refused under a ban.
+121. **The vote averages the tax rise over the term** (`elections.term_tax_rise`). It compared
+     only the end-of-term rate with the start, so a rise reversed just before the vote was
+     free. Each quarter in office records its rate; saves from before M8 start the average at
+     their next quarter.
+122. **AI financiers refuse low counter-offers.** A counter must keep at least
+     `ai.counter_accept_share` (0.7) of the rate, price or share first asked. This equals the
+     AI's own counter factor, so AI-to-AI deals are unchanged; the pilot's counters at 3-5%
+     on asks of about 9.5% are now refused.
+123. **AI financiers rank hosts by need, including growth** (`ai.host_growth_weight`): trust x
+     (emissions intensity + baseline growth, each relative to the 16-nation average), and
+     nations with no emissions are no longer skipped. Offers to India no longer stop once it is
+     clean. Side effect in the AI world: more deals reach India early, and India's 2049 CO2
+     falls from about 2.0 to 0.6 Gt (docs/CALIBRATION.md).
+124. **Inbound equity stays good for the host by design.** The host gives up a share of the
+     plant's operating margin and carries failure risk; that is foreign direct investment, and
+     cheap capacity is the point of attracting it. The exploit was the always-accepted counter
+     (item 122).
+125. **Storage costs about three times more** (0.05 -> 0.15 T$ per EJ/yr absorbed): shifting
+     1 EJ/yr with one daily cycle takes about 760 GWh of batteries, roughly 0.15 T$ at
+     $200/kWh installed. A cost floor of 0.35 of the 2025 cost stops learning below about
+     $70/kWh. Both unsourced approximate.
+126. **Carbon removal learning was already at its floor.** With 2 Mt/yr installed worldwide in
+     2025, AI deployment reaches the floor (0.4 of the 2025 cost) within a few years, so the
+     pilot saw no further fall. Unchanged; the cost table now marks sources at their floor.
+127. **Factory exploit only partly addressed.** `scoring.clean_share_floor` 0.01 -> 0.03. A
+     factory cost of 1.0 T$ per T$/yr of output (closer to integrated supply chains) was
+     tried and reverted: China then built too few factories to hold its manufacturing jobs and
+     the AI and deal-maker bots lost China's 2032 vote in 3-4 of 6 seeds. The pilot's case
+     (about 9 points of world share for 0.015 T$) still lifts the clean component a lot;
+     left for the playtest round.
+128. **Banked slots are capped** at 4 domestic and 4 diplomatic (this quarter's included).
+129. **Influence is ten times cheaper** (1,000 per T$): talks cost 0.005 T$ instead of 0.05.
+130. **The activity cap costs half the political capital** (50 per unit, so 0.1 costs 5).
+131. **Policy effects are shown** (screen line): the share of the fossil-job vote penalty
+     retraining removes, the share of the price drag the rebate removes, methane cut shares,
+     the activity cap and the pledge's status. No rule changed.
+132. **Champion needs 1.6 degC and falling** (decided with the user, 2026-11-08):
+     `scoring.good_world_warming` 1.5 -> 1.6, and warming must be lower than 5 years earlier
+     (`scoring.falling_years`). Every nation on the most aggressive clean bot peaks at
+     1.71 degC and passes 1.5 by 2030, so 1.5 was unreachable. The same "good world" test
+     applies to Green but Poor. The World Multiplier still reaches 1.0 only at 1.5 degC.
+
 ## Open questions
 
 - **AI overshoot.** Cheap clean energy leads several low-ambition nations to cut far past their
@@ -484,14 +542,17 @@ planning)").
   and India run, through coal job losses). Agent playtests are the better test now.
 - **Russia is hard to hold.** The balanced bot completes only half its Russian games: falling
   fossil export revenue drags growth below baseline at elections.
-- **No bot world reaches 1.5 degC.** Every balance run ends at about 1.63-1.75 degC, so endings
-  are almost all Shared Failure or Prosperous but Doomed. Champion needs coordinated play the
-  bots do not attempt; agent playtesting should probe it.
+- **No bot world reaches a good world.** Every balance run ends at about 1.62-1.76 degC, so
+  endings are almost all Shared Failure or Prosperous but Doomed even with Champion at 1.6 degC
+  (M8). Agent playtesting should probe whether players can pull the world under it.
 - **Fallen Government is rare by design now.** It needs a sustained blackout or an approval
   collapse; neglect is punished mainly through lost elections.
-- **Pilot playtest findings** for the next mechanics pass are listed in
-  docs/PLAYTEST_REPORT.md (tax-timing exploit, free inbound equity, cheap factories, dead
-  diplomacy late game, a season-flickering bonus, Champion out of reach).
+- **Cheap factories** still move the clean component a lot for small producers (item 127).
+- **Disasters may dominate income** for exposed nations (the pilot took about ten hits of
+  1-2.4% of GDP); to be judged across the M8 playtest round.
+- **Resolved in M8:** tax timing, always-accepted counters, the flickering clean-gain bonus,
+  coal arriving after a ban, banked slots, expensive talks, no late deal offers to clean
+  nations, storage dominance, and an unreachable Champion (see items 118-132).
 - **Resolved in M7:** losing an election helping (it now ends the game).
 - **Resolved in M6:** all-clean dominance in India and Vietnam, weak world difficulty, rejected
   bot actions (1,200 -> 39), and criterion 7 (reinterpreted, item 109).

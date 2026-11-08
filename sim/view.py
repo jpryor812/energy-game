@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from sim import deals, diplomacy, elections, energy, scoring, tech, trade, turn
+from sim import climate, deals, diplomacy, elections, energy, jobs, scoring, tech, trade, turn
 from sim.catalogue import catalogue
 from sim.session import Game
 
@@ -87,6 +87,7 @@ def observe(game: Game) -> dict[str, Any]:
         s: {
             "unit_cost": _r(tech.nation_unit_cost(cfg, w, n, s), 4),
             "lcoe": _r(tech.lcoe(cfg, w, n, s), 2) if s in cfg.energy_source_ids else None,
+            "at_floor": tech.at_floor(cfg, w, s),
         }
         for s in cfg.source_ids
     }
@@ -217,6 +218,7 @@ def observe(game: Game) -> dict[str, Any]:
             "price": _r(n.energy_price, 2),
             "price_vs_2025": _r(n.energy_price / n.base["energy_price"] - 1),
             "clean_share": _r(scoring.clean_share(cfg, n)),
+            "clean_share_year": _r(scoring.annual_clean_share(cfg, w, me)),
             "carbon_price": _r(n.carbon_price, 1),
             "rebate": _r(n.rebate, 2),
             "fossil_ban": bool(n.fossil_ban),
@@ -226,11 +228,21 @@ def observe(game: Game) -> dict[str, Any]:
             "building": pipeline,
             "costs": costs,
             "integration": integration,
+            "policy_effects": {
+                "retraining_relief": _r(jobs.retraining_relief(cfg, n)),
+                "rebate_price_relief": _r(n.rebate * cfg.tune("economy.rebate_price_relief")),
+                "methane_cut_fossil": _r(climate.abatement(cfg, n, "fossil")),
+                "methane_cut_other": _r(climate.abatement(cfg, n, "other")),
+                "activity_cap": _r(n.activity_cap),
+                "pledge_on_track": diplomacy.pledge_on_track(cfg, w, me),
+            },
         },
         "emissions": emissions,
         "world": {
             "warming": _r(w.warming),
             "world_multiplier": _r(scoring.world_multiplier(cfg, w.warming)),
+            "warming_5y_ago": _r(w.history[-21]["warming"]) if len(w.history) > 20 else None,
+            "champion_at": cfg.tune("scoring.good_world_warming"),
             "global_emissions": _r(w.global_emissions, 0) if w.history else None,
             "credit_price": _r(w.credit_price, 1),
             "club": list(club),
@@ -240,6 +252,14 @@ def observe(game: Game) -> dict[str, Any]:
         "deals": {"inbox": inbox, "active": mine},
         "notices": list(game.notices),
         "leaders": leaders,
+        "races": (
+            [
+                {k: _r(v) if isinstance(v, float) else v for k, v in r.items()}
+                for r in scoring.races(cfg, w, me)
+            ]
+            if w.history
+            else []
+        ),  # fmt: skip
         "last_quarter": {
             "results": last["nations"][me]["actions"] if last else [],
             "events": events,
@@ -332,11 +352,12 @@ def render(obs: dict[str, Any], brief: bool = False) -> str:
         f"ENERGY: demand {en['demand']:.2f} EJ, delivered {en['delivered']:.2f}, shortfall "
         f"{en['shortfall_share'] * 100:.1f}%, curtailed {en['curtailment']:.2f} | price "
         f"{en['price']:.2f} $/GJ ({_pct(en['price_vs_2025'])}) | clean "
-        f"{en['clean_share'] * 100:.0f}%",
+        f"{en['clean_share'] * 100:.0f}% (last 4 quarters {en['clean_share_year'] * 100:.0f}%)",
         f"  carbon price {en['carbon_price']:.0f} $/t, rebate {en['rebate']:.2f}, fossil ban "
         f"{'on' if en['fossil_ban'] else 'off'}, subsidies {_kv(en['subsidies'])}",
         f"  supply: {_kv(en['supply'], '{:.2f}')}",
         _integration(en["integration"]),
+        _effects(en["policy_effects"]),
     ]
     if not brief:
         lines.append(f"  capacity: {_kv(en['capacity'], '{:.2f}')}")
@@ -349,9 +370,12 @@ def render(obs: dict[str, Any], brief: bool = False) -> str:
         lines.append("    none")
     if not brief:
         lines.append(
-            "  costs (unit T$ per EJ/yr, removal per Mt/yr | LCOE $/GJ): "
+            "  costs (unit T$ per EJ/yr, removal per Mt/yr | LCOE $/GJ; 'floor' = learning can "
+            "cut it no further): "
             + ", ".join(
-                f"{s} {c['unit_cost']:.4g}" + (f"|{c['lcoe']:.1f}" if c["lcoe"] is not None else "")
+                f"{s} {c['unit_cost']:.4g}"
+                + (f"|{c['lcoe']:.1f}" if c["lcoe"] is not None else "")
+                + (" floor" if c["at_floor"] else "")
                 for s, c in en["costs"].items()
             )
         )
@@ -364,7 +388,10 @@ def render(obs: dict[str, Any], brief: bool = False) -> str:
         + (
             f"{em['pledge']['target']:.0f} Mt by {em['pledge']['year']}" if em["pledge"] else "none"
         ),
-        f"WORLD: warming {wd['warming']:.3f} C, multiplier {wd['world_multiplier']:.2f} | "
+        f"WORLD: warming {wd['warming']:.3f} C"
+        + (f" (5 years ago {wd['warming_5y_ago']:.3f})" if wd["warming_5y_ago"] is not None else "")
+        + f", multiplier {wd['world_multiplier']:.2f}; good world (Champion) at or below "
+        f"{wd['champion_at']:g} C and falling | "
         "global CO2 "
         + (f"{wd['global_emissions'] / 1000:.1f}" if wd["global_emissions"] is not None else "-")
         + f" Gt/yr | credit price {wd['credit_price']:.0f} $/t | club: "
@@ -419,7 +446,33 @@ def render(obs: dict[str, Any], brief: bool = False) -> str:
         if mine and mine not in top:
             board += f" ... you {mine['score']:.1f}"
         lines.append(f"  leaders (score now): {board}")
+        lines.append("  bonus races: " + "; ".join(_race(r, o["country"]) for r in o["races"]))
     return "\n".join(lines)
+
+
+def _race(r: dict[str, Any], me: str) -> str:
+    name = r["race"].replace("_", " ")
+    if r["race"] == "first_net_zero":
+        if r["claimed"]:
+            who = "you" if r["leader"] == me else r["leader"]
+            return f"{name} claimed by {who} in {r['claimed']}"
+        return f"{name} open (you at {r['you']:.0%} of 2025)"
+    if r["leader"] is None:
+        return f"{name}: nobody yet"
+    if r["leader"] == me:
+        return f"{name}: you lead ({r['you']:.3g})"
+    return f"{name}: {r['leader']} {r['lead']:.3g}, you {r['you']:.3g}"
+
+
+def _effects(e: dict[str, Any]) -> str:
+    pledge = {None: "none", True: "on track", False: "off track"}[e["pledge_on_track"]]
+    return (
+        f"  policy effects: retraining removes {e['retraining_relief']:.0%} of the fossil-job "
+        f"penalty at elections | rebate removes {e['rebate_price_relief']:.0%} of the growth drag "
+        f"from energy prices | methane cut {e['methane_cut_fossil']:.0%} (fossil), "
+        f"{e['methane_cut_other']:.0%} (other) | activity cap {e['activity_cap']:.0%} of output "
+        f"| pledge {pledge}"
+    )
 
 
 def _integration(g: dict[str, Any]) -> str:

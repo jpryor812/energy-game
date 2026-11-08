@@ -94,31 +94,31 @@ M4b also builds factories, abates methane, funds forests and builds carbon remov
 
 | Metric | 2025 | 2030 | 2040 | 2049 |
 |---|---|---|---|---|
-| Global CO2 (Gt/yr) | 43.0 | 33.0 | 23.0 | 12.9 |
-| Warming, end of year (degC) | 1.38 | 1.49 | 1.58 | 1.64 |
+| Global CO2 (Gt/yr) | 43.0 | 33.0 | 25.0 | 9.9 |
+| Warming, end of year (degC) | 1.38 | 1.49 | 1.58 | 1.65 |
 
 ### Nations
 
 | Nation | GDP 2025 (T$) | GDP 2049 | Growth 2025-49 (%/yr) | CO2 2025 (Mt) | CO2 2030 | CO2 2040 | CO2 2049 | Fossil share 2025 | 2049 | Max shortfall |
 |---|---|---|---|---|---|---|---|---|---|---|
-| AUS | 1.86 | 2.81 | 1.7 | 363 | 235 | 105 | -3 | 84% | 13% | 0.0% |
-| BRA | 2.31 | 3.71 | 2.0 | 435 | 334 | 104 | -140 | 48% | 0% | 0.0% |
-| CAN | 2.34 | 3.23 | 1.3 | 502 | 334 | 233 | 49 | 66% | 18% | 0.0% |
-| CHN | 20.12 | 43.56 | 3.3 | 11,531 | 10,019 | 7,429 | 4,108 | 79% | 25% | 0.0% |
-| EUU | 21.45 | 28.99 | 1.3 | 2,285 | 1,298 | 457 | -655 | 66% | 0% | 0.0% |
-| GBR | 4.05 | 5.51 | 1.3 | 300 | 137 | 50 | 0 | 72% | 0% | 0.0% |
-| IDN | 1.49 | 3.99 | 4.2 | 788 | 720 | 747 | 519 | 88% | 29% | 0.0% |
-| IND | 4.08 | 14.89 | 5.5 | 3,036 | 2,815 | 2,695 | 1,994 | 88% | 28% | 0.0% |
-| JPN | 4.47 | 5.36 | 0.8 | 926 | 580 | 182 | 61 | 82% | 7% | 0.0% |
-| MEX | 1.85 | 2.72 | 1.6 | 428 | 317 | 77 | 28 | 89% | 7% | 0.0% |
-| NGA | 0.30 | 0.62 | 3.1 | 113 | 97 | 92 | 62 | 94% | 26% | 0.0% |
-| RUS | 2.59 | 2.96 | 0.6 | 1,674 | 1,325 | 916 | 783 | 87% | 37% | 0.0% |
-| SAU | 1.30 | 2.32 | 2.4 | 655 | 505 | 327 | 248 | 98% | 37% | 0.0% |
-| USA | 31.27 | 49.51 | 1.9 | 4,629 | 3,468 | 1,565 | 204 | 79% | 6% | 0.0% |
-| VNM | 0.52 | 1.67 | 5.0 | 325 | 322 | 278 | 336 | 75% | 26% | 0.8% |
-| ZAF | 0.43 | 0.56 | 1.1 | 433 | 334 | 223 | 33 | 94% | 10% | 0.0% |
+| AUS | 1.86 | 2.75 | 1.6 | 363 | 235 | 108 | -7 | 84% | 6% | 0.0% |
+| BRA | 2.31 | 3.71 | 2.0 | 435 | 371 | 220 | -98 | 48% | 2% | 0.0% |
+| CAN | 2.34 | 3.25 | 1.4 | 502 | 334 | 250 | 100 | 66% | 26% | 0.0% |
+| CHN | 20.12 | 43.63 | 3.3 | 11,531 | 9,987 | 7,409 | 2,856 | 79% | 17% | 0.0% |
+| EUU | 21.45 | 28.95 | 1.3 | 2,285 | 1,308 | 457 | -618 | 66% | 0% | 0.0% |
+| GBR | 4.05 | 5.48 | 1.3 | 300 | 134 | 50 | 0 | 72% | 0% | 0.0% |
+| IDN | 1.49 | 3.99 | 4.2 | 788 | 719 | 730 | 477 | 88% | 25% | 0.0% |
+| IND | 4.08 | 14.81 | 5.5 | 3,036 | 2,741 | 2,659 | 615 | 88% | 9% | 0.0% |
+| JPN | 4.47 | 5.36 | 0.8 | 926 | 575 | 182 | 46 | 82% | 6% | 0.0% |
+| MEX | 1.85 | 2.72 | 1.6 | 428 | 317 | 77 | 34 | 89% | 9% | 0.0% |
+| NGA | 0.30 | 0.62 | 3.1 | 113 | 97 | 89 | 57 | 94% | 24% | 0.0% |
+| RUS | 2.59 | 3.01 | 0.6 | 1,674 | 1,321 | 1,191 | 1,107 | 87% | 54% | 0.0% |
+| SAU | 1.30 | 2.32 | 2.4 | 655 | 505 | 326 | 181 | 98% | 27% | 0.0% |
+| USA | 31.27 | 49.50 | 1.9 | 4,629 | 3,475 | 2,743 | 437 | 79% | 6% | 0.0% |
+| VNM | 0.52 | 1.66 | 5.0 | 325 | 316 | 332 | 297 | 75% | 22% | 1.6% |
+| ZAF | 0.43 | 0.55 | 1.1 | 433 | 338 | 242 | 21 | 94% | 6% | 0.0% |
 
-Warming reaches 1.64 degC in 2049 (seed 1, no shocks, M6), against 1.96 degC with no
+Warming reaches 1.65 degC in 2049 (seed 1, no shocks, M8), against 1.96 degC with no
 action. By 2049 methane is down to
 about half its 2025 level, aerosols (and their cooling) are nearly gone, the forest fund has
 turned land use slightly negative, and AI nations run about 3.5 Gt/yr of carbon removal.
@@ -186,6 +186,13 @@ After the M6 mechanics pass all seven pass on 3 seeds. M6 changes, in short:
   collapse, more than any other strategy: it loses 80% of the elections it contests (others
   16-24%). It rarely causes blackouts, because political capital limits closures and the market
   backfills, so Fallen Government stays rare.
+
+M8 (6 seeds) keeps the M7 picture: 6 of 7 criteria pass and viable strategies stays TUNE.
+Steady bots complete 92% (balanced) and 89% (deal maker) of games. A higher factory cost was
+tried and reverted because China's AI then lost its 2032 vote in most seeds (ASSUMPTIONS item
+127). In the AI world, offers ranked by growth as well as emissions send more deals to India,
+whose 2049 CO2 falls from about 2.0 to 0.6 Gt; global CO2 in 2049 falls from 12.9 to 9.9 Gt
+and warming ends at 1.65 degC.
 
 ## Placeholders that matter most for balance
 

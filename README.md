@@ -76,3 +76,9 @@ Same seed and inputs always produce byte-identical output.
   play usually survives), and a playable command-line game (`python -m sim.play`) with saves,
   a game screen, an action catalogue and a player guide for agent playtests. 6 of 7 balance
   criteria pass; viable strategies is marked TUNE because the scripted bots ignore elections.
+- **M8 (mechanics pass after the pilot playtest):** done. Fixes the pilot's exploits and bugs
+  (tax timing, always-accepted counter-offers, a season-flickering bonus, coal arriving after a
+  fossil ban), caps banked slots, makes talks cheaper and storage dearer, keeps deal offers
+  flowing to fast-growing clean nations, shows bonus races and policy effects on screen, and
+  sets Champion at 1.6 degC and falling. Then a seven-agent playtest round
+  (docs/PLAYTEST_REPORT.md).

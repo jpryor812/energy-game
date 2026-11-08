@@ -176,10 +176,16 @@ def test_capital_moves_only_by_income_and_spending(cfg, world):
     assert plain.nations["AAA"].capital - built.nations["AAA"].capital == pytest.approx(cost)
 
 
-def test_slots_bank_each_quarter(cfg):
+def test_slots_bank_each_quarter_up_to_a_cap(cfg):
     w = new_world(cfg, seed=1)
     for _ in range(3):
         w = turn.step(w, cfg)
-    per_d = cfg.tune("slots.domestic_per_quarter")
-    per_p = cfg.tune("slots.diplomatic_per_quarter")
-    assert w.nations["AAA"].slots_banked == {"domestic": 3 * per_d, "diplomatic": 3 * per_p}
+    banked = {
+        k: min(3 * cfg.tune(f"slots.{k}_per_quarter"), cfg.tune(f"slots.{k}_bank_cap"))
+        for k in ("domestic", "diplomatic")
+    }
+    assert w.nations["AAA"].slots_banked == banked
+    for _ in range(10):
+        w = turn.step(w, cfg)
+    caps = {k: cfg.tune(f"slots.{k}_bank_cap") for k in ("domestic", "diplomatic")}
+    assert w.nations["AAA"].slots_banked == caps

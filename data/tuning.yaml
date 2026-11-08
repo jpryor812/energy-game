@@ -260,11 +260,19 @@ slots:
   domestic_per_quarter:
     value: 2
     status: placeholder
-    note: Build doc placeholder (design doc suggests 3). Unused slots bank with no cap.
+    note: Build doc placeholder (design doc suggests 3). Unused slots bank up to domestic_bank_cap (M8).
   diplomatic_per_quarter:
     value: 1
     status: placeholder
     note: Build doc placeholder (design doc suggests 2).
+  domestic_bank_cap:
+    value: 4
+    status: placeholder
+    note: Most domestic slots that can be held, this quarter's included (M8). Two quarters' worth, so slots are used or lost; the pilot banked 69 diplomatic slots it never used.
+  diplomatic_bank_cap:
+    value: 4
+    status: placeholder
+    note: Most diplomatic slots that can be held, this quarter's included (M8). A year's worth.
 
 market:
   cost_weight:
@@ -347,9 +355,9 @@ actions:
     status: placeholder
     note: Cumulative spend, as a share of current GDP, that gives ~63% of efficiency_max_gain.
   influence_per_trillion:
-    value: 100
+    value: 1000
     status: placeholder
-    note: Influence points per T$.
+    note: Influence points per T$. M8 (was 100) - talks cost 5 influence, which was 0.05 T$ (about a quarter of India's capital) for a small trust gain; now 0.005 T$.
   fossil_ban_pc:
     value: 10.0
     status: placeholder
@@ -359,9 +367,9 @@ actions:
     status: placeholder
     note: Highest activity cap (share of energy demand removed).
   activity_pc_cost:
-    value: 100
+    value: 50
     status: placeholder
-    note: Political capital per unit of activity-cap increase (0.1 -> 10).
+    note: Political capital per unit of activity-cap increase (0.1 -> 5). M8 (was 100) - the pilot found the cap not worth its price; it already costs GDP and approval.
   activity_gdp_ratio:
     value: 0.5
     status: placeholder
@@ -481,9 +489,9 @@ scoring:
     status: placeholder
     note: log(world clean-tech manufacturing share now / 2025) that moves the clean score from 0.5 to 0.73 (doubling the share scores ~0.73).
   clean_share_floor:
-    value: 0.01
+    value: 0.03
     status: placeholder
-    note: Added to manufacturing shares before comparing, so a nation with no factories in 2025 can gain by building some.
+    note: Added to manufacturing shares before comparing, so a nation with no factories in 2025 can gain by building some. M8 (was 0.01) - a small factory moved a small producer's clean score from 0.49 to 0.79 in the pilot.
   world_good:
     value: 1.5
     unit: degC
@@ -499,10 +507,15 @@ scoring:
     status: placeholder
     note: Lowest world multiplier.
   good_world_warming:
-    value: 1.5
+    value: 1.6
     unit: degC
     status: placeholder
-    note: Final warming at or below this counts as a good world outcome for endings (the 1.5 degC goal).
+    note: Final warming at or below this, and falling (falling_years), counts as a good world outcome for endings (Champion, Green but Poor). M8 (was 1.5, decided with the user 2026-11-08) - with every nation on the most aggressive clean bot warming still peaked at 1.71 degC and passed 1.5 by 2030, so 1.5 was unreachable; the World Multiplier still reaches 1.0 only at 1.5.
+  falling_years:
+    value: 5
+    unit: years
+    status: placeholder
+    note: M8 - warming must be lower at the end than this many years earlier for a good world outcome (the peak is behind us).
   top_rank:
     value: 4
     status: placeholder
@@ -611,6 +624,7 @@ ai:
   trust_weight: {value: 2.0, status: placeholder, note: "How much trust above neutral lowers the bar to accept a deal."}
   counter_margin: {value: 0.5, status: placeholder, note: "A deal this close to acceptable gets a counter-offer instead of a refusal."}
   counter_rate_factor: {value: 0.7, status: placeholder, note: "A counter asks for this share of the offered rate or price."}
+  counter_accept_share: {value: 0.7, status: placeholder, note: "An AI financier accepts a counter-offer only if it keeps at least this share of the rate, price or equity share it first asked (M8; equal to counter_rate_factor so AI-to-AI deals are unchanged)."}
   credit_cover_share: {value: 0.2, status: placeholder, note: "Share of expected overshoot an AI buys in credits per order."}
   club_affinity: {value: 0.5, status: placeholder, note: "Utility for joining the carbon club, scaled by w_trust."}
   max_payment_share: {value: 0.5, status: placeholder, note: "Most of its yearly capital income an AI host will commit to one deal's payments; AI financiers size loans to fit."}
@@ -622,6 +636,7 @@ ai:
   forest_share: {value: 0.03, status: placeholder, note: "Share of capital an AI considers paying into the forest fund."}
   methane_horizon: {value: 20, status: placeholder, note: "Years over which an AI spreads avoided methane warming to compare it with CO2 cuts."}
   removal_energy_cap: {value: 0.25, status: placeholder, note: "An AI keeps carbon removal's energy use below this share of its economy's energy demand."}
+  host_growth_weight: {value: 1.0, status: placeholder, note: "M8 - when choosing whom to offer a deal, an AI financier ranks hosts by trust x (emissions intensity relative to the 16-nation average + this x baseline growth relative to the average), so fast-growing clean nations still get offers."}
   equity_share_offer: {value: 0.5, status: placeholder, note: "Share of a plant's operating margin an AI equity investor asks for."}
   climate_loan_discount: {value: 0.02, status: placeholder, note: "Interest a green-leader climate loan takes off the commercial rate (concessional)."}
 
@@ -694,7 +709,7 @@ industry:
   world_capacity_solar: {value: 0.15, status: placeholder, note: "World solar equipment factory capacity 2025, T$/yr of output. Unsourced approximate."}
   world_capacity_wind: {value: 0.1, status: placeholder, note: "World wind equipment factory capacity 2025, T$/yr. Unsourced approximate."}
   world_capacity_storage: {value: 0.1, status: placeholder, note: "World grid-battery factory capacity 2025, T$/yr. Unsourced approximate."}
-  factory_capital_cost: {value: 0.5, status: placeholder, note: "T$ to build 1 T$/yr of factory output capacity. Unsourced approximate."}
+  factory_capital_cost: {value: 0.5, status: placeholder, note: "T$ to build 1 T$/yr of factory output capacity. Unsourced approximate. M8 tried 1.0 (closer to integrated solar supply chains) but China then built too few factories to hold its manufacturing jobs and lost the 2032 vote in most seeds; kept at 0.5 pending playtests."}
   factory_build_time: {value: 8, status: placeholder, note: "Quarters to build a factory."}
   factory_lifespan: {value: 20, status: placeholder, note: "Years a factory lasts."}
   credit_competitiveness: {value: 2.0, status: placeholder, note: "Market share ~ capacity x (1 + manufacturing credit)^x."}

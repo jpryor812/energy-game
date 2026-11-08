@@ -46,7 +46,8 @@ def noop(cfg: Config, world: World, nid: str) -> list[Action]:
 
 
 def slots(cfg: Config, n: Nation, kind: str) -> int:
-    return n.slots_banked.get(kind, 0) + int(cfg.tune(f"slots.{kind}_per_quarter"))
+    banked = n.slots_banked.get(kind, 0) + int(cfg.tune(f"slots.{kind}_per_quarter"))
+    return min(banked, int(cfg.tune(f"slots.{kind}_bank_cap")))
 
 
 def build(cfg: Config, world: World, n: Nation, source: str, share: float) -> Action | None:

@@ -112,9 +112,10 @@ sources:
     equipment_share: {value: 0.6, status: placeholder, note: "Share of build cost that is traded equipment (modules, turbines, cells). Unsourced approximate."}
     build_time: {value: 2, status: placeholder, note: "Batteries build fast. Unsourced approximate."}
     lifespan: {value: 15, status: placeholder, note: "Typical battery life. Unsourced approximate."}
-    capital_cost: {value: 0.05, status: placeholder, note: "Per EJ/yr of wind and solar it lets the grid absorb. Unsourced approximate."}
+    capital_cost: {value: 0.15, status: placeholder, note: "Per EJ/yr of wind and solar it lets the grid absorb. M8 (was 0.05) - shifting 1 EJ/yr with one daily cycle needs ~760 GWh of batteries, ~0.15 T$ at ~$200/kWh installed. Unsourced approximate."}
     learning_rate: {value: 0.18, status: placeholder, note: "Battery literature ~18% per doubling. Unsourced approximate."}
-    global_installed: {value: 1.0, status: placeholder, note: "Abstract integration units; learning starting point."}
+    global_installed: {value: 1.0, status: placeholder, note: "Abstract integration units; learning starting point. Real grid batteries in 2025 shift roughly 0.3 EJ/yr at one cycle a day; 1.0 is kept so learning is not faster still. Unsourced approximate."}
+    cost_floor: {value: 0.35, status: placeholder, note: "M8 - learning cannot push storage cost below this share of its 2025 cost (~$70/kWh installed). Unsourced approximate."}
   grid:
     category: enabler
     build_time: {value: 12, status: placeholder, note: "Transmission builds are slow. Unsourced approximate."}

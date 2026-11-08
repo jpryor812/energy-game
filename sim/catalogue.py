@@ -31,7 +31,9 @@ def catalogue(cfg: Config) -> dict[str, dict[str, Any]]:
     entries: dict[str, dict[str, Any]] = {
         "build_capacity": {
             "summary": "Order new generating capacity; it comes online after the source's build "
-            "time.",
+            "time (quarters: "
+            + ", ".join(f"{x} {int(cfg.src(x, 'build_time'))}" for x in cfg.energy_source_ids)
+            + "). Fossil sources are refused while your fossil ban is on.",
             "params": {"source": sources, "amount": "EJ/yr of capacity, > 0"},
             "cost": "capital: unit cost x amount (see the cost table in `show`)",
             "example": {"type": "build_capacity", "source": "solar", "amount": 0.3},
@@ -152,7 +154,9 @@ def catalogue(cfg: Config) -> dict[str, dict[str, Any]]:
             "example": {"type": "fund_retraining", "amount": 0.02},
         },
         "set_fossil_ban": {
-            "summary": "Ban (or unban) new fossil plants; the market stops building them.",
+            "summary": "Ban (or unban) new fossil plants; the market stops building them, and "
+            "fossil projects not yet under construction are cancelled (plants already being "
+            "built still finish).",
             "params": {"on": [True, False]},
             "cost": f"{pc}: {_t(cfg, 'actions.fossil_ban_pc'):g} to switch on",
             "example": {"type": "set_fossil_ban", "on": True},

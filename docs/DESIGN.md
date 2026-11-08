@@ -187,7 +187,7 @@ Bonuses are flat points on top of the score, and the size of each is to be tuned
 
 | Ending | Condition |
 | --- | --- |
-| Champion | Top rank on N and a good world outcome |
+| Champion | Top rank on N and a good world outcome (M8 build note: a good world ends at or below 1.6 degC with warming falling over the last 5 years, decided with the user 2026-11-08, because 1.5 degC proved out of reach even with every nation going all out; the World Multiplier is still 1.0 only at 1.5 degC) |
 | Prosperous but Doomed | Top rank on N, bad world outcome |
 | Green but Poor | Good world outcome, low rank on N |
 | Shared Failure | Bad outcome for you and the world |

@@ -43,6 +43,15 @@ def unit_cost(cfg: Config, world: World, source: str) -> float:
     return max(cost, floor["value"] * c0) if floor else cost
 
 
+def at_floor(cfg: Config, world: World, source: str) -> bool:
+    """Whether learning has pushed the world cost down to the source's floor (no further falls
+    from deployment)."""
+    floor = cfg.techs["sources"][source].get("cost_floor")
+    if not floor:
+        return False
+    return unit_cost(cfg, world, source) <= floor["value"] * cfg.src(source, "capital_cost") + 1e-15
+
+
 def research_multiplier(cfg: Config, nation: Nation, source: str) -> float:
     spent = nation.research.get(source, 0.0)
     half = cfg.tune("research.half_effect_spend")

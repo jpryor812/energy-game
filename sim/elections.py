@@ -6,7 +6,8 @@ The vote is purely economic (decided with the user, 2026-11-08):
          + growth_weight x (annual GDP growth over the term - baseline growth), in pp
          + jobs_weight x weighted energy-job change over the term / workforce (sim.jobs)
          - price_weight x energy-price rise over the term
-         - tax_weight x tax raised over the term
+         - tax_weight x tax raised over the term, averaged over its quarters (M8: so a rise
+           reversed just before the vote still counts for the quarters it was in force)
          + a seeded swing (normal, `swing_sd`, from the "elections" RNG stream)
 
 Win at `threshold` or more. Losing ends the game: the player is voted out (decided with the user,
@@ -44,7 +45,27 @@ def start_term(world: World) -> None:
         "gdp": p.gdp,
         "price": p.energy_price,
         "tax": p.tax_change,
+        "tax_sum": 0.0,
+        "tax_quarters": 0.0,
     } | {f"jobs_{k}": v for k, v in p.jobs.items()}
+
+
+def term_tax_rise(world: World) -> float:
+    """Tax raised above the term's starting rate, averaged over the quarters of the term so far
+    (this quarter's rate if none has been recorded yet)."""
+    start = world.term_start
+    if start.get("tax_quarters", 0.0) > 0:
+        return start["tax_sum"] / start["tax_quarters"]
+    return world.nations[world.player].tax_change - start["tax"]
+
+
+def track(world: World) -> None:
+    """Record this quarter's tax rate for the term average."""
+    start = world.term_start
+    if "tax_sum" not in start:  # a save from before M8
+        start["tax_sum"], start["tax_quarters"] = 0.0, 0.0
+    start["tax_sum"] += world.nations[world.player].tax_change - start["tax"]
+    start["tax_quarters"] += 1.0
 
 
 def vote(cfg: Config, world: World) -> dict[str, float]:
@@ -62,15 +83,19 @@ def vote(cfg: Config, world: World) -> dict[str, float]:
         "growth": _e(cfg, "growth_weight") * (growth - baseline) * 100,
         "jobs": _e(cfg, "jobs_weight") * jobs.weighted_change(cfg, p, before, p.jobs),
         "prices": -_e(cfg, "price_weight") * (p.energy_price / start["price"] - 1),
-        "taxes": -_e(cfg, "tax_weight") * (p.tax_change - start["tax"]),
+        "taxes": -_e(cfg, "tax_weight") * term_tax_rise(world),
         "swing": rng.stream(world.seed, "elections", world.t, nid).gauss(0, _e(cfg, "swing_sd")),
     }
     return parts
 
 
 def run(cfg: Config, world: World) -> dict[str, Any] | None:
-    """Hold the election if one is due and the player is still in office; return a log."""
-    if world.player is None or not due(cfg, world.t) or not in_power(world):
+    """Record the quarter's tax for the term average; hold the election if one is due and the
+    player is still in office; return a log."""
+    if world.player is None or not in_power(world):
+        return None
+    track(world)
+    if not due(cfg, world.t):
         return None
     parts = vote(cfg, world)
     share = sum(parts.values())

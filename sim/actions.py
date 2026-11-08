@@ -4,7 +4,7 @@ An action is a plain dict, e.g. {"type": "build_capacity", "source": "solar", "a
 Each type declares a slot (domestic or diplomatic), a check that validates parameters and returns
 its resource costs, and an effect. `resolve` applies a nation's actions in order: an action that
 is malformed or unaffordable is rejected and logged, never raised, so a bad action cannot crash a
-run. Every action uses one slot of its type; unused slots are banked with no cap.
+run. Every action uses one slot of its type; unused slots are banked up to a cap (M8).
 
 Units: amounts of capacity in EJ/yr, money in T$, carbon price in $/tCO2, shares in 0..1.
 Diplomatic actions (M4): talks, tariffs, the carbon club, deals, and carbon credit orders.
@@ -20,7 +20,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from sim import construction, credits, deals, diplomacy, tech, trade
+from sim import construction, credits, deals, diplomacy, energy, tech, trade
 from sim.config import Config
 from sim.state import Construction, Nation, Pledge, World
 
@@ -78,6 +78,8 @@ def _a(cfg: Config, name: str) -> Any:
 
 def _build_check(cfg, world, n, act):
     s = _choice(act, "source", cfg.energy_source_ids)
+    if n.fossil_ban and energy.is_fossil(cfg, s):
+        raise Rejected(f"your fossil ban is on: no new {s} plants")
     amount = _positive(act)
     return {"capital": tech.nation_unit_cost(cfg, world, n, s) * amount}
 
@@ -360,6 +362,7 @@ def _respond_apply(cfg, world, n, act):
         key = _price_key(deal)
         deal.status = "countered"
         terms = {k: v for k, v in deal.terms.items() if k != "proposer"}
+        terms.setdefault("asked", deal.terms[key])  # the financier's first ask (M8)
         terms[key] = float(act[key])
         terms["proposer"] = n.id
         deals.propose(world, deal.financier, deal.host, deal.type, terms)
@@ -497,6 +500,16 @@ def _ban_check(cfg, world, n, act):
 
 
 def _ban_apply(cfg, world, n, act):
+    """Switching the ban on also cancels fossil projects whose construction has not started yet
+    (start = arrival minus build time), so plants ordered years ahead do not keep arriving (M8).
+    Plants already being built still finish."""
+    if act["on"] and not n.fossil_ban:
+        n.pipeline = [
+            c
+            for c in n.pipeline
+            if not energy.is_fossil(cfg, c.source)
+            or c.complete_turn - int(cfg.src(c.source, "build_time")) <= world.t
+        ]
     n.fossil_ban = 1.0 if act["on"] else 0.0
 
 

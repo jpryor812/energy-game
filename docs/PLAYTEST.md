@@ -18,8 +18,9 @@ climate*.
 - A few bonuses (2 points each): first to net zero, largest cut, the most effective deal, and
   others.
 
-**Endings.** Champion (top-4 nation and warming at or below 1.5 degC), Prosperous but Doomed,
-Green but Poor, Shared Failure.
+**Endings.** Champion (top-4 nation, and warming ends at or below 1.6 degC and lower than five
+years earlier), Prosperous but Doomed, Green but Poor, Shared Failure. The screen shows the
+bonus races and who leads each.
 
 **Losing.** Two ways, and either ends the game with a score of 0:
 
@@ -31,7 +32,8 @@ Green but Poor, Shared Failure.
 - **Fallen Government.** If stability falls below 0.1. Blackouts (energy shortfalls) and low
   approval erode stability.
 
-**Each quarter** you get 2 domestic and 1 diplomatic action slots; unused slots are banked. You
+**Each quarter** you get 2 domestic and 1 diplomatic action slots; unused slots are banked, up
+to 4 of each. You
 also earn capital (T$, trillions of dollars), political capital (spent on unpopular moves such as
 carbon prices, closing plants and tax rises) and can buy influence (spent on talks).
 
@@ -105,6 +107,6 @@ Finish with a report (in your notes file and in your final answer), under these 
 7. **Dull stretches.** Periods with nothing worth deciding.
 8. **Bugs.** Anything that looked wrong: impossible numbers, rejected actions you think were
    valid, results that contradict the screen.
-9. **Was Champion reachable?** Could you, or the world, get warming to 1.5 degC? What would it
-   have taken?
+9. **Was Champion reachable?** Could you, or the world, get warming to 1.6 degC and falling?
+   What would it have taken?
 10. **One change you would make.**

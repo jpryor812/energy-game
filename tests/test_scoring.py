@@ -27,6 +27,8 @@ def test_world_multiplier_shape(cfg):
     ("rank", "warming", "loss", "expected"),
     [
         (1, 1.5, None, scoring.CHAMPION),
+        (1, 1.6, None, scoring.CHAMPION),
+        (1, 1.65, None, scoring.PROSPEROUS_BUT_DOOMED),
         (1, 3.0, None, scoring.PROSPEROUS_BUT_DOOMED),
         (16, 1.5, None, scoring.GREEN_BUT_POOR),
         (16, 3.0, None, scoring.SHARED_FAILURE),
@@ -36,6 +38,12 @@ def test_world_multiplier_shape(cfg):
 )
 def test_endings(cfg, rank, warming, loss, expected):
     assert scoring.ending(cfg, rank, warming, loss) == expected
+
+
+def test_good_world_needs_warming_to_be_falling(cfg):
+    assert scoring.ending(cfg, 1, 1.55, None, falling=False) == scoring.PROSPEROUS_BUT_DOOMED
+    assert scoring.ending(cfg, 16, 1.55, None, falling=False) == scoring.SHARED_FAILURE
+    assert scoring.ending(cfg, 1, 1.55, None, falling=None) == scoring.CHAMPION
 
 
 def test_components_in_range_and_index_bounded(cfg, noop_world):

@@ -24,7 +24,18 @@ import math
 from dataclasses import dataclass
 from typing import Any
 
-from sim import actions, climate, construction, credits, deals, diplomacy, energy, tech, trade
+from sim import (
+    actions,
+    climate,
+    construction,
+    credits,
+    deals,
+    diplomacy,
+    economy,
+    energy,
+    tech,
+    trade,
+)
 from sim.config import Config
 from sim.state import Nation, World
 
@@ -474,12 +485,20 @@ def _deal_offer(cfg, world, nid, personality, w_em, income) -> tuple[float, Acti
         for d in world.deals.values()
         if d.financier == nid and (d.status == deals.OPEN or world.t - d.start_turn < 4)
     }
+    # Rank hosts by trust x need: emissions intensity and baseline growth, each relative to the
+    # 16-nation average (M8: growth too, so clean but fast-growing nations still get offers).
+    ids = sorted(world.nations)
+    intensity = {i: max(0.0, world.nations[i].emissions) / world.nations[i].gdp for i in ids}
+    growth = {i: max(0.0, economy.baseline_growth(cfg, i, world.t)) for i in ids}
+    avg_i = max(sum(intensity.values()) / len(ids), 1e-12)
+    avg_g = max(sum(growth.values()) / len(ids), 1e-12)
     hosts = []
-    for hid in sorted(world.nations):
-        h = world.nations[hid]
-        if hid == nid or hid in busy or h.emissions <= 0:
+    for hid in ids:
+        if hid == nid or hid in busy:
             continue
-        hosts.append((diplomacy.trust(world, nid, hid) * h.emissions / h.gdp, hid))
+        need = intensity[hid] / avg_i + _ai(cfg, "host_growth_weight") * growth[hid] / avg_g
+        if need > 0:
+            hosts.append((diplomacy.trust(world, nid, hid) * need, hid))
     if not hosts:
         return None
     _, hid = max(hosts)
@@ -544,9 +563,13 @@ def diplomatic(cfg, world, nid, personality, ctx, w_em, income) -> list[tuple[fl
                 counter = d.terms[key] * _ai(cfg, "counter_rate_factor")
                 act = {"type": "respond_deal", "deal_id": did, "response": "counter", key: counter}
                 out.append((1.0, act))
-        else:  # a counter-offer back to us as financier
-            if deals.build_cost(cfg, world, d) <= n.capital:  # accept one round of counter
-                out.append((1.0, {"type": "respond_deal", "deal_id": did, "response": "accept"}))
+        else:  # a counter-offer back to us as financier: accept one round if affordable and
+            # not below our floor on what we first asked (M8); refuse otherwise
+            key = actions._price_key(d)
+            floor = _ai(cfg, "counter_accept_share") * d.terms.get("asked", d.terms[key])
+            ok = d.terms[key] >= floor - 1e-12 and deals.build_cost(cfg, world, d) <= n.capital
+            response = "accept" if ok else "refuse"
+            out.append((1.0, {"type": "respond_deal", "deal_id": did, "response": response}))
 
     for pid in sorted(world.nations):
         if pid == nid or (nid in members and pid in members):
