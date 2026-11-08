@@ -3,7 +3,7 @@ import json
 import os
 from pathlib import Path
 
-from sim import config, runner
+from sim import config, runner, scoring
 from sim.state import World
 
 GOLDEN = Path(__file__).parent / "golden_hashes.json"
@@ -19,10 +19,11 @@ def test_noop_run_writes_outputs(tmp_path, fixture_dir):
     assert runner.main([*args, "--out", str(out)]) == 0
     assert sorted(p.name for p in out.iterdir()) == ["history.jsonl", "state.json", "summary.json"]
     lines = (out / "history.jsonl").read_text().splitlines()
-    assert len(lines) == 100
-    assert json.loads(lines[-1])["label"] == "2049Q4"
     summary = json.loads((out / "summary.json").read_text())
-    assert summary["turns_played"] == 100 and summary["final_quarter"] == "2049Q4"
+    assert len(lines) == summary["turns_played"]
+    assert json.loads(lines[-1])["label"] == summary["final_quarter"]
+    # Doing nothing on the fixture loses an election; a lost game stops early.
+    assert summary["turns_played"] == 100 or summary["ending"] in scoring.LOSSES
     state = World.from_json((out / "state.json").read_text())
     assert state.hash() == summary["state_hash"]
 

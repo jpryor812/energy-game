@@ -313,9 +313,10 @@ Decisions made with the user on 2026-11-08 are recorded in docs/DESIGN.md ("Deci
     growth above baseline over the term + 2 x weighted job change / workforce - 0.1 x energy
     price rise - 2 x tax raised + a seeded normal swing (sd 0.02). Win at 50%. Losing hands the
     nation to the AI (its default personality) for one term; the player returns at the next
-    election date without a vote. Approval is not in the vote.
+    election date without a vote. Approval is not in the vote. *Superseded in M7 (item 112):
+    losing ends the game, and incumbency is 0.56.*
 82. **Opposition terms** keep everything the AI does: carbon prices, subsidies, taxes and deals
-    carry over when the player returns.
+    carry over when the player returns. *Removed in M7.*
 83. **AI and the new levers.** AI nations consider factories (valued by extra export growth) and
     electrification (when within 5 points of their clean ceiling). Taxes, tax credits, domestic
     content and retraining are player levers for now: AI leaders face no elections.
@@ -436,6 +437,28 @@ planning)").
      after its first moves between the carbon price and plant closures. Rejected bot actions
      fell from about 1,200 to 39 across the balance grid.
 
+## M7: losing an election ends the game; the text interface
+
+112. **Losing an election ends the game** (decided with the user, 2026-11-08), replacing the
+     opposition term. A lost game, Voted Out or Fallen Government, scores `loss_score` (0); the
+     formula score at that point is kept as `score_at_exit` for diagnostics. Elections are held
+     only for the player's nation.
+113. **Incumbency 0.53 -> 0.56**, so steady play usually survives six elections: over 6 seeds
+     balanced completes 86% of games, deal_maker 89%, all_fossil 89%, all_clean 53%, reckless
+     0%. All-out clean play is electorally risky, mostly through fossil job losses and slower
+     growth, as intended.
+114. **Balance report** now runs 6 seeds by default, reports expected score (lost games count
+     as 0) and completion rates, runs the free-rider comparison without elections so both worlds
+     reach 2049, and adds to criterion 7 that steady play completes at least 70% of games.
+115. **The AI-only calibration world has no player**, so no elections (`report.ai_world`).
+116. **The text interface** (`python -m sim.play`, `sim/session.py`, `sim/view.py`,
+     `sim/catalogue.py`) adds no rules: a turn is `turn.step` with the player's actions, and a
+     session driven by a bot reproduces `runner.play` (tested). The screen shows resources after
+     this quarter's income, because income arrives before actions resolve. It hides AI
+     personalities, other nations' plans and the seeded draws; the expected vote leaves out the
+     swing and is shown from the second year of a term. Saves refuse to load with changed data
+     files.
+
 ## Open questions
 
 - **AI overshoot.** Cheap clean energy leads several low-ambition nations to cut far past their
@@ -448,14 +471,18 @@ planning)").
 - **The score is weakly sensitive to GDP.** The relative income component is an S-curve on the
   log ratio to baseline (scale 0.1) and most bots sit in its lower half, so a further 20% GDP
   loss costs only about 3-5% of score. This also caps how much world difficulty can matter.
-- **Losing an election can help.** The AI governs a nation that loses an election for one term,
-  and plays well: in Vietnam the reckless bot, out of office about half the game, outscores
-  every scripted bot (57.3 vs 56.0). Losing should probably carry a cost of its own.
+- **Viable strategies under election risk (criterion 3, TUNE).** Counting only completed
+  games, several strategies stay close in every nation, but the scripted bots ignore elections,
+  so expected scores swing with which seeds they lose (all_clean is voted out in every China
+  and India run, through coal job losses). Agent playtests are the better test now.
+- **Russia is hard to hold.** The balanced bot completes only half its Russian games: falling
+  fossil export revenue drags growth below baseline at elections.
 - **No bot world reaches 1.5 degC.** Every balance run ends at about 1.63-1.75 degC, so endings
   are almost all Shared Failure or Prosperous but Doomed. Champion needs coordinated play the
   bots do not attempt; agent playtesting should probe it.
 - **Fallen Government is rare by design now.** It needs a sustained blackout or an approval
   collapse; neglect is punished mainly through lost elections.
+- **Resolved in M7:** losing an election helping (it now ends the game).
 - **Resolved in M6:** all-clean dominance in India and Vietnam, weak world difficulty, rejected
   bot actions (1,200 -> 39), and criterion 7 (reinterpreted, item 109).
 - **Resolved in M5:** construction-job swings (construction jobs now saturate), the difficulty

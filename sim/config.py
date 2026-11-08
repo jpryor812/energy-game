@@ -273,6 +273,7 @@ REQUIRED_TUNING = (
     "elections.tax_weight",
     "elections.swing_sd",
     "elections.threshold",
+    "scoring.loss_score",
     "shocks.disaster_rate",
     "shocks.disaster_threshold",
     "shocks.disaster_gdp_loss",

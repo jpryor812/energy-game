@@ -204,7 +204,7 @@ def test_balance_report_lists_all_criteria(cfg):
             summary | {"bot": b, "country": c} for b in balance.BOTS for c in cfg.playable_ids
         ],
         "by_difficulty": [summary | {"difficulty": d} for d in ("easy", "normal", "hard")],
-        "many_free": [summary | {"country": c} for c in cfg.playable_ids],
+        "many_free": [summary | {"country": c} for _ in (0, 1) for c in cfg.playable_ids],
         "short": {(c, b): 50.0 for c in cfg.playable_ids for b in ("balanced", "all_fossil")},
         "determinism": ("a" * 64, "a" * 64),
         "seeds": [1],

@@ -5,7 +5,7 @@ import dataclasses
 
 import pytest
 
-from sim import actions, economy, elections, energy, jobs, runner, tech, trade, turn
+from sim import actions, economy, elections, energy, jobs, runner, scoring, tech, trade, turn
 from sim.scenario import new_world
 
 
@@ -149,14 +149,14 @@ def test_vote_is_purely_economic(cfg):
     assert sum(elections.vote(cfg, w).values()) < base
 
 
-def test_losing_hands_one_term_to_the_opposition(cfg):
+def test_losing_an_election_ends_the_game(cfg):
     harsh = copy.deepcopy(cfg.tuning)
     harsh["elections"]["incumbency"]["value"] = 0.0  # every election is lost
     hcfg = dataclasses.replace(cfg, tuning=harsh)
     w = runner.play(hcfg, 1, "AAA", "balanced", until=40)
-    events = [(e["t"], e["event"]) for e in w.elections]
-    assert events == [(15, "lost"), (31, "player_returns")]
-    log = {h["t"]: h for h in w.history}
-    assert all(not log[t]["player_in_power"] for t in range(16, 32))
-    assert all(log[t]["nations"]["AAA"]["actions"] == [] for t in range(17, 32))
-    assert log[32]["player_in_power"] and log[33]["nations"]["AAA"]["actions"]
+    assert [(e["t"], e["event"]) for e in w.elections] == [(15, "lost")]
+    assert w.t == 16 and w.voted_out_at == 15
+    summary = runner.summarize(hcfg, w, "AAA", "balanced", 1)
+    assert summary["ending"] == scoring.VOTED_OUT
+    assert summary["score"] == hcfg.tune("scoring.loss_score")
+    assert summary["score_at_exit"] > 0

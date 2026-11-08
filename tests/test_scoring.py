@@ -24,17 +24,18 @@ def test_world_multiplier_shape(cfg):
 
 
 @pytest.mark.parametrize(
-    ("rank", "warming", "fallen", "expected"),
+    ("rank", "warming", "loss", "expected"),
     [
-        (1, 1.5, False, scoring.CHAMPION),
-        (1, 3.0, False, scoring.PROSPEROUS_BUT_DOOMED),
-        (16, 1.5, False, scoring.GREEN_BUT_POOR),
-        (16, 3.0, False, scoring.SHARED_FAILURE),
-        (1, 1.5, True, scoring.FALLEN_GOVERNMENT),
+        (1, 1.5, None, scoring.CHAMPION),
+        (1, 3.0, None, scoring.PROSPEROUS_BUT_DOOMED),
+        (16, 1.5, None, scoring.GREEN_BUT_POOR),
+        (16, 3.0, None, scoring.SHARED_FAILURE),
+        (1, 1.5, scoring.FALLEN_GOVERNMENT, scoring.FALLEN_GOVERNMENT),
+        (1, 1.5, scoring.VOTED_OUT, scoring.VOTED_OUT),
     ],
 )
-def test_endings(cfg, rank, warming, fallen, expected):
-    assert scoring.ending(cfg, rank, warming, fallen) == expected
+def test_endings(cfg, rank, warming, loss, expected):
+    assert scoring.ending(cfg, rank, warming, loss) == expected
 
 
 def test_components_in_range_and_index_bounded(cfg, noop_world):

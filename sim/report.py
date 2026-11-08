@@ -15,8 +15,9 @@ import dataclasses
 import sys
 from typing import Any
 
-from sim import config, runner
+from sim import config, runner, turn
 from sim.config import Config
+from sim.scenario import new_world
 from sim.state import World
 
 CHECKPOINTS = (0, 20, 60, 99)  # 2025Q1, 2030Q1, 2040Q1, 2049Q4
@@ -43,7 +44,12 @@ def bau_world(cfg: Config, seed: int = 1) -> World:
 
 
 def ai_world(cfg: Config, seed: int = 1) -> World:
-    return runner.play(without_shocks(cfg), seed, cfg.playable_ids[0], "ai")
+    """Every nation played by the AI, with no player and so no elections."""
+    cfg = without_shocks(cfg)
+    world = new_world(cfg, seed)
+    while world.t < cfg.tune("time.turns"):
+        world = turn.step(world, cfg)
+    return world
 
 
 def bau_tables(cfg: Config, world: World) -> str:

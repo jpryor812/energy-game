@@ -9,9 +9,9 @@ The vote is purely economic (decided with the user, 2026-11-08):
          - tax_weight x tax raised over the term
          + a seeded swing (normal, `swing_sd`, from the "elections" RNG stream)
 
-Win at `threshold` or more. Losing hands the nation to the AI (its default personality) for one
-term; at the next election date the player returns without a vote. AI-led nations have no
-elections. Approval does not enter the vote.
+Win at `threshold` or more. Losing ends the game: the player is voted out (decided with the user,
+2026-11-08, replacing M4b's one opposition term). AI-led nations have no elections. Approval
+does not enter the vote.
 """
 
 from __future__ import annotations
@@ -33,8 +33,8 @@ def due(cfg: Config, t: int) -> bool:
 
 
 def in_power(world: World) -> bool:
-    """Whether the player governs this quarter."""
-    return world.t > world.opposition_until
+    """Whether the player still governs (has not lost an election)."""
+    return world.voted_out_at < 0
 
 
 def start_term(world: World) -> None:
@@ -69,18 +69,21 @@ def vote(cfg: Config, world: World) -> dict[str, float]:
 
 
 def run(cfg: Config, world: World) -> dict[str, Any] | None:
-    """Hold the election (or end the opposition's term) if one is due; return a log."""
-    if world.player is None or not due(cfg, world.t):
+    """Hold the election if one is due and the player is still in office; return a log."""
+    if world.player is None or not due(cfg, world.t) or not in_power(world):
         return None
-    if world.t <= world.opposition_until:
-        log: dict[str, Any] = {"t": world.t, "event": "player_returns"}
-    else:
-        parts = vote(cfg, world)
-        share = sum(parts.values())
-        won = share >= _e(cfg, "threshold")
-        log = {"t": world.t, "event": "won" if won else "lost", "vote": share, "parts": parts}
-        if not won:
-            world.opposition_until = world.t + int(_e(cfg, "interval"))
+    parts = vote(cfg, world)
+    share = sum(parts.values())
+    won = share >= _e(cfg, "threshold")
+    log: dict[str, Any] = {
+        "t": world.t,
+        "event": "won" if won else "lost",
+        "vote": share,
+        "parts": parts,
+    }
     world.elections.append(log)
-    start_term(world)
+    if won:
+        start_term(world)
+    else:
+        world.voted_out_at = world.t
     return log

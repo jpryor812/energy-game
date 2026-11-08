@@ -202,10 +202,10 @@ class World:
     coalition_tariffs: dict[str, float] = field(default_factory=dict)
     credit_price: float = 0.0
     credit_orders: list[dict[str, Any]] = field(default_factory=list)
-    # M4b: the player's nation, elections, and an opposition term (through turn
-    # `opposition_until` the AI governs the player's nation).
+    # M4b: the player's nation and elections. M7: losing an election ends the game;
+    # `voted_out_at` is the turn of the lost election (-1 while in office).
     player: str | None = None
-    opposition_until: int = -1
+    voted_out_at: int = -1
     term_start: dict[str, float] = field(default_factory=dict)
     elections: list[dict[str, Any]] = field(default_factory=list)
     # M4b climate: methane (2025 = 1, relaxes toward current emissions), aerosols (2025 = 1),
@@ -241,7 +241,7 @@ class World:
             credit_price=float(d["credit_price"]),
             credit_orders=[dict(o) for o in d["credit_orders"]],
             player=d["player"],
-            opposition_until=int(d["opposition_until"]),
+            voted_out_at=int(d["voted_out_at"]),
             term_start={k: float(v) for k, v in d["term_start"].items()},
             elections=[dict(e) for e in d["elections"]],
             methane_index=float(d["methane_index"]),

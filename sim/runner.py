@@ -23,7 +23,7 @@ from sim.config import Config
 from sim.scenario import new_world
 from sim.state import World
 
-MILESTONE = "M6"
+MILESTONE = "M7"
 
 
 def play(
@@ -39,9 +39,9 @@ def play(
     difficulty: str | None = None,
 ) -> World:
     """Play from `world` (or a fresh world) until quarter `until` (default: the last turn), or
-    until the player's government falls. While the player is out of office after losing an
-    election, the AI governs its nation. With bot "ai" the AI plays the player's nation too;
-    with `ai=False` the other nations take no actions (business as usual)."""
+    until the player loses (government falls or an election is lost). With bot "ai" the AI plays
+    the player's nation too; with `ai=False` the other nations take no actions (business as
+    usual)."""
     if country not in cfg.playable_ids:
         raise ValueError(f"'{country}' is not playable; choose from {cfg.playable_ids}")
     bot = bots.get(bot_name)
@@ -51,16 +51,15 @@ def play(
         world.player = country
         elections.start_term(world)
     end = cfg.value("tuning", "time.turns") if until is None else until
-    while world.t < end and not scoring.is_fallen(cfg, world, country):
-        ai_governs = bot_name == "ai" or not elections.in_power(world)
-        acts = {} if ai_governs else {country: bot(cfg, world, country)}
+    while world.t < end and not scoring.loss(cfg, world, country):
+        acts = {} if bot_name == "ai" else {country: bot(cfg, world, country)}
         world = turn.step(world, cfg, actions=acts, dt=dt, ai=ai)
     return world
 
 
 def summarize(cfg: Config, world: World, country: str, bot_name: str, dt: int) -> dict[str, Any]:
     start_year = cfg.value("tuning", "time.start_year")
-    result = scoring.score(cfg, world, country, fallen=scoring.is_fallen(cfg, world, country))
+    result = scoring.score(cfg, world, country, lost=scoring.loss(cfg, world, country))
     rejected = sum(
         1 for h in world.history for r in h["nations"][country]["actions"] if not r["ok"]
     )
@@ -76,6 +75,7 @@ def summarize(cfg: Config, world: World, country: str, bot_name: str, dt: int) -
         "config_hash": cfg.hash,
         "state_hash": world.hash(),
         "score": result["score"],
+        "score_at_exit": result["score_at_exit"],
         "ending": result["ending"],
         "rank": result["rank"],
         "nation_index": result["nation_index"],

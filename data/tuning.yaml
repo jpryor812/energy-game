@@ -511,6 +511,10 @@ scoring:
     value: 0.1
     status: placeholder
     note: Stability below this ends the game early (Fallen Government).
+  loss_score:
+    value: 0.0
+    status: placeholder
+    note: Score of a lost game (Fallen Government or Voted Out); losing an election ends the game (decided with the user 2026-11-08, M7).
   net_zero_share:
     value: 0.05
     status: placeholder
@@ -716,7 +720,7 @@ industrial_policy:
 elections:
   first_turn: {value: 15, status: placeholder, note: "First election at the end of 2028 (t=15); then every interval."}
   interval: {value: 16, status: placeholder, note: "Quarters between elections (four years)."}
-  incumbency: {value: 0.53, status: placeholder, note: "Vote share of an incumbent whose economy matched expectations."}
+  incumbency: {value: 0.56, status: placeholder, note: "Vote share of an incumbent whose economy matched expectations. 0.53 -> 0.56 in M7, when losing an election began to end the game: steady play (balanced, deal_maker) now finishes about 80-90% of games, all-out clean play about 60%, reckless play never."}
   growth_weight: {value: 0.03, status: placeholder, note: "Vote share per pp/yr of growth above baseline over the term."}
   jobs_weight: {value: 2.0, status: placeholder, note: "Vote share per unit of weighted energy-job change as a share of the workforce."}
   price_weight: {value: 0.1, status: placeholder, note: "Vote share lost per unit rise in the energy price over the term (+20% -> -0.02)."}

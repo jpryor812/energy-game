@@ -33,7 +33,8 @@ Bonuses (flat points). Absolute: first nation to reach net zero (emissions at or
 `net_zero_share` of 2025), largest cut in tonnes, and the deal that cut the most emissions (both
 parties). Relative, x difficulty: largest percentage cut, largest gain in clean share.
 
-Endings, for the player: Fallen Government if stability fell below the threshold; otherwise a
+Endings, for the player: Fallen Government if stability fell below the threshold, or Voted Out
+if they lost an election; both end the game early and score `loss_score` (M7). Otherwise a
 top finish (rank on the combined index at or above `top_rank`) and a good world (final warming
 at or below `good_world_warming`) decide between Champion, Prosperous but Doomed, Green but Poor,
 and Shared Failure.
@@ -53,6 +54,8 @@ PROSPEROUS_BUT_DOOMED = "Prosperous but Doomed"
 GREEN_BUT_POOR = "Green but Poor"
 SHARED_FAILURE = "Shared Failure"
 FALLEN_GOVERNMENT = "Fallen Government"
+VOTED_OUT = "Voted Out"
+LOSSES = (FALLEN_GOVERNMENT, VOTED_OUT)
 
 
 def logistic(x: float) -> float:
@@ -213,9 +216,9 @@ def clean_share(cfg: Config, n) -> float:
     return clean / delivered if delivered > 0 else 0.0
 
 
-def ending(cfg: Config, rank: int, warming: float, fallen: bool) -> str:
-    if fallen:
-        return FALLEN_GOVERNMENT
+def ending(cfg: Config, rank: int, warming: float, loss: str | None = None) -> str:
+    if loss:
+        return loss
     top = rank <= _sc(cfg, "top_rank")
     good = warming <= _sc(cfg, "good_world_warming")
     if top and good:
@@ -229,6 +232,16 @@ def ending(cfg: Config, rank: int, warming: float, fallen: bool) -> str:
 
 def is_fallen(cfg: Config, world: World, nid: str) -> bool:
     return world.nations[nid].stability < _sc(cfg, "fallen_stability")
+
+
+def loss(cfg: Config, world: World, nid: str) -> str | None:
+    """How the player lost, if they did: their government fell, or they lost an election. Either
+    ends the game (M7)."""
+    if is_fallen(cfg, world, nid):
+        return FALLEN_GOVERNMENT
+    if world.player == nid and world.voted_out_at >= 0:
+        return VOTED_OUT
+    return None
 
 
 def absolute_components(cfg: Config, world: World, nid: str) -> dict[str, float]:
@@ -275,12 +288,13 @@ def combined_index(cfg: Config, absolute: float, relative: float, mult: float) -
     return _sc(cfg, "weight_absolute") * absolute + _sc(cfg, "weight_relative") * relative * mult
 
 
-def score(cfg: Config, world: World, player: str, fallen: bool = False) -> dict[str, Any]:
+def score(cfg: Config, world: World, player: str, lost: str | None = None) -> dict[str, Any]:
     """Final (or running) score for every nation, the player's rank and ending.
 
     score = (w_abs x absolute index + w_rel x relative index x country difficulty) x World
     Multiplier + absolute bonuses + relative bonuses x country difficulty. Rank (for endings) is
-    on the combined index before the World Multiplier.
+    on the combined index before the World Multiplier. A lost game (`lost` is Fallen Government
+    or Voted Out) scores `loss_score`; `score_at_exit` keeps what the formula gave.
     """
     ids = sorted(world.nations)
     rel_comps = {nid: components(cfg, world, nid) for nid in ids}
@@ -302,7 +316,8 @@ def score(cfg: Config, world: World, player: str, fallen: bool = False) -> dict[
     totals = {nid: combined[nid] * world_mult + bonus_total(nid) for nid in ids}
     return {
         "player": player,
-        "score": totals[player],
+        "score": _sc(cfg, "loss_score") if lost else totals[player],
+        "score_at_exit": totals[player],
         "nation_index": relative[player],
         "absolute_index": absolute[player],
         "difficulty_multiplier": mults[player],
@@ -313,7 +328,7 @@ def score(cfg: Config, world: World, player: str, fallen: bool = False) -> dict[
         "warming": world.warming,
         "rank": ranks[player],
         "bonuses": bonus[player],
-        "ending": ending(cfg, ranks[player], world.warming, fallen),
+        "ending": ending(cfg, ranks[player], world.warming, lost),
         "all_nations": {
             nid: {
                 "nation_index": relative[nid],

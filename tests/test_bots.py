@@ -1,5 +1,8 @@
 """Bots play every playable nation with valid actions, deterministically."""
 
+import copy
+import dataclasses
+
 import pytest
 
 from sim import actions, bots, config, runner
@@ -9,7 +12,9 @@ PLAYING_BOTS = ["all_fossil", "all_clean", "balanced", "deal_maker"]
 
 @pytest.mark.parametrize("bot", PLAYING_BOTS)
 def test_bot_full_game_on_fixture(cfg, bot):
-    w = runner.play(cfg, 1, "AAA", bot)
+    safe = copy.deepcopy(cfg.tuning)
+    safe["elections"]["incumbency"]["value"] = 1.0  # elections always won: play all 100 turns
+    w = runner.play(dataclasses.replace(cfg, tuning=safe), 1, "AAA", bot)
     assert w.t == cfg.tune("time.turns")
     log = [r for h in w.history for r in h["nations"]["AAA"]["actions"]]
     assert log, "bot never acted"

@@ -1,15 +1,17 @@
 """Balance harness: run the grid, measure the build doc's acceptance criteria, and write
 docs/BALANCE_REPORT.md.
 
-    python -m sim.balance --workers 8            # full report (3 seeds)
+    python -m sim.balance --workers 8            # full report (6 seeds)
     python -m sim.balance --workers 8 --seeds 1  # quicker
 
 Criteria (docs/BUILD_SIM_V0.md, with the 2026-11-08 change to criterion 4):
 
 1. Determinism: the same seed gives the same state hash, run twice.
-2. No dominant bot: no scripted bot has the best mean score for every playable nation.
+2. No dominant bot: no scripted bot has the best expected score for every playable nation.
+   Since M7 a lost game (Voted Out or Fallen Government) scores `loss_score`, so expected
+   scores include the risk of losing; the report also shows completion rates.
 3. Viable strategies: for each playable nation at least two scripted bots finish within
-   `TOLERANCE` of the best mean score.
+   `TOLERANCE` of the best expected score.
 4. Difficulty ordering: with the same bot, the easy and medium nations' mean absolute index is
    higher than the hard nations', for at least three of the four scripted bots (all_fossil can
    invert it: when nobody cuts, per-person emissions dominate and big emitters look worst).
@@ -17,10 +19,12 @@ Criteria (docs/BUILD_SIM_V0.md, with the 2026-11-08 change to criterion 4):
    of its relative index (income and welfare) by 2030 against a cooperative strategy
    (balanced), but its final score falls when many nations free-ride (every nation plays
    all_fossil). The economic components are used because the index now also scores climate
-   contribution (decided 2026-11-08), which free-riding loses by construction.
+   contribution (decided 2026-11-08), which free-riding loses by construction. Both final-score
+   worlds run the full game without elections.
 6. Sanity: no impossible values in any run.
-7. Game length: every run reaches the final turn unless the government falls, and the reckless
-   bot triggers Fallen Government in at least `FALLEN_SHARE` of its runs.
+7. Game length and punishment for neglect: every run reaches the final turn unless the player
+   loses; reckless play is removed from office more than any other strategy; steady play
+   (`STEADY`) completes at least `STEADY_COMPLETION` of its games.
 
 The thresholds below are report settings, not world tuning.
 """
@@ -41,28 +45,34 @@ SCRIPTED = ["all_clean", "all_fossil", "balanced", "deal_maker"]
 BOTS = ["ai", *SCRIPTED, "reckless"]
 TOLERANCE = 0.05
 FALLEN_SHARE = 0.3
+STEADY = ["balanced", "deal_maker"]
+STEADY_COMPLETION = 0.7
 REPORT = Path(__file__).resolve().parent.parent / "docs" / "BALANCE_REPORT.md"
 
 
-def free_rider_world(cfg: Config, seed: int, country: str) -> dict[str, Any]:
-    """Every nation plays the all_fossil bot: a world of free-riders. Returns the player's
-    summary."""
+def free_rider_world(cfg: Config, seed: int, country: str, everyone: bool) -> dict[str, Any]:
+    """`country` plays all_fossil for the full game, with no elections (so both worlds run to
+    the end and compare like with like). If `everyone`, every nation plays all_fossil: a world
+    of free-riders; otherwise the others are AI. Returns the country's summary."""
     from sim import bots, turn
     from sim.scenario import new_world
 
     world = new_world(cfg, seed)
-    world.player = country
-    from sim import elections
-
-    elections.start_term(world)
     while world.t < cfg.tune("time.turns"):
-        acts = {nid: bots.all_fossil(cfg, world, nid) for nid in world.nations}
-        world = turn.step(world, cfg, actions=acts, ai=False)
+        who = world.nations if everyone else [country]
+        acts = {nid: bots.all_fossil(cfg, world, nid) for nid in who}
+        world = turn.step(world, cfg, actions=acts, ai=not everyone)
     return runner.summarize(cfg, world, country, "all_fossil", 1)
 
 
 def _free_job(args: tuple) -> dict[str, Any]:
     return free_rider_world(*args)
+
+
+def completed(main: list[dict[str, Any]], bot: str, country: str | None = None) -> float:
+    """Share of a bot's runs that reached the end without losing."""
+    rs = [r for r in main if r["bot"] == bot and country in (None, r["country"])]
+    return sum(r["ending"] not in scoring.LOSSES for r in rs) / max(1, len(rs))
 
 
 def mean(xs: list[float]) -> float:
@@ -84,7 +94,7 @@ def run(cfg: Config, seeds: list[int], workers: int) -> dict[str, Any]:
         for d, c in itertools.product(config.DIFFICULTIES, playable)
     ]
     by_difficulty = runner.run_grid(cfg, diff_jobs, workers)
-    free_args = [(cfg, seeds[0], c) for c in playable]
+    free_args = [(cfg, seeds[0], c, e) for e in (False, True) for c in playable]
     if workers > 1:
         from concurrent.futures import ProcessPoolExecutor
 
@@ -163,11 +173,32 @@ def report(cfg: Config, data: dict[str, Any]) -> str:
             f"| {c} | " + " | ".join(f"{score[(c, b)]:.1f}" for b in BOTS) + f" | {best} |"
         )
     dominant = len(set(best_bots.values())) == 1
+    survive = [
+        "| Nation | " + " | ".join(BOTS) + " |",
+        "|---" * (len(BOTS) + 1) + "|",
+    ]
+    for c in playable:
+        cells = []
+        for b in BOTS:
+            done = [r["score"] for r in by[(c, b)] if r["ending"] not in scoring.LOSSES]
+            share = len(done) / len(by[(c, b)])
+            cells.append(f"{share:.0%} / {mean(done):.1f}" if done else f"{share:.0%} / -")
+        survive.append(f"| {c} | " + " | ".join(cells) + " |")
     results.append(
         (
             "No dominant bot",
             verdict(not dominant),
-            ["Mean score by nation and bot:", "", *table, ""],
+            [
+                "Expected score by nation and bot (mean over seeds; a lost game scores "
+                f"{cfg.tune('scoring.loss_score'):g}):",
+                "",
+                *table,
+                "",
+                "Games completed / mean score of completed games:",
+                "",
+                *survive,
+                "",
+            ],
         )
     )
     results.append(("Viable strategies", verdict(viable_ok, tune=True), viable_rows))
@@ -197,10 +228,12 @@ def report(cfg: Config, data: dict[str, Any]) -> str:
     rows = ["| Nation | Economic index 2030: balanced | all_fossil | Final score, all_fossil: "
             "cooperative world | free-rider world | Warming: coop / free-rider |",
             "|---|---|---|---|---|---|"]  # fmt: skip
-    free = {r["country"]: r for r in data["many_free"]}
+    n_free = len(data["many_free"]) // 2
+    coops = {r["country"]: r for r in data["many_free"][:n_free]}
+    free = {r["country"]: r for r in data["many_free"][n_free:]}
     gain = loss = 0
     for c in playable:
-        coop = by[(c, "all_fossil")][0]
+        coop = coops[c]
         fr = free[c]
         s_bal, s_fos = data["short"][(c, "balanced")], data["short"][(c, "all_fossil")]
         gain += s_fos > s_bal
@@ -212,7 +245,8 @@ def report(cfg: Config, data: dict[str, Any]) -> str:
     rows.append("")
     rows.append(
         f"Free-riding gains by 2030 for {gain}/{len(playable)} nations; the free-rider's "
-        f"final score falls when everyone free-rides for {loss}/{len(playable)}."
+        f"final score falls when everyone free-rides for {loss}/{len(playable)}. Both final-score "
+        "worlds run the full game without elections."
     )
     results.append(
         (
@@ -228,7 +262,7 @@ def report(cfg: Config, data: dict[str, Any]) -> str:
     results.append(("Sanity", verdict(not issues), rows))
 
     # 7. Game length and punishment for neglect
-    short_runs = [r for r in main if r["turns_played"] < 100 and r["ending"] != "Fallen Government"]
+    short_runs = [r for r in main if r["turns_played"] < 100 and r["ending"] not in scoring.LOSSES]
     reckless = [r for r in main if r["bot"] == "reckless"]
     fallen = [r for r in reckless if r["ending"] == "Fallen Government"]
     others_fallen = [
@@ -245,11 +279,17 @@ def report(cfg: Config, data: dict[str, Any]) -> str:
 
     reckless_loss = loss_rate("reckless")
     other_loss = {b: loss_rate(b) for b in SCRIPTED}
+    completion = {b: completed(main, b) for b in BOTS}
+    steady_ok = all(completion[b] >= STEADY_COMPLETION for b in STEADY)
     removed = sum(
         r["ending"] == "Fallen Government" or r["elections_lost"] > 0 for r in reckless
     ) / max(1, len(reckless))
     rows = [
-        f"- Runs ending early without a fallen government: {len(short_runs)}.",
+        f"- Runs ending early without a loss: {len(short_runs)}.",
+        "- Games completed (not voted out or fallen), by bot: "
+        + ", ".join(f"{b} {v:.0%}" for b, v in completion.items())
+        + f". Steady play ({', '.join(STEADY)}) should complete at least "
+        f"{STEADY_COMPLETION:.0%}.",
         f"- Reckless bot: Fallen Government in {len(fallen)}/{len(reckless)} runs ({share:.0%}); "
         f"loses {reckless_loss:.0%} of the elections it contests; removed from office at least "
         f"once in {removed:.0%} of runs.",
@@ -259,13 +299,15 @@ def report(cfg: Config, data: dict[str, Any]) -> str:
         f"- Other bots: Fallen Government in {len(others_fallen)} runs"
         + (f": {others_fallen}" if others_fallen else "."),
         f"- Pass: reckless play is removed from office (falls, or loses an election) at least "
-        f"{FALLEN_SHARE:.0%} of the time and more often than any other bot, and no other bot "
-        "falls. Neglect is punished mainly at the ballot box: political capital limits how fast "
+        f"{FALLEN_SHARE:.0%} of the time and more often than any other bot, no other bot falls, "
+        "and steady play usually completes. Losing an election ends the game (M7). Neglect is "
+        "punished mainly at the ballot box: political capital limits how fast "
         "plants can close and the market backfills, so reckless play rarely causes blackouts. "
         "Blackouts themselves erode stability directly (tests/test_m6.py).",
     ]
     ok = (
         not short_runs
+        and steady_ok
         and not others_fallen
         and removed >= FALLEN_SHARE
         and reckless_loss > max(other_loss.values())
@@ -290,13 +332,18 @@ def report(cfg: Config, data: dict[str, Any]) -> str:
         "",
         "Balanced bot, seed " + str(data["seeds"][0]) + ", each playable nation.",
         "",
-        "| Difficulty | Mean score | Mean warming 2049 | Disasters per run | Disruptions per run |",
-        "|---|---|---|---|---|",
+        "| Difficulty | Expected score | Completed | Mean warming at end | Disasters per run "
+        "| Disruptions per run |",
+        "|---|---|---|---|---|---|",
     ]
     for d in config.DIFFICULTIES:
         rs = [r for r in data["by_difficulty"] if r["difficulty"] == d]
         cells = [mean([r[k] for r in rs]) for k in ("score", "warming", "disasters", "disruptions")]
-        lines.append(f"| {d} | {cells[0]:.1f} | {cells[1]:.2f} | {cells[2]:.1f} | {cells[3]:.1f} |")
+        done = sum(r["ending"] not in scoring.LOSSES for r in rs) / max(1, len(rs))
+        lines.append(
+            f"| {d} | {cells[0]:.1f} | {done:.0%} | {cells[1]:.2f} | {cells[2]:.1f} "
+            f"| {cells[3]:.1f} |"
+        )
     lines.append("")
     lines += ["## Other signals", ""]
     lines.append(
@@ -332,7 +379,7 @@ def _count(xs: list[str]) -> dict[str, int]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m sim.balance")
     parser.add_argument("--workers", type=int, default=1)
-    parser.add_argument("--seeds", type=int, default=3, help="number of seeds (1..n)")
+    parser.add_argument("--seeds", type=int, default=6, help="number of seeds (1..n)")
     parser.add_argument("--out", type=Path, default=REPORT)
     args = parser.parse_args(argv)
     cfg = config.load()
