@@ -9,7 +9,8 @@ run. Every action uses one slot of its type; unused slots are banked with no cap
 Units: amounts of capacity in EJ/yr, money in T$, carbon price in $/tCO2, shares in 0..1.
 Diplomatic actions (M4): talks, tariffs, the carbon club, deals, and carbon credit orders.
 Domestic economy (M4b): taxes, tax credits, factories, domestic content, retraining, and
-electrification programmes.
+electrification programmes. Climate levers (M4b): carbon removal, methane abatement, and the
+global forest fund.
 """
 
 from __future__ import annotations
@@ -483,6 +484,28 @@ def _electrification_apply(cfg, world, n, act):
     n.electrification += act["amount"]
 
 
+# --- climate levers (M4b) ------------------------------------------------------------------------
+
+
+def _removal_check(cfg, world, n, act):
+    if "carbon_removal" not in cfg.source_ids:
+        raise Rejected("carbon removal is not in this game")
+    return {"capital": tech.nation_unit_cost(cfg, world, n, "carbon_removal") * _positive(act)}
+
+
+def _removal_apply(cfg, world, n, act):
+    construction.queue(cfg, n, "carbon_removal", act["amount"], world.t)
+
+
+def _methane_apply(cfg, world, n, act):
+    n.methane_abatement += act["amount"]
+
+
+def _forest_apply(cfg, world, n, act):
+    world.forest_fund += act["amount"]
+    n.forest_paid += act["amount"]
+
+
 SPECS: dict[str, Spec] = {
     "build_capacity": Spec(DOMESTIC, _build_check, _build_apply),
     "retire_capacity": Spec(DOMESTIC, _retire_check, _retire_apply),
@@ -501,6 +524,9 @@ SPECS: dict[str, Spec] = {
     "set_domestic_content": Spec(DOMESTIC, _content_check, _content_apply),
     "fund_retraining": Spec(DOMESTIC, _spend_check, _retraining_apply),
     "electrification_program": Spec(DOMESTIC, _spend_check, _electrification_apply),
+    "build_removal": Spec(DOMESTIC, _removal_check, _removal_apply),
+    "methane_abatement": Spec(DOMESTIC, _spend_check, _methane_apply),
+    "fund_forests": Spec(DIPLOMATIC, _spend_check, _forest_apply),
     "make_pledge": Spec(DIPLOMATIC, _pledge_check, _pledge_apply),
     "open_talks": Spec(DIPLOMATIC, _talks_check, _talks_apply),
     "set_tariff": Spec(DIPLOMATIC, _tariff_check, _tariff_apply),

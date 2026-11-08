@@ -11,9 +11,11 @@ Shares and step sizes below are bot behaviour, not world tuning, so they live he
 - all_fossil: no carbon price, cuts taxes, subsidises and builds the cheapest fossil fuel.
 - all_clean:  rising carbon price with a rebate, subsidises solar and wind, builds the cheapest
               clean source, adds storage when output is curtailed, researches solar, builds
-              solar factories, funds electrification, retires coal as political capital allows.
+              solar factories, funds electrification and methane abatement, builds carbon
+              removal from 2035, retires coal as political capital allows.
 - balanced:   moderate carbon price, builds gas and the cheapest clean source, invests in
-              efficiency and adaptation, builds solar factories, retrains fossil workers.
+              efficiency and adaptation, builds solar factories, abates methane, retrains
+              fossil workers.
 - deal_maker: balanced at home; abroad it offers equipment-on-credit deals to trusted,
               high-emitting partners once a year, accepts offers it can afford, opens talks,
               joins the carbon club when eligible, and pledges.
@@ -131,6 +133,11 @@ def all_clean(cfg: Config, world: World, nid: str) -> list[Action]:
         wanted.append(raise_carbon(n, 15.0, 150.0))
     if world.t % 8 == 4:
         wanted.append(spend("electrification_program", n, 0.1))
+    if world.t % 8 == 6:
+        wanted.append(spend("methane_abatement", n, 0.1))
+    if world.t >= 40 and q == 2:
+        unit = tech.nation_unit_cost(cfg, world, n, "carbon_removal")
+        wanted.insert(1, {"type": "build_removal", "amount": 0.2 * n.capital / unit})
     if world.t % 8 == 0:
         wanted.append(factory(cfg, n, "solar", 0.1))
     if q == 3:
@@ -156,6 +163,8 @@ def _balanced_domestic(cfg: Config, world: World, n: Nation) -> list[Action | No
         wanted.append(spend("adaptation_spend", n, 0.05))
     if world.t % 8 == 2:
         wanted.append(factory(cfg, n, "solar", 0.1))
+    if world.t % 8 == 6:
+        wanted.append(spend("methane_abatement", n, 0.05))
     fossil_now = n.jobs.get("fossil", 0.0)
     if q == 3 and fossil_now < n.base.get("fossil_jobs", fossil_now):
         wanted.append(spend("fund_retraining", n, 0.05))

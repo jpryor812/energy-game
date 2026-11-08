@@ -67,9 +67,11 @@ def annual_growth(terms: dict[str, float]) -> float:
 
 def carbon_revenue(n: Nation) -> float:
     """Discretionary carbon revenue, T$/yr: only the price above its 2025 level counts (2025
-    revenue is already in the ordinary budget), minus the share rebated to households."""
+    revenue is already in the ordinary budget), charged on CO2 emitted before carbon removal,
+    minus the share rebated to households."""
     extra = max(0.0, n.carbon_price - n.base.get("carbon_price", 0.0))
-    return extra * n.emissions * 1e-6 * (1 - n.rebate)
+    emitted = max(0.0, n.emissions + n.removals)  # charged on CO2 emitted, before removals
+    return extra * emitted * 1e-6 * (1 - n.rebate)
 
 
 def tax_credit_cost(n: Nation) -> float:

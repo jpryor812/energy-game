@@ -29,29 +29,29 @@ No nation takes actions and AI is off; the market, trade and stocktakes still ru
 
 | Metric | 2025 | 2030 | 2040 | 2049 |
 |---|---|---|---|---|
-| Global CO2 (Gt/yr) | 43.6 | 42.7 | 41.6 | 41.5 |
-| Warming, end of year (degC) | 1.39 | 1.53 | 1.80 | 2.05 |
+| Global CO2 (Gt/yr) | 43.6 | 41.8 | 39.4 | 38.7 |
+| Warming, end of year (degC) | 1.39 | 1.53 | 1.77 | 1.96 |
 
 ### Nations
 
 | Nation | GDP 2025 (T$) | GDP 2049 | Growth 2025-49 (%/yr) | CO2 2025 (Mt) | CO2 2030 | CO2 2040 | CO2 2049 | Fossil share 2025 | 2049 | Max shortfall |
 |---|---|---|---|---|---|---|---|---|---|---|
-| AUS | 1.86 | 2.76 | 1.7 | 363 | 321 | 255 | 217 | 84% | 48% | 0.0% |
-| BRA | 2.31 | 3.64 | 1.9 | 435 | 433 | 427 | 472 | 48% | 29% | 0.0% |
-| CAN | 2.34 | 3.27 | 1.4 | 502 | 446 | 359 | 302 | 66% | 49% | 0.0% |
-| CHN | 20.12 | 43.45 | 3.3 | 11,531 | 11,286 | 10,714 | 10,120 | 79% | 53% | 0.0% |
-| EUU | 21.49 | 28.63 | 1.2 | 2,288 | 1,882 | 1,222 | 855 | 66% | 35% | 0.0% |
-| GBR | 4.05 | 5.46 | 1.3 | 300 | 247 | 168 | 121 | 72% | 44% | 0.0% |
-| IDN | 1.49 | 3.83 | 4.0 | 788 | 909 | 1,234 | 1,642 | 88% | 57% | 0.0% |
-| IND | 4.08 | 14.41 | 5.4 | 3,036 | 3,387 | 4,219 | 4,966 | 88% | 59% | 0.0% |
-| JPN | 4.47 | 5.18 | 0.6 | 926 | 811 | 612 | 469 | 82% | 54% | 0.0% |
-| MEX | 1.85 | 2.61 | 1.4 | 428 | 393 | 338 | 302 | 89% | 57% | 0.0% |
-| NGA | 0.30 | 0.63 | 3.2 | 113 | 115 | 130 | 155 | 94% | 55% | 0.0% |
-| RUS | 2.59 | 3.06 | 0.7 | 1,674 | 1,620 | 1,511 | 1,415 | 87% | 66% | 0.0% |
-| SAU | 1.30 | 2.40 | 2.6 | 655 | 645 | 621 | 601 | 98% | 70% | 0.0% |
-| USA | 31.27 | 48.62 | 1.9 | 4,629 | 4,019 | 3,099 | 2,533 | 79% | 49% | 0.0% |
-| VNM | 0.52 | 1.62 | 4.9 | 330 | 385 | 553 | 809 | 76% | 41% | 0.0% |
-| ZAF | 0.43 | 0.58 | 1.2 | 433 | 392 | 313 | 259 | 94% | 59% | 0.0% |
+| AUS | 1.86 | 2.77 | 1.7 | 363 | 321 | 256 | 218 | 84% | 48% | 0.0% |
+| BRA | 2.31 | 3.65 | 1.9 | 435 | 433 | 427 | 476 | 48% | 29% | 0.0% |
+| CAN | 2.34 | 3.27 | 1.4 | 502 | 446 | 359 | 303 | 66% | 49% | 0.0% |
+| CHN | 20.12 | 43.60 | 3.3 | 11,531 | 11,286 | 10,720 | 10,169 | 79% | 54% | 0.0% |
+| EUU | 21.49 | 28.70 | 1.2 | 2,288 | 1,882 | 1,223 | 858 | 66% | 35% | 0.0% |
+| GBR | 4.05 | 5.48 | 1.3 | 300 | 247 | 168 | 121 | 72% | 44% | 0.0% |
+| IDN | 1.49 | 3.85 | 4.0 | 788 | 909 | 1,235 | 1,652 | 88% | 57% | 0.0% |
+| IND | 4.08 | 14.49 | 5.4 | 3,036 | 3,387 | 4,222 | 4,997 | 88% | 59% | 0.0% |
+| JPN | 4.47 | 5.19 | 0.6 | 926 | 811 | 612 | 471 | 82% | 54% | 0.0% |
+| MEX | 1.85 | 2.62 | 1.5 | 428 | 393 | 338 | 304 | 89% | 57% | 0.0% |
+| NGA | 0.30 | 0.63 | 3.2 | 113 | 115 | 130 | 156 | 94% | 55% | 0.0% |
+| RUS | 2.59 | 3.06 | 0.7 | 1,674 | 1,620 | 1,512 | 1,421 | 87% | 66% | 0.0% |
+| SAU | 1.30 | 2.41 | 2.6 | 655 | 645 | 622 | 604 | 98% | 70% | 0.0% |
+| USA | 31.27 | 48.75 | 1.9 | 4,629 | 4,019 | 3,101 | 2,542 | 79% | 49% | 0.0% |
+| VNM | 0.52 | 1.63 | 4.9 | 330 | 385 | 554 | 814 | 76% | 41% | 0.0% |
+| ZAF | 0.43 | 0.58 | 1.2 | 433 | 392 | 314 | 260 | 94% | 59% | 0.0% |
 
 ## Against references
 
@@ -59,9 +59,9 @@ No nation takes actions and AI is off; the market, trade and stocktakes still ru
 |---|---|---|---|
 | Global CO2 2025, incl. land use | ~43 Gt (GCB: fossil 38.6 + land use ~4.6, 2024) | 43.6 Gt | Match. Land use uses the 2015-2024 mean (5.0 Gt), slightly above 2024. |
 | Nation fossil CO2 at t=0 | Each nation's 2024 GCB value | Exact (by construction) | Match. 2025 annual values differ slightly due to growth and seasonality. |
-| Warming rate 2025-2035 | 0.27 [0.2-0.4] degC/decade (Forster et al. 2025) | 0.28 degC/decade | Match. The non-CO2 multiplier was set for this. |
-| Energy CO2 2049 | ~38 Gt, roughly flat (IEA WEO 2025 Current Policies) | ~36 Gt, slowly falling | About 6% low. |
-| Warming 2049 | Passes 2 degC around 2050 (IEA WEO 2025 Current Policies) | 2.05 degC | Consistent. |
+| Warming rate 2025-2035 | 0.27 [0.2-0.4] degC/decade (Forster et al. 2025) | 0.27 degC/decade | Match. The clean-air aerosol trend was set for this. |
+| Energy CO2 2049 | ~38 Gt, roughly flat (IEA WEO 2025 Current Policies) | ~33 Gt, slowly falling | About 13% low: since M4b the rest of the world decarbonises with the 16 nations. |
+| Warming 2049 | Passes 2 degC around 2050 (IEA WEO 2025 Current Policies) | 1.96 degC | Consistent. |
 | Real GDP growth 2025-2030 | IMF WEO projections | Within 0.5 pp for every nation | Match. |
 | Energy shortfall | None expected without shocks | Below 1% for every nation, every quarter | Match. |
 
@@ -81,86 +81,82 @@ No nation takes actions and AI is off; the market, trade and stocktakes still ru
 5. **GDP 2025 annual figures are ~1% above IMF 2025**, because the IMF 2025 value is used as the
    2025Q1 level and growth continues through the year.
 
-## AI world (M3, with M4 diplomacy)
+## AI world (M3, with M4 diplomacy and M4b levers)
 
 All 16 nations played by the AI (`python -m sim.report ai`). Each follows an assumed target path
 (data/targets.yaml, a design assumption from its policy stance, not a real pledge) as strongly as
-its personality says, and since M4 also trades, tariffs, finances deals, joins the carbon club and
-trades carbon credits.
+its personality says, trades, finances deals, joins the carbon club, trades credits, and since
+M4b also builds factories, abates methane, funds forests and builds carbon removal.
 
 ### World
 
 | Metric | 2025 | 2030 | 2040 | 2049 |
 |---|---|---|---|---|
-| Global CO2 (Gt/yr) | 43.2 | 37.1 | 32.0 | 20.7 |
-| Warming, end of year (degC) | 1.39 | 1.52 | 1.74 | 1.90 |
+| Global CO2 (Gt/yr) | 43.0 | 32.8 | 23.1 | 7.3 |
+| Warming, end of year (degC) | 1.38 | 1.50 | 1.59 | 1.66 |
 
 ### Nations
 
 | Nation | GDP 2025 (T$) | GDP 2049 | Growth 2025-49 (%/yr) | CO2 2025 (Mt) | CO2 2030 | CO2 2040 | CO2 2049 | Fossil share 2025 | 2049 | Max shortfall |
 |---|---|---|---|---|---|---|---|---|---|---|
-| AUS | 1.86 | 2.70 | 1.6 | 353 | 210 | 198 | 22 | 83% | 6% | 0.0% |
-| BRA | 2.31 | 3.55 | 1.8 | 427 | 318 | 230 | 55 | 47% | 6% | 0.0% |
-| CAN | 2.34 | 3.10 | 1.2 | 491 | 281 | 133 | 68 | 65% | 15% | 0.0% |
-| CHN | 20.12 | 43.67 | 3.3 | 11,391 | 9,727 | 6,759 | 908 | 79% | 6% | 0.0% |
-| EUU | 21.44 | 28.93 | 1.3 | 2,260 | 1,293 | 481 | 93 | 66% | 6% | 0.0% |
-| GBR | 4.04 | 5.23 | 1.1 | 298 | 112 | 46 | 12 | 72% | 6% | 0.0% |
-| IDN | 1.49 | 3.82 | 4.0 | 768 | 676 | 592 | 351 | 88% | 17% | 0.0% |
-| IND | 4.08 | 14.40 | 5.4 | 2,999 | 2,737 | 2,535 | 1,061 | 88% | 15% | 0.0% |
-| JPN | 4.46 | 5.05 | 0.5 | 917 | 510 | 393 | 42 | 82% | 6% | 0.0% |
-| MEX | 1.85 | 2.65 | 1.5 | 422 | 284 | 157 | 117 | 89% | 33% | 0.0% |
-| NGA | 0.30 | 0.58 | 2.9 | 107 | 63 | 84 | 71 | 94% | 37% | 0.0% |
-| RUS | 2.59 | 2.66 | 0.1 | 1,604 | 1,311 | 834 | 853 | 87% | 53% | 0.0% |
-| SAU | 1.30 | 2.15 | 2.1 | 625 | 393 | 305 | 249 | 98% | 48% | 0.0% |
-| USA | 31.27 | 48.77 | 1.9 | 4,553 | 3,228 | 3,017 | 295 | 79% | 6% | 0.0% |
-| VNM | 0.51 | 1.68 | 5.1 | 321 | 317 | 357 | 151 | 75% | 12% | 0.0% |
-| ZAF | 0.43 | 0.52 | 0.8 | 425 | 303 | 122 | 91 | 94% | 26% | 0.0% |
+| AUS | 1.86 | 2.84 | 1.8 | 363 | 248 | 181 | -107 | 84% | 6% | 0.0% |
+| BRA | 2.31 | 3.69 | 2.0 | 435 | 328 | 210 | 133 | 48% | 21% | 0.0% |
+| CAN | 2.34 | 3.22 | 1.3 | 502 | 317 | 102 | 104 | 66% | 29% | 0.0% |
+| CHN | 20.12 | 43.63 | 3.3 | 11,531 | 10,000 | 6,056 | 118 | 79% | 6% | 0.0% |
+| EUU | 21.47 | 29.16 | 1.3 | 2,287 | 1,322 | 460 | 109 | 66% | 26% | 0.0% |
+| GBR | 4.05 | 5.50 | 1.3 | 300 | 132 | 50 | -36 | 72% | 30% | 0.0% |
+| IDN | 1.49 | 4.00 | 4.2 | 788 | 732 | 686 | 357 | 88% | 22% | 0.0% |
+| IND | 4.08 | 14.66 | 5.5 | 3,036 | 2,722 | 2,705 | 1,751 | 88% | 25% | 0.0% |
+| JPN | 4.47 | 5.34 | 0.7 | 926 | 573 | 184 | 184 | 82% | 22% | 0.0% |
+| MEX | 1.85 | 2.68 | 1.5 | 428 | 318 | 202 | 143 | 89% | 38% | 0.0% |
+| NGA | 0.30 | 0.62 | 3.1 | 113 | 98 | 75 | 85 | 94% | 38% | 0.0% |
+| RUS | 2.59 | 2.91 | 0.5 | 1,674 | 1,390 | 892 | 819 | 87% | 44% | 0.0% |
+| SAU | 1.30 | 2.29 | 2.4 | 655 | 501 | 376 | 291 | 98% | 44% | 0.0% |
+| USA | 31.27 | 49.38 | 1.9 | 4,629 | 3,416 | 2,873 | -1,304 | 79% | 6% | 0.0% |
+| VNM | 0.52 | 1.72 | 5.2 | 325 | 311 | 343 | 195 | 75% | 14% | 0.7% |
+| ZAF | 0.43 | 0.55 | 1.1 | 433 | 335 | 225 | 114 | 94% | 31% | 0.0% |
 
-Energy CO2 in 2049 is about 14.5 Gt: between the no-action baseline (~36 Gt) and the IEA's
-announced-pledges level for 2050 (roughly 12 Gt, from memory of WEO scenarios, not re-checked).
-Warming reaches 1.90 degC, against 2.05 degC with no action.
+Warming peaks at 1.66 degC in 2049, against 1.96 degC with no action. By 2049 methane is down to
+about half its 2025 level, aerosols (and their cooling) are nearly gone, the forest fund has
+turned land use slightly negative, and AI nations run about 3.5 Gt/yr of carbon removal.
 
 | Nation | Personality | Target path 2049 | Actual 2049 |
 |---|---|---|---|
-| AUS | cautious_follower | 0.21 | 0.05 |
-| BRA | cautious_follower | 0.31 | 0.11 |
+| AUS | cautious_follower | 0.21 | -0.30 |
+| BRA | cautious_follower | 0.31 | 0.26 |
 | CAN | cautious_follower | 0.21 | 0.13 |
-| CHN | opportunist | 0.43 | 0.07 |
+| CHN | opportunist | 0.43 | -0.00 |
 | EUU | green_leader | 0.05 | 0.04 |
-| GBR | green_leader | 0.06 | 0.03 |
+| GBR | green_leader | 0.06 | -0.18 |
 | IDN | opportunist | 0.56 | 0.48 |
-| IND | opportunist | 1.00 | 0.30 |
-| JPN | cautious_follower | 0.11 | 0.04 |
-| MEX | fossil_defender | 0.60 | 0.24 |
-| NGA | fossil_defender | 0.73 | 0.60 |
-| RUS | fossil_defender | 0.73 | 0.50 |
-| SAU | fossil_defender | 0.66 | 0.38 |
-| USA | opportunist | 0.60 | 0.06 |
-| VNM | opportunist | 0.32 | 0.42 |
-| ZAF | cautious_follower | 0.31 | 0.21 |
+| IND | opportunist | 1.00 | 0.53 |
+| JPN | cautious_follower | 0.11 | 0.19 |
+| MEX | fossil_defender | 0.60 | 0.33 |
+| NGA | fossil_defender | 0.73 | 0.76 |
+| RUS | fossil_defender | 0.73 | 0.48 |
+| SAU | fossil_defender | 0.66 | 0.43 |
+| USA | opportunist | 0.60 | -0.30 |
+| VNM | opportunist | 0.32 | 0.61 |
+| ZAF | cautious_follower | 0.31 | 0.25 |
 
 Diplomacy in this run:
 
-- **Deals:** 87 signed (48 completed, 39 still paying), none defaulted; 153 offers expired
-  unanswered.
-- **Carbon club:** grew from the EU to 8 members (Australia, Brazil, Canada, EU, UK, Japan,
-  Vietnam, South Africa).
-- **Stocktakes** judge each nation against the same 1.5 degC pathway on its own 2025 emissions.
-  The EU and UK stay on it; Canada, Japan and Australia come close; China, India, Indonesia,
-  Vietnam, Russia and Nigeria overshoot by 25-80% of their 2025 emissions per period and face
-  coalition tariffs of 1-8%.
-- **Credit market:** credits are scarce (2.1 Gt issued, 0.4 Gt traded), so the price climbs
-  from $20 to about $70/t over the game.
-- **No AI starts a trade war:** AI nations only match tariffs placed on them, so with a clean
-  slate none appear.
+- **Deals:** 109 signed (59 completed, 50 still paying), none defaulted.
+- **Carbon club:** 7 members (Brazil, Canada, EU, UK, Indonesia, Vietnam, South Africa).
+- **Coalition tariffs** at the end: India 6.7%, Nigeria 6.4%, Russia 4.3%, Saudi Arabia 4.3%,
+  Mexico 3.6%, China 2.7%, US 1.9%, Japan 0.8%.
+- **Credit market:** 6.2 Gt issued, 1.5 Gt traded, ending at $40/t.
 
-What to look at in M5:
+## All-out world (M4b)
 
-- **Several nations overshoot their target path** (Saudi Arabia, Mexico, the US, China), because
-  cheap wind and solar pay for themselves through lower energy prices.
-- **A late-2040s drop for the US and China** as clean energy gets cheap and the clean ceiling
-  rises; many nations finish near the 5% fossil floor.
-- **India stays high** (its path allows growth) and pays coalition tariffs.
+To check that "colder than 2025" is reachable, `tests/test_climate.py` scripts every nation to go
+all-out from 2025: maximum tax, the cheapest clean source every quarter, methane abatement,
+electrification, a carbon price rising to $300/t, forest funding, and carbon removal from 2032.
+Warming peaks at about 1.56 degC in the mid-2030s and ends 2049 at about 1.34 degC, just below
+2025's 1.36 degC. It takes near-zero emissions by the late 2030s, methane cut by half, a
+land-use sink, and about 33 Gt/yr of carbon removal by 2049. **That removal scale is far beyond
+current physical estimates** (around 10 Gt/yr is an optimistic mid-century figure); it is a game
+design choice so that excellent global play can cool the planet (decided 2026-11-08).
 
 ## Placeholders that matter most for balance
 

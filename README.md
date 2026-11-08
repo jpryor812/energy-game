@@ -53,5 +53,7 @@ Same seed and inputs always produce byte-identical output.
 - **M4b part 1 (domestic economy and elections):** done. Taxes, tax credits, factories and
   domestic content, energy jobs and retraining, electrification programmes, and four-yearly
   economic elections where losing hands the nation to the AI for one term.
-- **M4b part 2** (short-lived warming, carbon removal, forests, responsive rest of world) and
-  **M5** (balance report): not built.
+- **M4b part 2 (climate and cooling):** done. Short-lived warming (methane, aerosols), carbon
+  removal, a global forest fund, and a rest of the world that decarbonises with the 16 nations.
+  An all-out world can end colder than 2025.
+- **M5** (four deal types, balance report): not built.

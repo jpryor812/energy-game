@@ -8,7 +8,7 @@ as the reference point for the growth drags.
 
 from __future__ import annotations
 
-from sim import construction, diplomacy, energy, jobs, tech, trade
+from sim import climate, construction, diplomacy, energy, jobs, tech, trade
 from sim.config import FUELS, Config
 from sim.state import Nation, World
 
@@ -95,6 +95,7 @@ def new_world(cfg: Config, seed: int) -> World:
     gdp_16 = sum(n.gdp for n in nations.values())
     world.base["gdp_16"] = gdp_16
     world.base["row_gdp"] = max(0.0, cfg.tune("trade.world_gdp_2025") - gdp_16)
+    climate.init(cfg, world)
     trade.init_factories(cfg, world)
     init_jobs(cfg, world)
     diplomacy.init_trust(world, cfg)

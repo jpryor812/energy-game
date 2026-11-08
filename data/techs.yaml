@@ -14,6 +14,7 @@
 #   global_installed 2025 world output (EJ/yr): the learning-curve starting point n0
 #   coverage_share   the 16 modelled nations' share of world use of that source
 #   equipment_share  share of build cost bought from manufacturers (solar, wind, storage only)
+#   carbon_removal   capacity in MtCO2/yr removed; energy_use in EJ per MtCO2
 
 sources:
   coal:
@@ -121,3 +122,12 @@ sources:
     capital_cost: {value: 0.03, status: placeholder, note: "Per EJ/yr of wind and solar it lets the grid absorb. Unsourced approximate."}
     learning_rate: {value: 0.0, status: placeholder, note: "Mature technology."}
     global_installed: {value: 1.0, status: placeholder, note: "Abstract integration units; learning starting point."}
+  carbon_removal:
+    category: removal
+    build_time: {value: 8, status: placeholder, note: "Two years to build. Unsourced approximate."}
+    lifespan: {value: 25, status: placeholder, note: "Unsourced approximate."}
+    capital_cost: {value: 0.003, status: placeholder, note: "T$ per MtCO2/yr of removal capacity (~$3,000 per t/yr, roughly $400-600/t removed at first). Unsourced approximate."}
+    learning_rate: {value: 0.2, status: placeholder, note: "Cost cut per doubling of deployment. Unsourced approximate."}
+    global_installed: {value: 2.0, status: placeholder, note: "MtCO2/yr of removal running worldwide in 2025, mostly bioenergy with carbon capture. Unsourced approximate."}
+    energy_use: {value: 0.008, status: placeholder, note: "EJ per MtCO2 removed (~8 GJ/t, direct air capture), added to the nation's energy demand; a dirty grid offsets part of the removal. Unsourced approximate."}
+    cost_floor: {value: 0.4, status: placeholder, note: "Learning cannot push removal cost below this share of its 2025 cost (~$150/t removed with energy): the optimistic end of long-run estimates. Unsourced approximate."}

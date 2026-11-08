@@ -32,7 +32,9 @@ FILES = ("tuning", "techs", "countries", "events", "targets")
 TUNABLE_STATUSES = frozenset({"placeholder", "calibrated"})
 TUNABLE_KEYS = frozenset({"value", "status", "note", "source", "unit"})
 PERSONALITIES = frozenset({"green_leader", "fossil_defender", "opportunist", "cautious_follower"})
-SOURCE_CATEGORIES = frozenset({"fossil", "clean_dispatchable", "variable_renewable", "enabler"})
+SOURCE_CATEGORIES = frozenset(
+    {"fossil", "clean_dispatchable", "variable_renewable", "enabler", "removal"}
+)
 FUELS = ("coal", "gas", "oil")
 COUNTRY_REQUIRED = (
     "name",
@@ -74,7 +76,18 @@ REQUIRED_TUNING = (
     "politics.stability_reversion",
     "climate.warming_start",
     "climate.tcre",
-    "climate.nonco2_multiplier",
+    "climate.ch4_warming",
+    "climate.aerosol_warming",
+    "climate.other_warming",
+    "climate.ch4_lifetime",
+    "climate.ch4_fossil_share",
+    "climate.other_methane_trend",
+    "climate.aerosol_trend",
+    "climate.abatement_max_fossil",
+    "climate.abatement_max_other",
+    "climate.abatement_half_spend",
+    "climate.forest_max_cut",
+    "climate.forest_half_fund",
     "climate.damage_coefficient",
     "climate.rest_of_world_co2",
     "climate.rest_of_world_growth",
@@ -192,6 +205,10 @@ REQUIRED_TUNING = (
     "ai.factory_share",
     "ai.electrification_share",
     "ai.ceiling_margin",
+    "ai.methane_share",
+    "ai.removal_share",
+    "ai.forest_share",
+    "ai.methane_horizon",
     "tax.min_change",
     "tax.max_change",
     "tax.growth_drag",
@@ -259,6 +276,7 @@ REQUIRED_SOURCE = {
     "clean_dispatchable": ("variable_cost", "emission_factor", "headroom", "coverage_share"),
     "variable_renewable": ("variable_cost", "emission_factor", "headroom", "coverage_share"),
     "enabler": (),
+    "removal": ("energy_use",),
 }
 REQUIRED_NATION = (
     "start.gdp",
@@ -344,8 +362,8 @@ class Config:
 
     @property
     def energy_source_ids(self) -> list[str]:
-        """Sources that deliver energy (everything except enablers)."""
-        return [s for s in self.source_ids if self.category(s) != "enabler"]
+        """Sources that deliver energy (everything except enablers and carbon removal)."""
+        return [s for s in self.source_ids if self.category(s) not in ("enabler", "removal")]
 
     @property
     def vre_ids(self) -> list[str]:

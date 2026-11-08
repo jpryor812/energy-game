@@ -93,7 +93,8 @@ def context(cfg: Config, world: World, nid: str) -> Context:
         construction.future_capacity(cfg, nid, n, s, world.t, world.t + 4) for s in cfg.vre_ids
     )
     normal += min(vre_future, absorb)  # wind and solar count only as far as the grid takes them
-    margin = normal / demand - 1 if demand > 0 else 0.0
+    peak = demand * max(cfg.tune("seasonality.demand_factor"))  # judge spare capacity at the peak
+    margin = normal / peak - 1 if peak > 0 else 0.0
     target_margin = _ai(cfg, "security_margin")
     need = max(0.0, target_margin - margin) / target_margin
     growth = (1 + n.growth) * (1 - cfg.nat(nid, "trend.intensity_decline")) - 1
@@ -175,6 +176,13 @@ def candidates(cfg: Config, world: World, nid: str, personality: str) -> list[Ac
                 "amount": _ai(cfg, "factory_share") * n.capital / cost,
             }
         )
+    out.append({"type": "methane_abatement", "amount": _ai(cfg, "methane_share") * n.capital})
+    if "carbon_removal" in cfg.source_ids:
+        unit = tech.nation_unit_cost(cfg, world, n, "carbon_removal")
+        out.append(
+            {"type": "build_removal", "amount": _ai(cfg, "removal_share") * n.capital / unit}
+        )
+    out.append({"type": "fund_forests", "amount": _ai(cfg, "forest_share") * n.capital})
     if ctx_clean_room_tight(cfg, world, nid):
         out.append(
             {
@@ -300,6 +308,22 @@ def estimate(cfg: Config, world: World, nid: str, act: Action, ctx: Context) -> 
             m.equipment_demand.get(t, 0.0) for mid, m in world.nations.items() if mid != nid
         )
         eff.growth = cfg.tune("trade.cleantech_growth_elasticity") * gain * abroad / n.gdp * 100
+    elif kind == "methane_abatement":
+        eff.emissions = -_methane_co2e(cfg, world, n, act["amount"]) / base_em * 100
+    elif kind == "build_removal":
+        grid_ef = n.emissions / ctx.delivered if ctx.delivered > 0 else 0.0
+        energy_use = cfg.src("carbon_removal", "energy_use")
+        eff.emissions = -act["amount"] * max(0.0, 1 - energy_use * grid_ef) / base_em * 100
+    elif kind == "fund_forests":
+        before = climate.forest_cut(cfg, world)
+        world.forest_fund += act["amount"]
+        try:
+            after = climate.forest_cut(cfg, world)
+        finally:
+            world.forest_fund -= act["amount"]
+        land = climate.exogenous_co2(cfg, world)["land_use"] / max(1e-9, 1 - before)
+        credit = cfg.tune("credits.weight_financed") * (after - before) * land
+        eff.emissions = -credit / base_em * 100
     elif kind == "electrification_program":
         before = energy.electrification_bonus(cfg, n)
         n.electrification += act["amount"]
@@ -318,6 +342,25 @@ def estimate(cfg: Config, world: World, nid: str, act: Action, ctx: Context) -> 
             n.adaptation -= act["amount"]
         eff.growth = n.climate_damage / before * (before - after) * 100 if before > 0 else 0.0
     return eff
+
+
+def _methane_co2e(cfg: Config, world: World, n: Nation, amount: float) -> float:
+    """CO2-equivalent MtCO2/yr of spending `amount` on methane abatement: the steady-state
+    warming avoided, spread over `ai.methane_horizon` years at the TCRE rate."""
+    share = cfg.tune("climate.ch4_fossil_share")
+    fossil = sum(n.fossil_production.values()) / max(world.base["fossil_production"], 1e-9)
+    people = n.population / sum(m.population for m in world.nations.values())
+    before = (climate.abatement(cfg, n, "fossil"), climate.abatement(cfg, n, "other"))
+    n.methane_abatement += amount
+    try:
+        after = (climate.abatement(cfg, n, "fossil"), climate.abatement(cfg, n, "other"))
+    finally:
+        n.methane_abatement -= amount
+    index_cut = share * fossil * (after[0] - before[0]) + (1 - share) * people * (
+        after[1] - before[1]
+    )
+    warming = cfg.tune("climate.ch4_warming") * index_cut
+    return warming / climate.co2_per_mt(cfg) / _ai(cfg, "methane_horizon")
 
 
 # --- scoring and choice --------------------------------------------------------------------------

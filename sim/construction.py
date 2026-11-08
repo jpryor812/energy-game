@@ -237,6 +237,10 @@ def apply(world: World, cfg: Config, dt: int) -> dict[str, float]:
         by_nation[nid] = done
         alpha = 1 - (1 - cfg.tune("jobs.smoothing")) ** dt
         n.build_rate += alpha * (sum(done.values()) * 4 / dt - n.build_rate)
+        if "carbon_removal" in cfg.source_ids:
+            n.extra_demand = n.capacity.get("carbon_removal", 0.0) * cfg.src(
+                "carbon_removal", "energy_use"
+            )
         for s, amount in done.items():
             completed[s] += amount
             if s in clean:

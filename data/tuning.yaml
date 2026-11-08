@@ -162,10 +162,56 @@ climate:
     status: calibrated
     source: ipcc_ar6_wg1
     note: AR6 WG1 best estimate 1.65 degC per 1000 PgC = 0.45 degC per 1000 GtCO2.
-  nonco2_multiplier:
-    value: 0.45
+  ch4_warming:
+    value: 0.5
     status: placeholder
-    note: Extra warming from non-CO2 forcers and falling aerosols, as a fraction of CO2 warming. Set so ~41 GtCO2/yr gives ~0.27 degC/decade, the observed rate (forster2025).
+    note: Warming from methane in 2025 (degC). Roughly the IPCC AR6 contribution of methane to warming since 1850-1900. Approximate, not re-checked.
+  aerosol_warming:
+    value: 0.25
+    status: placeholder
+    note: Cooling from aerosols linked to coal and oil burning in 2025 (degC, entered as positive). Modest strength by decision (2026-11-08); real estimates of total aerosol cooling are larger.
+  other_warming:
+    value: 0.05
+    status: placeholder
+    note: Warming from other non-CO2 gases (nitrous oxide etc.) net of other cooling, held constant. Chosen so non-CO2 warming nets to 0.3 degC in 2025.
+  ch4_lifetime:
+    value: 12
+    unit: years
+    status: placeholder
+    note: Methane's atmospheric lifetime (about 12 years); the methane index relaxes toward current emissions at this rate.
+  ch4_fossil_share:
+    value: 0.35
+    status: placeholder
+    note: Share of human methane from fossil fuels (the rest from farming and waste). Approximate, from Global Methane Budget reporting; not re-checked.
+  other_methane_trend:
+    value: 0.0
+    status: placeholder
+    note: Annual change in non-fossil methane per person.
+  aerosol_trend:
+    value: -0.035
+    status: placeholder
+    note: Annual fall in aerosols from clean-air policies. Set so business-as-usual warming runs ~0.27 degC/decade (forster2025).
+  abatement_max_fossil:
+    value: 0.75
+    status: placeholder
+    note: Most of a nation's fossil methane (leaks, venting) abatement can remove.
+  abatement_max_other:
+    value: 0.5
+    status: placeholder
+    note: Most of a nation's farming and waste methane abatement can remove.
+  abatement_half_spend:
+    value: 0.002
+    status: placeholder
+    note: Abatement stock, as a share of GDP, that gives half the maximum cut.
+  forest_max_cut:
+    value: 1.5
+    status: placeholder
+    note: Most of land-use CO2 the global forest fund can remove; above 1 land becomes a net sink.
+  forest_half_fund:
+    value: 0.5
+    unit: T$
+    status: placeholder
+    note: Forest fund that gives half of forest_max_cut.
   damage_coefficient:
     value: 0.006
     unit: growth drag per degC^2 at vulnerability 1
@@ -491,6 +537,10 @@ ai:
   factory_share: {value: 0.1, status: placeholder, note: "Share of capital an AI considers putting into one clean-tech factory."}
   electrification_share: {value: 0.1, status: placeholder, note: "Share of capital an AI considers for an electrification programme."}
   ceiling_margin: {value: 0.05, status: placeholder, note: "An AI considers electrification once its clean share is within this of its clean ceiling."}
+  methane_share: {value: 0.05, status: placeholder, note: "Share of capital an AI considers for methane abatement."}
+  removal_share: {value: 0.1, status: placeholder, note: "Share of capital an AI considers for carbon removal."}
+  forest_share: {value: 0.03, status: placeholder, note: "Share of capital an AI considers paying into the forest fund."}
+  methane_horizon: {value: 20, status: placeholder, note: "Years over which an AI spreads avoided methane warming to compare it with CO2 cuts."}
 
 trade:
   world_gdp_2025: {value: 118.485, status: calibrated, note: "IMF WEO world GDP 2025, T$ (source imf_weo). The rest of the world is this minus the 16 nations."}

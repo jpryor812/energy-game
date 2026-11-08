@@ -50,7 +50,7 @@ def test_warming_rate(real):
 
 def test_2049_against_current_policies(real):
     cfg, w = real
-    exo = climate.exogenous_co2(cfg, 99)
+    exo = climate.exogenous_co2(cfg, w)
     energy_co2 = report.annual(w.history, 2049, "global_emissions") - exo["land_use"]
     energy_co2 -= exo["other_fossil"]
     assert ENERGY_CO2_2049[0] < energy_co2 < ENERGY_CO2_2049[1]
@@ -80,10 +80,11 @@ def ai_real():
 
 
 def test_ai_world_between_baseline_and_deep_cuts(real, ai_real):
-    _, bau = real
+    cfg, bau = real
     _, w = ai_real
     assert w.warming < bau.warming
     assert AI_WARMING_2049[0] < w.warming < AI_WARMING_2049[1]
+    assert w.warming > cfg.tune("climate.warming_start")  # only an all-out world gets colder
 
 
 def test_ai_world_keeps_lights_on(ai_real):

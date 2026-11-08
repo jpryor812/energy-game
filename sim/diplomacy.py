@@ -98,7 +98,7 @@ def leave_club(world: World, nid: str) -> None:
 
 def remaining_budget(cfg: Config, world: World) -> float:
     """MtCO2 left before `target_warming`, under the model's own warming rule (reported only)."""
-    per_mt = climate.warming_from(cfg, 1.0) - climate.warming_from(cfg, 0.0)
+    per_mt = climate.co2_per_mt(cfg)
     total = (_s(cfg, "target_warming") - cfg.tune("climate.warming_start")) / per_mt
     return total - world.global_cumulative_emissions
 

@@ -139,6 +139,11 @@ class Nation:
     build_rate: float = 0.0
     retraining: float = 0.0
     electrification: float = 0.0
+    # M4b climate levers.
+    methane_abatement: float = 0.0
+    forest_paid: float = 0.0
+    removals: float = 0.0
+    extra_demand: float = 0.0
 
     _FLOATS = (
         "gdp", "population", "capital", "political_capital", "influence", "tech_points",
@@ -149,7 +154,7 @@ class Nation:
         "carbon_revenue", "clean_built", "import_dependence", "goods_exports",
         "cleantech_exports", "tariff_revenue", "trade_drag", "credit_balance", "credits_bought",
         "period_emissions", "exported_cut_rate", "tax_change", "build_rate", "retraining",
-        "electrification",
+        "electrification", "methane_abatement", "forest_paid", "removals", "extra_demand",
     )  # fmt: skip
     _FLOAT_MAPS = (
         "capacity", "subsidies", "tariffs", "supply", "fossil_production", "fossil_exports",
@@ -196,6 +201,11 @@ class World:
     opposition_until: int = -1
     term_start: dict[str, float] = field(default_factory=dict)
     elections: list[dict[str, Any]] = field(default_factory=list)
+    # M4b climate: methane (2025 = 1, relaxes toward current emissions), aerosols (2025 = 1),
+    # and the global forest fund (T$ paid in).
+    methane_index: float = 1.0
+    aerosol_index: float = 1.0
+    forest_fund: float = 0.0
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
@@ -226,6 +236,9 @@ class World:
             opposition_until=int(d["opposition_until"]),
             term_start={k: float(v) for k, v in d["term_start"].items()},
             elections=[dict(e) for e in d["elections"]],
+            methane_index=float(d["methane_index"]),
+            aerosol_index=float(d["aerosol_index"]),
+            forest_fund=float(d["forest_fund"]),
         )
 
     def to_json(self, *, indent: int | None = 2) -> str:

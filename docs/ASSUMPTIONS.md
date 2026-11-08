@@ -322,6 +322,34 @@ Decisions made with the user on 2026-11-08 are recorded in docs/DESIGN.md ("Deci
 84. **Stage order.** An "elections" stage runs after the stocktake and before the scoring
     snapshot (the build doc's pipeline had no election stage).
 
+## M4b part 2: climate and cooling
+
+85. **Warming in two parts.** Long-lived: TCRE (0.45 degC per 1000 GtCO2) x cumulative CO2 since
+    2025, with no multiplier. Short-lived: methane (0.5 degC in 2025) x a methane index that
+    relaxes toward current methane emissions with a 12-year lifetime; minus aerosol cooling
+    (0.25 degC in 2025, a modest strength by decision) x an aerosol index that follows coal and
+    oil burning and a clean-air trend (-3.5%/yr, set so business-as-usual warming stays at
+    ~0.27 degC/decade); plus 0.05 degC from other gases, held constant. 2025 still starts at
+    1.36 degC. This replaces the M1 non-CO2 multiplier.
+86. **Methane.** 35% of human methane is fossil (follows world fossil production), the rest
+    follows population. A nation's abatement spending cuts up to 75% of its fossil methane and
+    50% of its farming and waste methane (half at 0.2% of GDP).
+87. **Carbon removal** is a capacity (MtCO2/yr) with learning (20% per doubling) and a cost floor
+    at 40% of its 2025 cost (~$150/t removed with energy). Its energy (8 GJ/t) is added to the
+    nation's demand, so a fossil-heavy grid gives back part of the removal. It counts as a real
+    cut for score and stocktake. Carbon-price revenue is charged on CO2 emitted before removal.
+88. **Forest fund.** Any nation can pay into one global fund that cuts land-use CO2 by up to 150%
+    (land becomes a net sink), half at 0.5 T$. Payers earn financed credit (0.75) for the avoided
+    land-use CO2, in proportion to what they paid.
+89. **The rest of the world responds:** its energy CO2 is scaled by the 16 nations' carbon
+    intensity of energy relative to 2025 (clean technology spreads).
+90. **"Colder than 2025" is reachable but extreme** (decided 2026-11-08): an all-out world ends
+    2049 just below 1.36 degC (tested), but only with carbon removal of ~33 Gt/yr, far beyond
+    current physical estimates. The AI world ends at ~1.66 degC.
+91. **AI climate levers.** AI nations consider methane abatement (valued as CO2-equivalent: the
+    steady-state warming avoided spread over 20 years), carbon removal and the forest fund, and
+    judge spare capacity at the seasonal peak before retiring plants.
+
 ## Open questions
 
 - **Difficulty ordering (for M5).** Early bot runs score the US below India and Vietnam on the
@@ -333,6 +361,8 @@ Decisions made with the user on 2026-11-08 are recorded in docs/DESIGN.md ("Deci
 - **Construction jobs swing with build waves (for M5).** Big late-game build-outs (the US in
   the 2040s) create and then shed millions of construction jobs, which can swing an election
   by 20+ points; consider tying construction jobs to a smoother measure.
+- **Strategy balance (for M5).** With M4b, `all_clean` or the AI is the best strategy for most
+  nations; `balanced` and `deal_maker` trail. The difficulty order is still not the design's.
 - **Resolved in M4:** all-or-nothing fair share (now a 1.5 degC pathway on each nation's own
   emissions).
 - **Resolved in M2:** BAU builder vs. player builds (market runs for everyone), frozen-trend

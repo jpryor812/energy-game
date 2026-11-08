@@ -170,9 +170,18 @@ def dispatch(cfg: Config, nation: Nation, demand: float, t: int = 0) -> Dispatch
     return Dispatch(demand, supply, shortfall, curtailment, price, emissions)
 
 
+def net_removal(cfg: Config, nation: Nation, d: Dispatch) -> float:
+    """MtCO2/yr removed by the nation's carbon removal. Its energy is part of demand
+    (`extra_demand`), so the CO2 from powering it is already in the nation's gross emissions."""
+    if "carbon_removal" not in cfg.source_ids:
+        return 0.0
+    return nation.capacity.get("carbon_removal", 0.0)
+
+
 def base_demand(nation: Nation) -> float:
-    """Underlying demand rate before seasonality, EJ/yr."""
-    return nation.gdp * nation.energy_intensity
+    """Underlying demand rate before seasonality, EJ/yr: the economy's use plus energy for
+    carbon removal."""
+    return nation.gdp * nation.energy_intensity + nation.extra_demand
 
 
 def apply_dispatch(world: World, cfg: Config, dt: int) -> None:
@@ -186,7 +195,8 @@ def apply_dispatch(world: World, cfg: Config, dt: int) -> None:
         n.shortfall = d.shortfall
         n.curtailment = d.curtailment
         n.energy_price = d.price
-        n.emissions = d.emissions
+        n.removals = net_removal(cfg, n, d)
+        n.emissions = d.emissions - n.removals
         n.cumulative_emissions += d.emissions * dt / 4
         n.period_emissions += d.emissions * dt / 4
 

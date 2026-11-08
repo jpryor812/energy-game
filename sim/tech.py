@@ -2,7 +2,7 @@
 
 Unit cost C(n) = C0 x (n / n0)^(-b), where n is global cumulative deployment of the technology,
 n0 its 2025 level (`global_installed`), and b = -log2(1 - learning_rate), so each doubling of
-deployment cuts cost by `learning_rate`.
+deployment cuts cost by `learning_rate`, never below `cost_floor` x C0 where a source sets one.
 
 Global deployment grows by what the modelled nations build divided by their share of world
 deployment (`coverage_share`), so the rest of the world builds in proportion. Enablers have no
@@ -38,7 +38,9 @@ def unit_cost(cfg: Config, world: World, source: str) -> float:
     c0 = cfg.src(source, "capital_cost")
     if n0 <= 0 or n <= 0:
         return c0
-    return c0 * (n / n0) ** (-exponent(cfg.src(source, "learning_rate")))
+    cost = c0 * (n / n0) ** (-exponent(cfg.src(source, "learning_rate")))
+    floor = cfg.techs["sources"][source].get("cost_floor")
+    return max(cost, floor["value"] * c0) if floor else cost
 
 
 def research_multiplier(cfg: Config, nation: Nation, source: str) -> float:
@@ -106,6 +108,6 @@ def delivered_price(cfg: Config, world: World, nation: Nation) -> float:
 def apply(world: World, cfg: Config, completed: dict[str, float]) -> None:
     for s in sorted(completed):
         coverage = 1.0
-        if cfg.category(s) != "enabler":
+        if cfg.category(s) not in ("enabler", "removal"):
             coverage = cfg.src(s, "coverage_share")
         world.tech_state[s] = world.tech_state.get(s, 0.0) + completed[s] / coverage

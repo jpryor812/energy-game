@@ -148,9 +148,14 @@ def test_market_orders_arrive_together(cfg, world):
 
 def test_warming_and_damage(cfg):
     start = cfg.tune("climate.warming_start")
-    assert climate.warming_from(cfg, 0.0) == start
-    expected = start + 0.45 * (1 + cfg.tune("climate.nonco2_multiplier"))
-    assert climate.warming_from(cfg, 1e6) == pytest.approx(expected)
+    assert climate.warming_from(cfg, 0.0) == pytest.approx(start)
+    assert climate.warming_from(cfg, 1e6) == pytest.approx(start + 0.45)
+    # Short-lived part: less methane cools, less aerosol warms.
+    assert (
+        climate.warming_from(cfg, 0.0, ch4=0.5)
+        < start
+        < climate.warming_from(cfg, 0.0, aerosol=0.5)
+    )
     assert climate.damage(cfg, 1.0, start) == 0.0
     assert climate.damage(cfg, 2.0, start + 1) == pytest.approx(
         2 * cfg.tune("climate.damage_coefficient")
@@ -216,9 +221,12 @@ def test_sanity_no_nan_or_negative(bau_run):
     walk(bau_run[-1].to_dict(), "world")
 
 
-def test_warming_never_falls_while_emitting(bau_run):
-    temps = [w.warming for w in bau_run]
-    assert all(b >= a for a, b in zip(temps, temps[1:], strict=False))
+def test_cumulative_co2_never_falls_while_emitting(bau_run):
+    """Short-lived warming can now fall (methane, aerosols); long-lived CO2 only falls with net
+    removals."""
+    for a, b in zip(bau_run, bau_run[1:], strict=False):
+        if b.global_emissions > 0:
+            assert b.global_cumulative_emissions >= a.global_cumulative_emissions
 
 
 def test_bau_keeps_lights_on(bau_run):
