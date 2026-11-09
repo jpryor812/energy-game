@@ -523,6 +523,13 @@ planning)").
      (`scoring.falling_years`). Every nation on the most aggressive clean bot peaks at
      1.71 degC and passes 1.5 by 2030, so 1.5 was unreachable. The same "good world" test
      applies to Green but Poor. The World Multiplier still reaches 1.0 only at 1.5 degC.
+133. **Capital never stays negative** (playtest round 1). A negative quarterly income (tax cuts,
+     tax credits and interest on new debt) could push capital below zero, and the resource
+     check then crashed every action, free ones included. Free actions now pass when a
+     resource is negative, and a shortfall after income is borrowed as local debt, as all
+     other spending already was.
+134. **The fossil ban skips factories in the pipeline** (playtest round 1): item 120's
+     cancellation crashed on factory entries, which are not energy sources.
 
 ## Open questions
 
@@ -547,6 +554,10 @@ planning)").
   (M8). Agent playtesting should probe whether players can pull the world under it.
 - **Fallen Government is rare by design now.** It needs a sustained blackout or an approval
   collapse; neglect is punished mainly through lost elections.
+- **Playtest round 1 findings** (docs/PLAYTEST_REPORT.md, Round 1): climate-loan credit for
+  plants never built, factory capacity that scores forever, pre-election price cuts, jobs that
+  swing the vote quarter by quarter, risk-free inbound deals, club membership at 0 $/t, a rank
+  that leaves out bonuses, and a late game with nothing to decide. Planned for M9.
 - **Cheap factories** still move the clean component a lot for small producers (item 127).
 - **Disasters may dominate income** for exposed nations (the pilot took about ten hits of
   1-2.4% of GDP); to be judged across the M8 playtest round.

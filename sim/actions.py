@@ -507,7 +507,8 @@ def _ban_apply(cfg, world, n, act):
         n.pipeline = [
             c
             for c in n.pipeline
-            if not energy.is_fossil(cfg, c.source)
+            if c.source.startswith(construction.FACTORY)  # factories are not energy sources
+            or not energy.is_fossil(cfg, c.source)
             or c.complete_turn - int(cfg.src(c.source, "build_time")) <= world.t
         ]
     n.fossil_ban = 1.0 if act["on"] else 0.0
@@ -597,9 +598,10 @@ def resolve(cfg: Config, world: World, nid: str, acts: list[dict[str, Any]]) -> 
             spec = SPECS[act["type"]]
             if n.slots_banked.get(spec.slot, 0) < 1:
                 raise Rejected(f"no {spec.slot} slot left")
-            for res in RESOURCES:
-                if costs.get(res, 0.0) > getattr(n, res) + 1e-12:
-                    raise Rejected(f"needs {costs[res]:.4g} {res}, has {getattr(n, res):.4g}")
+            for res in RESOURCES:  # free actions stay possible when a resource is negative
+                need = costs.get(res, 0.0)
+                if need > 0 and need > getattr(n, res) + 1e-12:
+                    raise Rejected(f"needs {need:.4g} {res}, has {getattr(n, res):.4g}")
             for res in RESOURCES:
                 setattr(n, res, getattr(n, res) - costs.get(res, 0.0))
             n.slots_banked[spec.slot] -= 1

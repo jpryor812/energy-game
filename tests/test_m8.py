@@ -168,3 +168,54 @@ def test_turn_runs_with_capped_slots(cfg):
     for _ in range(4):
         w = turn.step(w, cfg)
     assert w.nations["AAA"].slots_banked["domestic"] <= cfg.tune("slots.domestic_bank_cap")
+
+
+def test_free_actions_work_with_negative_capital(cfg):
+    """Playtest round 1 (VNM): capital at -0.0002 T$ crashed every action with a KeyError."""
+    w = new_world(cfg, seed=1)
+    n = w.nations["AAA"]
+    n.capital = -0.001
+    n.slots_banked = {"domestic": 4, "diplomatic": 4}
+    free, paid = actions.resolve(
+        cfg,
+        w,
+        "AAA",
+        [
+            {"type": "set_tax_rate", "level": 0.0},
+            {"type": "build_capacity", "source": "wind", "amount": 0.1},
+        ],
+    )
+    assert free["ok"], free
+    assert not paid["ok"] and "capital" in paid["reason"]
+
+
+def test_negative_income_is_borrowed_not_left_as_negative_capital(cfg):
+    from sim import economy
+
+    w = new_world(cfg, seed=1)
+    n = w.nations["AAA"]
+    n.capital = -0.05
+    debt = n.debt_local
+    economy.apply_income(w, cfg, 1)
+    assert n.capital >= 0
+    assert n.debt_local > debt or n.capital > 0
+
+
+def test_fossil_ban_with_a_factory_under_construction(cfg):
+    """Playtest round 1 (exploit hunter): the ban crashed on factory entries in the pipeline."""
+    w = new_world(cfg, seed=1)
+    n = w.nations["AAA"]
+    n.slots_banked = {"domestic": 4, "diplomatic": 4}
+    n.political_capital = 100.0
+    n.capital = 1.0
+    build, ban = actions.resolve(
+        cfg,
+        w,
+        "AAA",
+        [
+            {"type": "build_factory", "tech": "solar", "amount": 0.001},
+            {"type": "set_fossil_ban", "on": True},
+        ],
+    )
+    assert build["ok"] and ban["ok"], (build, ban)
+    assert any(c.source.startswith(construction.FACTORY) for c in n.pipeline)

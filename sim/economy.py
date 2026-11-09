@@ -126,6 +126,9 @@ def apply_income(world: World, cfg: Config, dt: int) -> None:
         income += n.tax_change * n.gdp - tax_credit_cost(n)
         income -= r_hard * new_hard + r_local * new_local
         n.capital += income * years
+        if n.capital < 0:  # a shortfall is borrowed locally, as for any spending (M8)
+            n.debt_local -= n.capital
+            n.capital = 0.0
 
         pc = cfg.tune("politics.pc_income_base") + cfg.tune("politics.pc_income_approval") * (
             n.approval - cfg.tune("politics.approval_baseline")
