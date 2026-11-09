@@ -258,15 +258,15 @@ climate:
 
 slots:
   domestic_per_quarter:
+    value: 3
+    status: placeholder
+    note: The design doc's 3 (M9; was the build doc placeholder 2). Unused slots bank up to domestic_bank_cap (M8).
+  diplomatic_per_quarter:
     value: 2
     status: placeholder
-    note: Build doc placeholder (design doc suggests 3). Unused slots bank up to domestic_bank_cap (M8).
-  diplomatic_per_quarter:
-    value: 1
-    status: placeholder
-    note: Build doc placeholder (design doc suggests 2).
+    note: The design doc's 2 (M9; was 1). Round 1 players with money found one deal a quarter the binding limit on helping the world cut.
   domestic_bank_cap:
-    value: 4
+    value: 6
     status: placeholder
     note: Most domestic slots that can be held, this quarter's included (M8). Two quarters' worth, so slots are used or lost; the pilot banked 69 diplomatic slots it never used.
   diplomatic_bank_cap:
@@ -275,6 +275,10 @@ slots:
     note: Most diplomatic slots that can be held, this quarter's included (M8). A year's worth.
 
 market:
+  fast_horizon:
+    value: 8
+    status: placeholder
+    note: M9 - besides orders at its usual horizon (the slowest build time), the market fills any gap expected this many quarters ahead with sources that build that fast (gas, wind, solar, storage-era sources), so sudden capacity losses are covered within two years.
   cost_weight:
     value: 0.5
     status: placeholder
@@ -289,9 +293,9 @@ market:
     status: placeholder
     note: Real discount rate for levelized cost. Unsourced approximate.
   reserve_margin:
-    value: 0.0
+    value: 0.03
     status: placeholder
-    note: Market plans normal output this far above projected demand. Zero, because fossil headroom already covers the seasonal peak (docs/CALIBRATION.md).
+    note: Market plans normal output this far above projected demand. M9 (was 0) - the size of the winter peak (seasonality Q1 factor 1.03). Zero relied on fossil headroom covering the peak, which fails once fossil plants retire; Vietnam's AI then had 4-5% peak-quarter blackouts in the 2040s.
 
 research:
   max_cost_cut:
@@ -661,6 +665,7 @@ diplomacy:
 
 deals:
   proposal_expiry: {value: 4, status: placeholder, note: "Quarters a proposal stays open."}
+  host_capacity_cap: {value: 0.5, status: placeholder, note: "M9 - active deal capacity a nation can host, as a share of its energy demand. Round 1 saw offers of 10-17 EJ/yr to economies using 8-15 EJ."}
   max_duration: {value: 80, status: placeholder, note: "Longest deal, in quarters."}
   currency_loss: {value: 0.5, status: placeholder, note: "Value a financier loses on local-currency payments per unit fall in the host's FX reserves below 2025."}
   signing_trust_gain: {value: 0.03, status: placeholder, note: "Trust each side gains on signing."}
@@ -683,6 +688,7 @@ credits:
   weight_real: {value: 1.0, status: placeholder, note: "Score weight of a real domestic reduction (decided 2026-11-08)."}
   weight_financed: {value: 0.75, status: placeholder, note: "Score weight of a cut you financed abroad through a deal."}
   weight_exported: {value: 0.6, status: placeholder, note: "Score weight of a cut made with clean-tech equipment you exported."}
+  exported_cut_lifespan: {value: 25, status: placeholder, note: "M9 - years over which the cut credited for exported equipment winds down (the plants it went into retire); it used to last forever. Roughly a wind or solar plant's life. Unsourced approximate."}
   weight_purchased: {value: 0.25, status: placeholder, note: "Score weight of a purchased market credit."}
 
 stocktake:
@@ -711,7 +717,7 @@ industry:
   world_capacity_storage: {value: 0.1, status: placeholder, note: "World grid-battery factory capacity 2025, T$/yr. Unsourced approximate."}
   factory_capital_cost: {value: 0.5, status: placeholder, note: "T$ to build 1 T$/yr of factory output capacity. Unsourced approximate. M8 tried 1.0 (closer to integrated solar supply chains) but China then built too few factories to hold its manufacturing jobs and lost the 2032 vote in most seeds; kept at 0.5 pending playtests."}
   factory_build_time: {value: 8, status: placeholder, note: "Quarters to build a factory."}
-  factory_lifespan: {value: 20, status: placeholder, note: "Years a factory lasts."}
+  factory_lifespan: {value: 20, status: placeholder, note: "Years a factory lasts. M9 - factory capacity everywhere (the rest of the world included) retires at 1/lifespan a year; it was never applied before."}
   credit_competitiveness: {value: 2.0, status: placeholder, note: "Market share ~ capacity x (1 + manufacturing credit)^x."}
   domestic_content_penalty: {value: 0.5, status: placeholder, note: "Extra build cost per unit of domestic-content shortfall (required share not met by own factories)."}
 

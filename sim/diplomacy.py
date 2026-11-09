@@ -74,6 +74,16 @@ def club_eligible(cfg: Config, world: World, nid: str) -> bool:
     return world.nations[nid].carbon_price >= _d(cfg, "club_min_carbon_price")
 
 
+def enforce_club(cfg: Config, world: World) -> list[str]:
+    """Members whose carbon price has fallen below the club minimum leave (M9: membership was
+    never checked after joining); return who left."""
+    members = world.blocs.get(trade.CLUB, [])
+    left = [m for m in members if not club_eligible(cfg, world, m)]
+    if left:
+        world.blocs[trade.CLUB] = [m for m in members if m not in left]
+    return left
+
+
 def init_club(world: World, cfg: Config, founders: list[str]) -> None:
     world.blocs[trade.CLUB] = sorted(
         f for f in founders if f in world.nations and club_eligible(cfg, world, f)

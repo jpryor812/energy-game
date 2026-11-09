@@ -82,3 +82,8 @@ Same seed and inputs always produce byte-identical output.
   flowing to fast-growing clean nations, shows bonus races and policy effects on screen, and
   sets Champion at 1.6 degC and falling. Then a seven-agent playtest round
   (docs/PLAYTEST_REPORT.md).
+- **M9 (mechanics pass after playtest round 1):** done. Climate loans build real plants,
+  factories age out and score on sales, the vote averages prices and jobs over the term,
+  hosted deal capacity is capped, club members below the minimum price leave, rank follows the
+  final score, 3 domestic and 2 diplomatic slots a quarter, a market reserve against
+  peak-quarter blackouts, and screen fixes. The second agent playtest round is not run yet.

@@ -4,8 +4,11 @@ The vote is purely economic (decided with the user, 2026-11-08):
 
     vote = incumbency
          + growth_weight x (annual GDP growth over the term - baseline growth), in pp
-         + jobs_weight x weighted energy-job change over the term / workforce (sim.jobs)
-         - price_weight x energy-price rise over the term
+         + jobs_weight x weighted energy-job change / workforce (sim.jobs): M9, the term's
+           average jobs against the previous term's average, so one quarter's completions
+           cannot swing the vote
+         - price_weight x energy-price rise over the term, averaged over its quarters (M9,
+           like taxes: a price cut just before the vote counts only for its own quarters)
          - tax_weight x tax raised over the term, averaged over its quarters (M8: so a rise
            reversed just before the vote still counts for the quarters it was in force)
          + a seeded swing (normal, `swing_sd`, from the "elections" RNG stream)
@@ -38,8 +41,20 @@ def in_power(world: World) -> bool:
     return world.voted_out_at < 0
 
 
+def term_jobs(world: World) -> dict[str, float]:
+    """Average jobs over the term so far, by category (this quarter's if none recorded)."""
+    start = world.term_start
+    q = start.get("tax_quarters", 0.0)
+    p = world.nations[world.player]
+    if q <= 0:
+        return dict(p.jobs)
+    return {k: start.get(f"jobsum_{k}", v * q) / q for k, v in p.jobs.items()}
+
+
 def start_term(world: World) -> None:
     p = world.nations[world.player]
+    # M9: the new term's jobs baseline is the old term's average, not one quarter's count
+    baseline = term_jobs(world) if world.term_start else dict(p.jobs)
     world.term_start = {
         "t": float(world.t + 1 if world.history else world.t),
         "gdp": p.gdp,
@@ -47,7 +62,8 @@ def start_term(world: World) -> None:
         "tax": p.tax_change,
         "tax_sum": 0.0,
         "tax_quarters": 0.0,
-    } | {f"jobs_{k}": v for k, v in p.jobs.items()}
+        "price_sum": 0.0,
+    } | {f"jobs_{k}": v for k, v in baseline.items()}
 
 
 def term_tax_rise(world: World) -> float:
@@ -59,12 +75,26 @@ def term_tax_rise(world: World) -> float:
     return world.nations[world.player].tax_change - start["tax"]
 
 
+def term_price_rise(world: World) -> float:
+    """Energy-price rise over the term's starting price, averaged over the quarters of the term
+    so far (this quarter's price if none has been recorded yet)."""
+    start = world.term_start
+    if start.get("tax_quarters", 0.0) > 0 and "price_sum" in start:
+        return start["price_sum"] / start["tax_quarters"]
+    return world.nations[world.player].energy_price / start["price"] - 1
+
+
 def track(world: World) -> None:
-    """Record this quarter's tax rate for the term average."""
+    """Record this quarter's tax rate and energy price for the term averages."""
     start = world.term_start
     if "tax_sum" not in start:  # a save from before M8
         start["tax_sum"], start["tax_quarters"] = 0.0, 0.0
-    start["tax_sum"] += world.nations[world.player].tax_change - start["tax"]
+    start.setdefault("price_sum", 0.0)  # before M9
+    p = world.nations[world.player]
+    start["tax_sum"] += p.tax_change - start["tax"]
+    start["price_sum"] += p.energy_price / start["price"] - 1
+    for k, v in p.jobs.items():
+        start[f"jobsum_{k}"] = start.get(f"jobsum_{k}", 0.0) + v
     start["tax_quarters"] += 1.0
 
 
@@ -81,8 +111,8 @@ def vote(cfg: Config, world: World) -> dict[str, float]:
     parts = {
         "incumbency": _e(cfg, "incumbency"),
         "growth": _e(cfg, "growth_weight") * (growth - baseline) * 100,
-        "jobs": _e(cfg, "jobs_weight") * jobs.weighted_change(cfg, p, before, p.jobs),
-        "prices": -_e(cfg, "price_weight") * (p.energy_price / start["price"] - 1),
+        "jobs": _e(cfg, "jobs_weight") * jobs.weighted_change(cfg, p, before, term_jobs(world)),
+        "prices": -_e(cfg, "price_weight") * term_price_rise(world),
         "taxes": -_e(cfg, "tax_weight") * term_tax_rise(world),
         "swing": rng.stream(world.seed, "elections", world.t, nid).gauss(0, _e(cfg, "swing_sd")),
     }

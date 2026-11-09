@@ -1,6 +1,7 @@
 """Deals, emissions credit, the credit market, and the climate score. Fixture data."""
 
 import copy
+import dataclasses
 
 import pytest
 
@@ -94,6 +95,9 @@ def test_counter_offer_goes_back_to_financier(cfg, world):
 
 
 def test_hard_currency_default(cfg, world):
+    tuning = copy.deepcopy(cfg.tuning)  # this test needs a deal far bigger than the host cap
+    tuning["deals"]["host_capacity_cap"]["value"] = 100.0
+    cfg = dataclasses.replace(cfg, tuning=tuning)
     deal = signed(cfg, world, collateral=0.5, amount=20.0)  # payments far above income
     host = world.nations["BBB"]
     w = run_until(cfg, world, deal.terms["online_turn"])

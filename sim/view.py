@@ -65,6 +65,13 @@ def observe(game: Game) -> dict[str, Any]:
             election["expected_vote"] = _r(sum(parts.values()))
             election["parts"] = {k: _r(v) for k, v in parts.items()}
             election["note"] = "expected vote if held now, before a random swing"
+            start = w.term_start
+            election["jobs_baseline"] = {
+                k[5:]: _r(v) for k, v in sorted(start.items()) if k.startswith("jobs_")
+            }
+            election["jobs_term_average"] = {
+                k: _r(v) for k, v in sorted(elections.term_jobs(w).items())
+            }
 
     # Energy
     delivered = sum(n.supply.values())
@@ -138,7 +145,8 @@ def observe(game: Game) -> dict[str, Any]:
     }
 
     # Deals
-    inbox, mine = [], []
+    inbox, mine, sent = [], [], []
+    expiry = int(cfg.tune("deals.proposal_expiry"))
     for d in sorted(w.deals.values(), key=lambda d: d.id):
         if me not in (d.host, d.financier):
             continue
@@ -152,9 +160,13 @@ def observe(game: Game) -> dict[str, Any]:
         }
         if "end_turn" in d.terms:
             row["terms"]["end_label"] = _label(game, int(d.terms["end_turn"]))
+        if d.status == deals.OPEN:
+            row["expires"] = _label(game, d.start_turn + expiry)
         if d.status == deals.OPEN and deals.responder(d) == me:
             row["can_answer"] = w.t > d.start_turn
             inbox.append(row)
+        elif d.status == deals.OPEN:
+            sent.append(row)  # M9: your own offers awaiting an answer
         elif d.status == deals.ACTIVE:
             mine.append(row)
 
@@ -249,7 +261,12 @@ def observe(game: Game) -> dict[str, Any]:
             "coalition_tariff_on_you": _r(w.coalition_tariffs.get(me, 0.0)),
         },
         "relations": relations,
-        "deals": {"inbox": inbox, "active": mine},
+        "deals": {
+            "inbox": inbox,
+            "sent": sent,
+            "active": mine,
+            "room_to_host": _r(deals.host_room(cfg, w, me)),
+        },  # fmt: skip
         "notices": list(game.notices),
         "leaders": leaders,
         "races": (
@@ -271,6 +288,12 @@ def observe(game: Game) -> dict[str, Any]:
                 "rank": result["rank"],
                 "nation_index": _r(result["nation_index"], 1),
                 "absolute_index": _r(result["absolute_index"], 1),
+                "combined_index": _r(result["combined_index"], 1),
+                "difficulty_multiplier": result["difficulty_multiplier"],
+                "weights": [
+                    cfg.tune("scoring.weight_absolute"),
+                    cfg.tune("scoring.weight_relative"),
+                ],  # fmt: skip
                 "world_multiplier": _r(result["world_multiplier"]),
                 "components": {k: _r(v) for k, v in result["components"].items()},
                 "bonuses": result["bonuses"],
@@ -320,7 +343,13 @@ def render(obs: dict[str, Any], brief: bool = False) -> str:
             f"Election {e['next']} (in {e['quarters_away']} q): expected vote "
             f"{e['expected_vote']:.3f}, need {e['needed']} [{_kv(e['parts'], '{:+.3f}')}]; "
             f"growth this term {e['growth_this_term'] * 100:.2f}%/yr vs expected "
-            f"{e['growth_expected'] * 100:.2f}%/yr"
+            f"{e['growth_expected'] * 100:.2f}%/yr; taxes and prices count as averages over the "
+            "term"
+        )
+        lines.append(
+            f"  jobs (m), term average so far {_kv(e['jobs_term_average'], '{:.2f}')} against "
+            f"the last term's average {_kv(e['jobs_baseline'], '{:.2f}')} (fossil losses count "
+            "double unless retrained)"
         )
     if o["notices"]:
         lines += ["", "THIS QUARTER:"] + [f"  {x}" for x in o["notices"]]
@@ -414,12 +443,22 @@ def render(obs: dict[str, Any], brief: bool = False) -> str:
             ),
         ]
     inbox, active = o["deals"]["inbox"], o["deals"]["active"]
+    sent = o["deals"].get("sent", [])
     lines.append("")
-    lines.append(f"DEALS: inbox {len(inbox)}, active {len(active)}")
+    lines.append(
+        f"DEALS: inbox {len(inbox)}, awaiting answers {len(sent)}, active {len(active)}; you can "
+        f"host {o['deals'].get('room_to_host', 0):.3g} EJ/yr more of deal capacity"
+    )
     for d in inbox:
         lines.append(
             f"  OFFER {d['id']} {d['type']} {d['financier']}->{d['host']} "
-            f"{_terms(d['terms'])}" + ("" if d["can_answer"] else " (answer next quarter)")
+            f"{_terms(d['terms'])} (expires {d['expires']})"
+            + ("" if d["can_answer"] else " (answer next quarter)")
+        )
+    for d in sent:
+        lines.append(
+            f"  SENT {d['id']} {d['type']} {d['financier']}->{d['host']} "
+            f"{_terms(d['terms'])} (awaiting {_other(d, o['country'])}, expires {d['expires']})"
         )
     if not brief:
         for d in active:
@@ -434,12 +473,20 @@ def render(obs: dict[str, Any], brief: bool = False) -> str:
     if s is None:
         lines.append("SCORE: shown from the end of the first quarter.")
     else:
+        head = "SCORE at exit" if o["over"] and o["lost"] else "SCORE now"
         lines.append(
-            f"SCORE now {s['score_if_ended_now']:.1f} (rank {s['rank']}/16; nation index "
-            f"{s['nation_index']:.1f}, absolute {s['absolute_index']:.1f}, world x"
-            f"{s['world_multiplier']:.2f}) | {_kv(s['components'], '{:.2f}')}"
-            + (f" | bonuses {_kv(s['bonuses'])}" if s["bonuses"] else "")
+            f"{head} {s['score_if_ended_now']:.1f} (rank {s['rank']}/16, ranked on this score) = "
+            f"combined {s['combined_index']:.1f} x world {s['world_multiplier']:.2f} + bonuses; "
+            f"combined = {s['weights'][0]:g} x absolute {s['absolute_index']:.1f} + "
+            f"{s['weights'][1]:g} x nation index {s['nation_index']:.1f} x country "
+            f"{s['difficulty_multiplier']:g}"
         )
+        lines.append(
+            f"  nation index parts: {_kv(s['components'], '{:.2f}')}"
+            + (f" | bonuses {_kv(s['bonuses'])}" if s["bonuses"] else "")
+            + (" | clean = your share of world clean-tech equipment sales over the last year "
+               "against your 2025 share of factory capacity")
+        )  # fmt: skip
         top = o["leaders"][:5]
         mine = next((x for x in o["leaders"] if x["nation"] == o["country"]), None)
         board = ", ".join(f"{x['nation']} {x['score']:.1f}" for x in top)
@@ -448,6 +495,10 @@ def render(obs: dict[str, Any], brief: bool = False) -> str:
         lines.append(f"  leaders (score now): {board}")
         lines.append("  bonus races: " + "; ".join(_race(r, o["country"]) for r in o["races"]))
     return "\n".join(lines)
+
+
+def _other(d: dict[str, Any], me: str) -> str:
+    return d["host"] if d["financier"] == me else d["financier"]
 
 
 def _race(r: dict[str, Any], me: str) -> str:

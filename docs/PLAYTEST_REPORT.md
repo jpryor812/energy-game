@@ -173,3 +173,19 @@ of every action from 2039Q4 by a crash (below), so its last decade is not real p
   coal, and the market stops building; construction jobs collapse with it (USA, VNM, IND).
 - **Elections feel like noise** rather than a judgement on policy: the jobs baseline is not
   shown, and one vote came in 0.051 below its forecast (CHN).
+
+### M9 outcome
+
+Fixed in M9 (docs/ASSUMPTIONS.md items 135-148): climate loans build real plants; factories age
+out and the clean component scores a year of equipment sales; the exported-cut credit winds
+down; the vote averages prices and jobs over the term and shows the jobs baseline; hosted deal
+capacity is capped at half of energy demand; club members below the minimum price leave; first
+to net zero needs a four-quarter average; rank follows the final score; 3 domestic and 2
+diplomatic slots a quarter; a 3% market reserve and near-term market orders end peak-quarter
+blackouts; `"max"` resolves in the engine; open offers, offer sizes, expiries, the score's
+construction, unsold credits, leaving the club and late orders are shown.
+
+Not changed yet: wind and solar priced out once curtailed, cheap first doses, the
+log-versus-screen approval gap, supply that swings every other quarter, and FX reserves draining
+unexplained. Round 2 (the same seven agents, each with its own helper folder, plus a Vietnam
+replay) is planned but not run.

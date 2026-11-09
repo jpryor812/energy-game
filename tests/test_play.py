@@ -108,7 +108,7 @@ def test_cli_plays_a_game(fixture_dir, tmp_path, capsys):
     assert "propose_deal" in capsys.readouterr().out
 
 
-def test_max_spends_what_is_left_and_logs_a_number(cfg):
+def test_max_spends_what_is_left_at_resolution(cfg):
     game = Game.new(cfg, "AAA", seed=1)
     game.wait(4)
     acts = [
@@ -119,9 +119,22 @@ def test_max_spends_what_is_left_and_logs_a_number(cfg):
     assert all(r["ok"] for r in results)
     rep = game.turn(acts)
     assert all(r["ok"] for r in rep["results"])
-    logged = game.moves[-1]["actions"][1]["amount"]
-    assert isinstance(logged, float) and logged > 0
+    spent = rep["results"][1]["action"]["amount"]  # M9: the engine resolves "max"
+    assert isinstance(spent, float) and spent > 0
+    assert game.moves[-1]["actions"][1]["amount"] == "max"  # replays resolve it the same way
     assert game.world.nations["AAA"].capital < 1e-6  # everything was spent
+
+
+def test_max_closes_less_than_one_unit(cfg):
+    game = Game.new(cfg, "AAA", seed=1)
+    game.wait(1)
+    n = game.world.nations["AAA"]
+    n.political_capital = 1e6
+    source = min((s for s, c in n.capacity.items() if c > 0), key=lambda s: n.capacity[s])
+    n.capacity[source] = 0.4
+    [r] = game.check([{"type": "retire_capacity", "source": source, "amount": "max"}])
+    assert r["ok"], r
+    assert r["action"]["amount"] == pytest.approx(0.4)
 
 
 def test_notices_report_deal_offers_and_stocktakes(cfg):

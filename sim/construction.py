@@ -37,6 +37,18 @@ def retire_rate(cfg: Config, nid: str, source: str) -> float:
 def retire(cfg: Config, nid: str, n: Nation, dt: int) -> None:
     for s in sorted(n.capacity):
         n.capacity[s] *= (1.0 - retire_rate(cfg, nid, s)) ** (dt / 4)
+    keep = (1.0 - 1.0 / cfg.tune("industry.factory_lifespan")) ** (dt / 4)
+    for kind in sorted(n.factory_capacity):  # M9: factories age out too
+        n.factory_capacity[kind] *= keep
+
+
+def retire_world_factories(cfg: Config, world: World, dt: int) -> None:
+    """The rest of the world's factories age at the same rate as the 16 nations' (M9), so
+    shares hold steady unless someone builds."""
+    keep = (1.0 - 1.0 / cfg.tune("industry.factory_lifespan")) ** (dt / 4)
+    for key in sorted(world.base):
+        if key.startswith("row_capacity_"):
+            world.base[key] *= keep
 
 
 FACTORY = "factory_"  # pipeline prefix for clean-tech factories, e.g. "factory_solar"
@@ -119,7 +131,9 @@ def future_capacity(cfg: Config, nid: str, n: Nation, source: str, t: int, at: i
     return kept + arriving
 
 
-def order(cfg: Config, world: World, nid: str, n: Nation, t: int, at: int) -> None:
+def order(
+    cfg: Config, world: World, nid: str, n: Nation, t: int, at: int, fast: bool = False
+) -> None:
     """Place market orders so that, at turn `at`, normal output covers projected demand plus the
     reserve margin, split by `market_mix`; add grid for the wind and solar. Subsidies are paid
     from capital when ordered (borrowed locally if capital runs out)."""
@@ -149,7 +163,10 @@ def order(cfg: Config, world: World, nid: str, n: Nation, t: int, at: int) -> No
     fossil_normal = sum(v for s, v in normal.items() if energy.is_fossil(cfg, s))
     gap = target - clean_normal - fossil_normal
     if gap > 0:
-        alloc = split_gap(cfg, world, nid, n, gap, vre_cap - vre_normal, clean_cap - clean_normal)
+        alloc = split_gap(
+            cfg, world, nid, n, gap, vre_cap - vre_normal, clean_cap - clean_normal,
+            lead=at - t if fast else None,
+        )  # fmt: skip
         for s in sorted(alloc):
             amount = alloc[s] * cfg.src(s, "headroom")
             if amount <= 0:
@@ -159,7 +176,7 @@ def order(cfg: Config, world: World, nid: str, n: Nation, t: int, at: int) -> No
             if subsidy > 0:
                 pay(n, subsidy * tech.nation_unit_cost(cfg, world, n, s) * amount)
 
-    if "grid" in cfg.source_ids:
+    if "grid" in cfg.source_ids and not fast:  # grid is too slow for short-range orders
         enablers = [s for s in cfg.source_ids if cfg.category(s) == "enabler"]
         vre = sum(future_capacity(cfg, nid, n, s, t, at) for s in cfg.vre_ids)
         absorb = cfg.tune("energy.vre_base_absorb_share") * target + sum(
@@ -182,11 +199,16 @@ def split_gap(
     gap: float,
     vre_room: float,
     clean_room: float,
+    lead: int | None = None,
 ) -> dict[str, float]:
     """Split a gap in normal output by the market mix, keeping wind and solar within the
     electrifiable share and all clean sources within the clean ceiling; the rest goes to fossil
     sources by their mix weights (or the cheapest fossil source if the mix has none)."""
     mix = market_mix(cfg, world, nid, n)
+    if lead is not None:  # only sources that can be built in time (M9 short-range orders)
+        fast = {s: w for s, w in mix.items() if cfg.src(s, "build_time") <= lead}
+        total_w = sum(fast.values())
+        mix = {s: w / total_w for s, w in fast.items()} if total_w > 0 else {}
     if n.fossil_ban:  # no new fossil plants: their share goes to clean sources
         clean_w = {s: w for s, w in mix.items() if not energy.is_fossil(cfg, s)}
         total_w = sum(clean_w.values())
@@ -207,6 +229,10 @@ def split_gap(
         fossil = {s: w for s, w in mix.items() if energy.is_fossil(cfg, s) and w > 0}
         if not fossil:
             options = [s for s in cost_candidates(cfg, nid) if energy.is_fossil(cfg, s)]
+            if lead is not None:
+                options = [s for s in options if cfg.src(s, "build_time") <= lead]
+            if not options:
+                return alloc
             fossil = {min(options, key=lambda s: (tech.lcoe(cfg, world, n, s), s)): 1.0}
         total = sum(fossil.values())
         for s, w in fossil.items():
@@ -222,7 +248,13 @@ def pay(n: Nation, amount: float) -> None:
 
 
 def market_build(cfg: Config, world: World, nid: str, n: Nation) -> None:
+    """Order for delivery at the horizon, then (M9) fill any gap still expected within
+    `market.fast_horizon` quarters with sources that can be built that quickly, so a sudden
+    loss of capacity (a failed equity plant, retirements) does not leave years of blackouts."""
     order(cfg, world, nid, n, world.t, world.t + horizon_quarters(cfg, nid))
+    fast = int(cfg.tune("market.fast_horizon"))
+    if fast < horizon_quarters(cfg, nid):
+        order(cfg, world, nid, n, world.t, world.t + fast, fast=True)
 
 
 def seed_pipeline(cfg: Config, world: World, nid: str, n: Nation) -> None:
@@ -237,6 +269,7 @@ def apply(world: World, cfg: Config, dt: int) -> dict[str, float]:
     completed per source (all nations)."""
     completed: dict[str, float] = defaultdict(float)
     by_nation: dict[str, dict[str, float]] = {}
+    retire_world_factories(cfg, world, dt)
     clean = [s for s in cfg.source_ids if cfg.category(s) != "fossil"]
     for nid in sorted(world.nations):
         n = world.nations[nid]

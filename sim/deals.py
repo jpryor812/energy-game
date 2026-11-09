@@ -25,9 +25,9 @@ Equity-for-energy (M5): the financier builds a plant and takes `share` of its op
 fixed payment, so no default, but returns fall with the host's prices, and each quarter the plant
 may fail or be seized (seeded "deals" stream), more likely when the host is unstable, its FX
 reserves have fallen, it distrusts the investor, or it defaulted recently; the investor loses the
-stake and the capacity goes. Climate loan (M5): cash for the host to spend on clean capacity
-(`amount` in T$, assumed spent on `source`), repaid like equipment on credit from the next
-quarter.
+stake and the capacity goes. Climate loan (M5): `amount` T$ lent to build `source` capacity in
+the host at the host's own unit cost (M9: the plant enters the host's pipeline; before, the
+host got cash it need not spend), repaid like equipment on credit from the next quarter.
 
 Emissions credit: once running, a deal cuts the host's emissions by roughly the plant's output x
 the host's average fossil emission factor at signing. The host's real emissions already show it;
@@ -63,6 +63,28 @@ def build_cost(cfg: Config, world: World, deal: Deal) -> float:
         return deal.terms["amount"]
     fin = world.nations[deal.financier]
     return tech.nation_unit_cost(cfg, world, fin, deal.terms["source"]) * deal.terms["amount"]
+
+
+def deal_capacity(cfg: Config, world: World, deal: Deal) -> float:
+    """EJ/yr of capacity a deal builds in its host (a climate loan's at the host's unit cost)."""
+    if "capacity" in deal.terms:
+        return deal.terms["capacity"]
+    if deal.type == "climate_loan":
+        host = world.nations[deal.host]
+        return deal.terms["amount"] / tech.nation_unit_cost(cfg, world, host, deal.terms["source"])
+    return deal.terms["amount"]
+
+
+def host_room(cfg: Config, world: World, nid: str) -> float:
+    """EJ/yr of deal capacity a nation can still host (M9): active deals' capacity is capped
+    at `deals.host_capacity_cap` x its energy demand, so offers cannot dwarf its economy."""
+    n = world.nations[nid]
+    hosted = sum(
+        deal_capacity(cfg, world, d)
+        for d in world.deals.values()
+        if d.host == nid and d.status == ACTIVE
+    )
+    return max(0.0, _k(cfg, "host_capacity_cap") * n.demand - hosted)
 
 
 def effective_rate(cfg: Config, world: World, deal: Deal) -> float:
@@ -104,9 +126,11 @@ def activate(cfg: Config, world: World, deal: Deal) -> None:
     source = deal.terms["source"]
     online = world.t + int(cfg.src(source, "build_time"))
     if deal.type == "climate_loan":
-        # Cash for the host to build clean capacity; repayments start next quarter.
-        host.capital += cost
+        # The loan pays for clean capacity built in the host at the host's unit cost (M9: it
+        # used to be cash the host need not spend, while the lender was credited anyway);
+        # repayments start next quarter.
         capacity = cost / tech.nation_unit_cost(cfg, world, host, source)
+        construction.queue(cfg, host, source, capacity, world.t)
         pay_from = world.t + 1
     else:
         construction.queue(cfg, host, source, deal.terms["amount"], world.t)

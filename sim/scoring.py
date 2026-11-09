@@ -128,9 +128,20 @@ def climate_component(cfg: Config, world: World, nid: str) -> float:
     return logistic(per_year / _sc(cfg, "climate_scale"))
 
 
+def sales_share(world: World, nid: str) -> float | None:
+    """The nation's share of world clean-tech equipment purchases it supplied over the last four
+    quarters (M9: sales, not capacity, so idle factories do not score). None if nobody bought
+    equipment in that time."""
+    recs = [h["nations"] for h in world.history[-4:]]
+    total = sum(sum(r[o].get("equipment_demand", {}).values()) for r in recs for o in r)
+    if total <= 0:
+        return None
+    return sum(sum(r[nid].get("factory_sales", {}).values()) for r in recs) / total
+
+
 def manufacturing_share(world: World, nid: str, base: bool = False) -> float:
     """The nation's share of world clean-tech factory capacity (all technologies), now or in
-    2025."""
+    2025. Scoring uses `sales_share` for now and this for 2025."""
     from sim import trade
 
     total = mine = 0.0
@@ -146,10 +157,12 @@ def manufacturing_share(world: World, nid: str, base: bool = False) -> float:
 
 
 def clean_competitiveness(cfg: Config, world: World, nid: str) -> float:
-    """Share of world clean-tech manufacturing now against 2025 (0.5 = held its share). A small
-    floor lets nations with no factories in 2025 gain by building some."""
+    """Share of world clean-tech equipment sales over the last year against the 2025 share of
+    factory capacity (0.5 = held its share). A small floor lets nations with no factories in
+    2025 gain by building some."""
     floor = _sc(cfg, "clean_share_floor")
-    now = manufacturing_share(world, nid) + floor
+    sold = sales_share(world, nid)
+    now = (manufacturing_share(world, nid) if sold is None else sold) + floor
     then = manufacturing_share(world, nid, base=True) + floor
     return logistic(math.log(now / then) / _sc(cfg, "clean_scale"))
 
@@ -173,16 +186,20 @@ def annual_emissions(world: World, nid: str) -> float:
 
 
 def first_net_zero(cfg: Config, world: World) -> tuple[str, str] | None:
-    """(nation, quarter label) of the first nation to reach net zero, if any has."""
+    """(nation, quarter label) of the first nation to reach net zero, judged on emissions
+    averaged over four quarters (M9: one low-season quarter used to be enough), if any has."""
     share = _sc(cfg, "net_zero_share")
-    for h in world.history:
+    hist = world.history
+    for i in range(3, len(hist)):
+        window = hist[i - 3 : i + 1]
         reached = sorted(
             nid
-            for nid, r in h["nations"].items()
-            if r["emissions"] <= share * world.nations[nid].base["emissions"]
+            for nid in world.nations
+            if sum(h["nations"][nid]["emissions"] for h in window) / 4
+            <= share * world.nations[nid].base["emissions"]
         )
         if reached:
-            return reached[0], h["label"]
+            return reached[0], hist[i]["label"]
     return None
 
 
@@ -390,7 +407,7 @@ def score(cfg: Config, world: World, player: str, lost: str | None = None) -> di
 
     score = (w_abs x absolute index + w_rel x relative index x country difficulty) x World
     Multiplier + absolute bonuses + relative bonuses x country difficulty. Rank (for endings) is
-    on the combined index before the World Multiplier. A lost game (`lost` is Fallen Government
+    on that score, bonuses included (M9). A lost game (`lost` is Fallen Government
     or Voted Out) scores `loss_score`; `score_at_exit` keeps what the formula gave.
     """
     ids = sorted(world.nations)
@@ -400,8 +417,6 @@ def score(cfg: Config, world: World, player: str, lost: str | None = None) -> di
     absolute = {nid: absolute_index(cfg, c) for nid, c in abs_comps.items()}
     mults = {nid: difficulty_multiplier(cfg, nid) for nid in ids}
     combined = {nid: combined_index(cfg, absolute[nid], relative[nid], mults[nid]) for nid in ids}
-    order = sorted(ids, key=lambda nid: (-combined[nid], nid))
-    ranks = {nid: i + 1 for i, nid in enumerate(order)}
     world_mult = world_multiplier(cfg, world.warming)
     bonus = bonuses(cfg, world)
 
@@ -411,6 +426,10 @@ def score(cfg: Config, world: World, player: str, lost: str | None = None) -> di
         )
 
     totals = {nid: combined[nid] * world_mult + bonus_total(nid) for nid in ids}
+    # M9: rank on the final score, bonuses included (it was the combined index before bonuses,
+    # so it contradicted the leaderboard)
+    order = sorted(ids, key=lambda nid: (-totals[nid], nid))
+    ranks = {nid: i + 1 for i, nid in enumerate(order)}
     return {
         "player": player,
         "score": _sc(cfg, "loss_score") if lost else totals[player],

@@ -88,7 +88,9 @@ def catalogue(cfg: Config) -> dict[str, dict[str, Any]]:
             "example": {"type": "buy_influence", "amount": 0.02},
         },
         "build_grid_storage": {
-            "summary": "Build grid or storage, letting more wind and solar be used.",
+            "summary": "Build grid or storage, letting more wind and solar be used (amount in "
+            f"EJ/yr of wind and solar absorbed; grid takes {int(cfg.src('grid', 'build_time'))} "
+            f"quarters, storage {int(cfg.src('storage', 'build_time'))}).",
             "params": {"kind": enablers, "amount": "EJ/yr equivalent, > 0"},
             "cost": "capital: unit cost x amount",
             "example": {"type": "build_grid_storage", "kind": "storage", "amount": 0.1},
@@ -135,7 +137,10 @@ def catalogue(cfg: Config) -> dict[str, dict[str, Any]]:
             },  # fmt: skip
         },
         "build_factory": {
-            "summary": "Build a clean-tech factory line: jobs, exports, and a cheaper home supply.",
+            "summary": "Build a clean-tech factory line: jobs, exports, and a cheaper home supply "
+            f"(takes {int(_t(cfg, 'industry.factory_build_time'))} quarters; lines age out over "
+            f"{_t(cfg, 'industry.factory_lifespan'):g} years; the clean score counts what they "
+            "sell).",
             "params": {"tech": equipment, "amount": "factory units, > 0"},
             "cost": f"capital: {_t(cfg, 'industry.factory_capital_cost'):g} per unit",
             "example": {"type": "build_factory", "tech": "solar", "amount": 0.1},
@@ -170,7 +175,7 @@ def catalogue(cfg: Config) -> dict[str, dict[str, Any]]:
         },
         "build_removal": {
             "summary": "Build carbon removal capacity (uses energy; expensive early, cheaper with "
-            "learning).",
+            f"learning; takes {int(cfg.src('carbon_removal', 'build_time'))} quarters).",
             "params": {"amount": "MtCO2/yr of removal, > 0"},
             "cost": "capital: unit cost x amount",
             "example": {"type": "build_removal", "amount": 5},
@@ -232,7 +237,8 @@ def catalogue(cfg: Config) -> dict[str, dict[str, Any]]:
         },
         "propose_deal": {
             "summary": "Offer a clean-energy deal to a host nation; it answers next quarter. "
-            "equipment_on_credit and climate_loan lend (rate); energy_as_a_service sells the "
+            "equipment_on_credit lends the plant, climate_loan lends cash (T$) that builds it at "
+            "the host's cost (rate); energy_as_a_service sells the "
             "power (price, $/GJ); equity_for_energy takes a share of the plant's margin (share; "
             "the plant can fail if the host becomes unreliable).",
             "params": {

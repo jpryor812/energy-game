@@ -66,7 +66,9 @@ def test_components_move_the_right_way(cfg, noop_world):
     base = scoring.components(cfg, w, "AAA")
     w.nations["AAA"].gdp *= 1.2
     w.nations["AAA"].energy_price *= 0.5
-    w.nations["AAA"].factory_capacity["solar"] = 1.0  # a big share of world clean-tech making
+    for h in w.history[-4:]:  # M9: the clean component reads a year of equipment sales
+        h["nations"]["AAA"]["factory_sales"] = {"solar": 1.0}
+        h["nations"]["AAA"]["equipment_demand"] = {"solar": 1.0}
     better = scoring.components(cfg, w, "AAA")
     assert better["income"] > base["income"]
     assert better["welfare"] > base["welfare"]
@@ -80,8 +82,10 @@ def test_bonuses(cfg, noop_world):
     import copy
 
     w = copy.deepcopy(noop_world)
-    w.history[10]["nations"]["BBB"]["emissions"] = 0.0
-    w.history[20]["nations"]["AAA"]["emissions"] = 0.0
+    for i in range(10, 14):  # net zero is judged on four-quarter averages (M9)
+        w.history[i]["nations"]["BBB"]["emissions"] = 0.0
+    for i in range(20, 24):
+        w.history[i]["nations"]["AAA"]["emissions"] = 0.0
     w.nations["BBB"].emissions = 0.5 * w.nations["BBB"].base["emissions"]
     w.nations["AAA"].emissions = 0.9 * w.nations["AAA"].base["emissions"]
     b = scoring.bonuses(cfg, w)

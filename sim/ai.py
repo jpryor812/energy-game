@@ -104,6 +104,14 @@ def context(cfg: Config, world: World, nid: str) -> Context:
         construction.future_capacity(cfg, nid, n, s, world.t, world.t + 4) for s in cfg.vre_ids
     )
     normal += min(vre_future, absorb)  # wind and solar count only as far as the grid takes them
+    # M9: all clean output together is capped too (sim.energy.dispatch), so count it only up to
+    # that cap; otherwise an AI retires fossil plants it still needs at the seasonal peak.
+    clean_future = min(vre_future, absorb) + sum(
+        construction.future_capacity(cfg, nid, n, s, world.t, world.t + 4) / cfg.src(s, "headroom")
+        for s in cfg.energy_source_ids
+        if s not in cfg.vre_ids and not energy.is_fossil(cfg, s)
+    )
+    normal -= max(0.0, clean_future - energy.clean_max_share(cfg, world.t, n) * demand)
     peak = demand * max(cfg.tune("seasonality.demand_factor"))  # judge spare capacity at the peak
     margin = normal / peak - 1 if peak > 0 else 0.0
     target_margin = _ai(cfg, "security_margin")
@@ -462,9 +470,7 @@ def _value_deal_as_host(cfg, world, nid, deal, personality, ctx, w_em, income) -
     if payment + committed > _ai(cfg, "max_payment_share") * income[0]:
         return -math.inf  # cannot afford the payments
     cap_weight = _ai(cfg, "capital_cost_weight") / _p(cfg, personality, "budget_appetite")
-    cost = payment
-    if deal.type == "climate_loan":  # the loan itself pays the principal back: count interest
-        cost = deal.terms["amount"] * deals.effective_rate(cfg, world, deal)
+    cost = payment  # M9: a climate loan builds the plant, so principal is a real cost too
     value = benefit - cap_weight * cost / income[0]
     bar = -_p(cfg, personality, "w_deals") * _p(cfg, personality, "deal_affinity")
     bar -= _ai(cfg, "trust_weight") * (diplomacy.trust(world, nid, deal.financier) - 0.5)
@@ -494,7 +500,7 @@ def _deal_offer(cfg, world, nid, personality, w_em, income) -> tuple[float, Acti
     avg_g = max(sum(growth.values()) / len(ids), 1e-12)
     hosts = []
     for hid in ids:
-        if hid == nid or hid in busy:
+        if hid == nid or hid in busy or deals.host_room(cfg, world, hid) <= 0:
             continue
         need = intensity[hid] / avg_i + _ai(cfg, "host_growth_weight") * growth[hid] / avg_g
         if need > 0:
@@ -517,6 +523,13 @@ def _deal_offer(cfg, world, nid, personality, w_em, income) -> tuple[float, Acti
     budget = _ai(cfg, "deal_share") * n.capital
     if kind != "equity_for_energy":  # fixed repayments must fit the host's budget
         budget = min(budget, max(0.0, room) / (1 / years + rate))
+    # M9: no bigger than the host can take (capacity at the host's own cost for a loan)
+    budget = min(
+        budget,
+        deals.host_room(cfg, world, hid) * tech.nation_unit_cost(cfg, world, host, source)
+        if kind == "climate_loan"
+        else deals.host_room(cfg, world, hid) * unit,
+    )
     if budget <= 0:
         return None
     act = {

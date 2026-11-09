@@ -26,14 +26,15 @@ bonus races and who leads each.
 
 - **Voted Out.** Elections are held every four years: 2028Q4, 2032Q4, 2036Q4, 2040Q4, 2044Q4 and
   2048Q4. You need 50% of the vote. The vote is purely economic: growth over the term against
-  what was expected, energy jobs gained or lost (fossil job losses count double unless you
-  retrain workers), household energy prices, and tax rises, plus a small random swing. The
+  what was expected, energy jobs this term against last term (both averaged over the term;
+  fossil job losses count double unless you retrain workers), household energy prices and tax
+  rises (both averaged over the term), plus a small random swing. The
   screen shows your expected vote from the second year of each term.
 - **Fallen Government.** If stability falls below 0.1. Blackouts (energy shortfalls) and low
   approval erode stability.
 
-**Each quarter** you get 2 domestic and 1 diplomatic action slots; unused slots are banked, up
-to 4 of each. You
+**Each quarter** you get 3 domestic and 2 diplomatic action slots; unused slots are banked, up
+to 6 domestic and 4 diplomatic. You
 also earn capital (T$, trillions of dollars), political capital (spent on unpopular moves such as
 carbon prices, closing plants and tax rises) and can buy influence (spent on talks).
 
@@ -43,7 +44,8 @@ they build. Your own `build_capacity` orders come on top.
 
 **Deals.** You can offer other nations clean-energy deals (loans, equipment on credit, energy as
 a service, equity) and answer offers in your inbox. Deals cut emissions abroad, earn returns and
-build trust; equity can be lost if the host becomes unreliable.
+build trust; equity can be lost if the host becomes unreliable. A nation can host deal capacity
+up to half its energy demand. Rank is on the final score, bonuses included.
 
 ## Commands
 

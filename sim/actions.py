@@ -347,6 +347,14 @@ def _open_deal(world, n, act):
 def _respond_check(cfg, world, n, act):
     deal = _open_deal(world, n, act)
     response = _choice(act, "response", ["accept", "refuse", "counter"])
+    if response == "accept" and deal.host == n.id:
+        size, room = deals.deal_capacity(cfg, world, deal), deals.host_room(cfg, world, n.id)
+        if size > room + 1e-12:
+            raise Rejected(
+                f"this deal adds {size:.3g} EJ/yr but you can host only {room:.3g} more "
+                f"(deal capacity is capped at {cfg.tune('deals.host_capacity_cap'):g} x your "
+                "energy demand)"
+            )
     if response == "counter":
         key = _price_key(deal)
         _num(act, key, 0.0, DEAL_PRICE_MAX[key])
@@ -588,12 +596,35 @@ def cost(cfg: Config, world: World, n: Nation, act: dict[str, Any]) -> dict[str,
     return spec.check(cfg, world, n, act)
 
 
+LINEAR = (  # actions whose cost is proportional to "amount", so "amount": "max" works
+    "build_capacity", "build_grid_storage", "build_removal", "build_factory", "invest_research",
+    "invest_efficiency", "buy_influence", "adaptation_spend", "fund_retraining",
+    "electrification_program", "methane_abatement", "fund_forests", "retire_capacity",
+)  # fmt: skip
+
+
+def max_amount(cfg: Config, world: World, n: Nation, act: dict[str, Any]) -> float:
+    """The largest amount the nation's resources allow right now (M9: resolved when the action
+    resolves, so capital spent earlier in the quarter is already counted)."""
+    probe = 1e-6
+    unit = cost(cfg, world, n, act | {"amount": probe})
+    limits = [max(0.0, getattr(n, r)) / (c / probe) for r, c in unit.items() if c > 0]
+    amount = min(limits) * (1 - 1e-9) if limits else 0.0
+    if act["type"] == "retire_capacity":
+        amount = min(amount, n.capacity.get(act.get("source"), 0.0) * (1 - 1e-9))
+    if amount <= 0:
+        raise Rejected("nothing left to spend on this")
+    return amount
+
+
 def resolve(cfg: Config, world: World, nid: str, acts: list[dict[str, Any]]) -> list[dict]:
     """Validate and apply a nation's actions in order; return one result per action."""
     n = world.nations[nid]
     results = []
     for act in acts:
         try:
+            if act.get("amount") == "max" and act.get("type") in LINEAR:
+                act = dict(act) | {"amount": max_amount(cfg, world, n, act)}
             costs = cost(cfg, world, n, act)
             spec = SPECS[act["type"]]
             if n.slots_banked.get(spec.slot, 0) < 1:

@@ -30,7 +30,10 @@ def test_races_report_every_bonus_and_the_first_to_net_zero(cfg):
     assert races["first_net_zero"]["claimed"] is None
     base = w.nations["BBB"].base["emissions"]
     w.history[1]["nations"]["BBB"]["emissions"] = 0.0
-    assert scoring.first_net_zero(cfg, w) == ("BBB", w.history[1]["label"])
+    assert scoring.first_net_zero(cfg, w) is None  # M9: one low quarter is not enough
+    for h in w.history[:4]:
+        h["nations"]["BBB"]["emissions"] = 0.0
+    assert scoring.first_net_zero(cfg, w) == ("BBB", w.history[3]["label"])
     assert scoring.bonuses(cfg, w)["BBB"]["first_net_zero"] > 0
     assert base > 0
 

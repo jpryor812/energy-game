@@ -94,31 +94,31 @@ M4b also builds factories, abates methane, funds forests and builds carbon remov
 
 | Metric | 2025 | 2030 | 2040 | 2049 |
 |---|---|---|---|---|
-| Global CO2 (Gt/yr) | 43.0 | 33.0 | 25.0 | 9.9 |
-| Warming, end of year (degC) | 1.38 | 1.49 | 1.58 | 1.65 |
+| Global CO2 (Gt/yr) | 42.0 | 33.1 | 22.5 | 6.4 |
+| Warming, end of year (degC) | 1.40 | 1.50 | 1.59 | 1.65 |
 
 ### Nations
 
 | Nation | GDP 2025 (T$) | GDP 2049 | Growth 2025-49 (%/yr) | CO2 2025 (Mt) | CO2 2030 | CO2 2040 | CO2 2049 | Fossil share 2025 | 2049 | Max shortfall |
 |---|---|---|---|---|---|---|---|---|---|---|
-| AUS | 1.86 | 2.75 | 1.6 | 363 | 235 | 108 | -7 | 84% | 6% | 0.0% |
-| BRA | 2.31 | 3.71 | 2.0 | 435 | 371 | 220 | -98 | 48% | 2% | 0.0% |
-| CAN | 2.34 | 3.25 | 1.4 | 502 | 334 | 250 | 100 | 66% | 26% | 0.0% |
-| CHN | 20.12 | 43.63 | 3.3 | 11,531 | 9,987 | 7,409 | 2,856 | 79% | 17% | 0.0% |
-| EUU | 21.45 | 28.95 | 1.3 | 2,285 | 1,308 | 457 | -618 | 66% | 0% | 0.0% |
-| GBR | 4.05 | 5.48 | 1.3 | 300 | 134 | 50 | 0 | 72% | 0% | 0.0% |
-| IDN | 1.49 | 3.99 | 4.2 | 788 | 719 | 730 | 477 | 88% | 25% | 0.0% |
-| IND | 4.08 | 14.81 | 5.5 | 3,036 | 2,741 | 2,659 | 615 | 88% | 9% | 0.0% |
-| JPN | 4.47 | 5.36 | 0.8 | 926 | 575 | 182 | 46 | 82% | 6% | 0.0% |
-| MEX | 1.85 | 2.72 | 1.6 | 428 | 317 | 77 | 34 | 89% | 9% | 0.0% |
-| NGA | 0.30 | 0.62 | 3.1 | 113 | 97 | 89 | 57 | 94% | 24% | 0.0% |
-| RUS | 2.59 | 3.01 | 0.6 | 1,674 | 1,321 | 1,191 | 1,107 | 87% | 54% | 0.0% |
-| SAU | 1.30 | 2.32 | 2.4 | 655 | 505 | 326 | 181 | 98% | 27% | 0.0% |
-| USA | 31.27 | 49.50 | 1.9 | 4,629 | 3,475 | 2,743 | 437 | 79% | 6% | 0.0% |
-| VNM | 0.52 | 1.66 | 5.0 | 325 | 316 | 332 | 297 | 75% | 22% | 1.6% |
-| ZAF | 0.43 | 0.55 | 1.1 | 433 | 338 | 242 | 21 | 94% | 6% | 0.0% |
+| AUS | 1.86 | 2.81 | 1.7 | 346 | 217 | 82 | 21 | 81% | 25% | 0.0% |
+| BRA | 2.31 | 3.69 | 2.0 | 417 | 327 | 216 | -66 | 46% | 12% | 0.0% |
+| CAN | 2.34 | 3.21 | 1.3 | 480 | 304 | 206 | 37 | 64% | 22% | 0.0% |
+| CHN | 20.12 | 43.42 | 3.3 | 11,296 | 9,850 | 7,143 | 706 | 77% | 6% | 0.0% |
+| EUU | 21.40 | 29.42 | 1.3 | 2,184 | 1,345 | 419 | -692 | 64% | 1% | 0.0% |
+| GBR | 4.03 | 5.31 | 1.2 | 290 | 116 | 61 | -80 | 70% | 6% | 0.0% |
+| IDN | 1.49 | 3.90 | 4.1 | 760 | 685 | 699 | 620 | 87% | 39% | 0.0% |
+| IND | 4.08 | 14.78 | 5.5 | 2,976 | 2,771 | 2,682 | 401 | 87% | 6% | 0.0% |
+| JPN | 4.47 | 5.33 | 0.7 | 895 | 571 | 182 | 61 | 80% | 7% | 0.0% |
+| MEX | 1.85 | 2.72 | 1.6 | 417 | 290 | 76 | 23 | 88% | 6% | 0.0% |
+| NGA | 0.30 | 0.62 | 3.1 | 109 | 87 | 64 | 14 | 93% | 6% | 0.0% |
+| RUS | 2.59 | 2.90 | 0.5 | 1,630 | 1,212 | 1,150 | 878 | 86% | 45% | 0.0% |
+| SAU | 1.30 | 2.28 | 2.4 | 638 | 463 | 317 | 261 | 97% | 43% | 0.0% |
+| USA | 31.27 | 49.55 | 1.9 | 4,480 | 3,251 | 1,314 | 132 | 77% | 6% | 0.0% |
+| VNM | 0.51 | 1.67 | 5.0 | 316 | 321 | 273 | 243 | 74% | 16% | 0.0% |
+| ZAF | 0.43 | 0.54 | 0.9 | 422 | 319 | 250 | 106 | 92% | 30% | 0.0% |
 
-Warming reaches 1.65 degC in 2049 (seed 1, no shocks, M8), against 1.96 degC with no
+Warming reaches 1.65 degC in 2049 (seed 1, no shocks, M9), against 1.96 degC with no
 action. By 2049 methane is down to
 about half its 2025 level, aerosols (and their cooling) are nearly gone, the forest fund has
 turned land use slightly negative, and AI nations run about 3.5 Gt/yr of carbon removal.
@@ -193,6 +193,12 @@ tried and reverted because China's AI then lost its 2032 vote in most seeds (ASS
 127). In the AI world, offers ranked by growth as well as emissions send more deals to India,
 whose 2049 CO2 falls from about 2.0 to 0.6 Gt; global CO2 in 2049 falls from 12.9 to 9.9 Gt
 and warming ends at 1.65 degC.
+
+M9 (6 seeds) again passes 6 of 7, viable strategies TUNE; balanced and deal-maker bots complete
+92% of games. In the AI world, climate loans that now build real plants, deals sized to what
+hosts can take, and the market's 3% reserve take global CO2 in 2049 from 9.9 to 6.4 Gt; China
+ends at 0.7 Gt and India at 0.4 Gt, but warming still ends at 1.65 degC. No nation has a
+blackout above 0.1% (Vietnam had 4-5% before the reserve, item 146).
 
 ## Placeholders that matter most for balance
 

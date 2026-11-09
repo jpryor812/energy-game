@@ -64,11 +64,16 @@ def run(cfg, w, turns):
 # --- deals ---------------------------------------------------------------------------------------
 
 
-def test_climate_loan_moves_cash_and_debt(cfg, world):
+def test_climate_loan_builds_capacity_and_moves_debt(cfg, world):
     host_cash, fin_cash = world.nations["BBB"].capital, world.nations["AAA"].capital
+    queued = len(world.nations["BBB"].pipeline)
     deal = signed(cfg, world, LOAN)
     assert world.nations["AAA"].capital == pytest.approx(fin_cash - 0.2)
-    assert world.nations["BBB"].capital == pytest.approx(host_cash + 0.2)
+    # M9: the loan builds the plant in the host instead of handing over cash
+    assert world.nations["BBB"].capital == pytest.approx(host_cash)
+    built = world.nations["BBB"].pipeline[queued:]
+    assert [c.source for c in built] == [deal.terms["source"]]
+    assert built[0].amount == pytest.approx(deal.terms["capacity"])
     assert deal.terms["outstanding"] == pytest.approx(0.2)
     assert deal.terms["pay_from"] == world.t + 1
     w = run(cfg, world, deal.terms["online_turn"] - world.t + 2)

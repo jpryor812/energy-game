@@ -110,10 +110,13 @@ def technology(world: World, cfg: Config, ctx: TurnContext) -> None:
 def diplomacy(world: World, cfg: Config, ctx: TurnContext) -> None:
     """Trust drifts back toward neutral, deals pay and earn credit, the credit market clears."""
     diplo.revert_trust(world, cfg, ctx.dt)
+    ctx.logs["club_left"] = diplo.enforce_club(cfg, world)
     deals.service(cfg, world, ctx.dt)
     issued = credits.issue(cfg, world, ctx.dt)
     ctx.logs["credit_market"] = credits.clear(cfg, world) | {"issued": issued}
+    keep = (1.0 - 1.0 / cfg.tune("credits.exported_cut_lifespan")) ** (ctx.dt / 4)
     for n in world.nations.values():
+        n.exported_cut_rate *= keep  # M9: the plants behind the cut retire
         stock = n.exported_cut_rate * ctx.dt / 4 * cfg.tune("credits.weight_exported")
         n.climate_credit["exported"] = n.climate_credit.get("exported", 0.0) + stock
 
@@ -166,6 +169,7 @@ def _nation_record(n, results: list[dict[str, Any]]) -> dict[str, Any]:
         "tax_change": n.tax_change,
         "factory_capacity": dict(n.factory_capacity),
         "factory_sales": dict(n.factory_sales),
+        "equipment_demand": dict(n.equipment_demand),
         "tariffs": dict(n.tariffs),
         "goods_exports": n.goods_exports,
         "cleantech_exports": n.cleantech_exports,

@@ -13,8 +13,8 @@ does one thing, and saves again, so each move is a single shell call.
 Actions are a JSON list of objects (see `actions`); pass `@file.json` to read them from a file.
 For actions with an amount, `"amount": "max"` spends all that is left this quarter after the
 actions before it. Add `--brief` to `show`, `turn` or `wait` for a shorter screen.
-A turn spends at most the slots you have (2 domestic and 1 diplomatic arrive each quarter;
-unused slots are banked, up to 4 of each). Losing an election, or stability falling below the
+A turn spends at most the slots you have (3 domestic and 2 diplomatic arrive each quarter;
+unused slots are banked, up to 6 and 4). Losing an election, or stability falling below the
 threshold, ends the game.
 """
 

@@ -140,7 +140,12 @@ def test_market_orders_arrive_together(cfg, world):
     n.energy_intensity *= 1.2
     construction.market_build(cfg, world, "AAA", n)
     due = {c.complete_turn for c in n.pipeline}
-    assert due == {construction.horizon_quarters(cfg, "AAA")}
+    # at the horizon, plus (M9) fast sources for any gap expected within the fast horizon
+    fast = int(cfg.tune("market.fast_horizon"))
+    assert due <= {construction.horizon_quarters(cfg, "AAA"), world.t + fast}
+    assert construction.horizon_quarters(cfg, "AAA") in due
+    soon = {c.source for c in n.pipeline if c.complete_turn == world.t + fast}
+    assert all(cfg.src(s, "build_time") <= fast for s in soon)
 
 
 # --- climate and tech ----------------------------------------------------------------------------

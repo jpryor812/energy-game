@@ -22,7 +22,18 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from sim import actions, canonical, deals, economy, elections, runner, scoring, tech, turn
+from sim import (
+    actions,
+    canonical,
+    deals,
+    economy,
+    elections,
+    runner,
+    scoring,
+    tech,
+    trade,
+    turn,
+)
 from sim.config import Config
 from sim.scenario import new_world
 from sim.state import World
@@ -35,11 +46,7 @@ class SaveError(Exception):
     """A save that cannot be loaded (missing, or made with different data)."""
 
 
-LINEAR = (  # actions whose cost is proportional to "amount", so "amount": "max" works
-    "build_capacity", "build_grid_storage", "build_removal", "build_factory", "invest_research",
-    "invest_efficiency", "buy_influence", "adaptation_spend", "fund_retraining",
-    "electrification_program", "methane_abatement", "fund_forests", "retire_capacity",
-)  # fmt: skip
+LINEAR = actions.LINEAR  # M9: "max" is resolved by the engine (sim.actions)
 
 
 @dataclass
@@ -119,31 +126,9 @@ class Game:
         return w
 
     def expand(self, acts: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Replace `"amount": "max"` with the most this quarter's resources allow, after the
-        actions before it in the list. Other actions pass through unchanged."""
-        w = self.preview()
-        n = w.nations[self.country]
-        left = {res: getattr(n, res) for res in actions.RESOURCES}
-        out = []
-        for act in copy.deepcopy(acts):
-            if act.get("amount") == "max" and act.get("type") in LINEAR:
-                try:
-                    unit = actions.cost(self.cfg, w, n, act | {"amount": 1.0})
-                except actions.Rejected:
-                    out.append(act)
-                    continue
-                limits = [left[r] / c for r, c in unit.items() if c > 0]
-                amount = max(0.0, min(limits)) * (1 - 1e-9) if limits else 0.0
-                if act["type"] == "retire_capacity":
-                    amount = min(amount, n.capacity.get(act.get("source"), 0.0))
-                act["amount"] = amount
-            try:
-                for r, c in actions.cost(self.cfg, w, n, act).items():
-                    left[r] -= c
-            except actions.Rejected:
-                pass
-            out.append(act)
-        return out
+        """Kept for callers: `"amount": "max"` is now resolved by the engine when the action
+        resolves (M9), from the resources the nation has at that moment."""
+        return copy.deepcopy(acts)
 
     def check(self, acts: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """What would happen to these actions this quarter, without playing it."""
@@ -222,8 +207,15 @@ def notices(cfg: Config, before: World, after: World, me: str) -> list[str]:
         old = before.deals.get(did)
         other = d.host if d.financier == me else d.financier
         what = f"{did} {d.type} ({d.financier}->{d.host}, {d.terms.get('source')})"
+        size = (
+            f"{d.terms['amount']:.3g} T$" if d.type == "climate_loan"
+            else f"{d.terms['amount']:.3g} EJ/yr"
+        )  # fmt: skip
         if old is None and d.status == deals.OPEN and deals.responder(d) == me:
-            out.append(f"New offer {what} from {other}: answer from next quarter.")
+            out.append(
+                f"New offer {what}, {size}, from {other}: answer from next quarter "
+                f"(expires after {int(cfg.tune('deals.proposal_expiry'))} quarters)."
+            )
         elif old is None and d.status == deals.OPEN:
             out.append(f"Your offer {what} was sent to {other}.")
         elif old is not None and old.status != d.status:
@@ -263,12 +255,39 @@ def notices(cfg: Config, before: World, after: World, me: str) -> list[str]:
     if st:
         pledge = st.get("pledge_on_track")
         out.append(
-            f"STOCKTAKE {label}: emissions {st['emissions']:.0f} Mt against an allowance of "
-            f"{st['allowance']:.0f} (overshoot {st['overshoot_share'] * 100:.0f}%); "
-            f"{surrendered:.0f} Mt of credits surrendered; coalition tariff on you "
+            f"STOCKTAKE {label}: your emissions over the period {st['emissions']:.0f} Mt against "
+            f"your allowance of {st['allowance']:.0f}; {surrendered:.0f} Mt of credits "
+            f"surrendered; overshoot left after credits {st['overshoot_share'] * 100:.0f}% of "
+            f"five years of your 2025 emissions; coalition tariff on you "
             f"{st.get('coalition_tariff', 0.0):.2f}"
             + (f"; pledge {'on track' if pledge else 'BROKEN'}" if pledge is not None else "")
             + "."
+        )
+
+    # Orders that will not arrive before the game ends (M9).
+    end = int(cfg.tune("time.turns"))
+    known = {(c.source, c.complete_turn, c.amount) for c in nb.pipeline}
+    late = sorted({
+        c.source for c in na.pipeline
+        if c.complete_turn >= end and (c.source, c.complete_turn, c.amount) not in known
+    })  # fmt: skip
+    if late:
+        out.append(
+            "New orders that will not come online before the game ends: " + ", ".join(late) + "."
+        )
+
+    # Credit orders that found no buyer (M9), and the carbon club.
+    mine = rec["nations"][me]["actions"]
+    sold = any(r["ok"] and r["action"].get("type") == "sell_credits" for r in mine)
+    if sold and not (rec.get("credit_market") or {}).get("traded"):
+        out.append(
+            "Your credit sell order found no buyer this quarter (nations buy only when they "
+            "need credits for a stocktake); the shown price is the last one, not a bid."
+        )
+    if me in trade.club_members(before) and me not in trade.club_members(after):
+        out.append(
+            "You left the carbon club: your carbon price is below "
+            f"{cfg.tune('diplomacy.club_min_carbon_price'):g} $/t."
         )
 
     # Bonuses gained or lost.

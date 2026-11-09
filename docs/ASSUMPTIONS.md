@@ -531,6 +531,51 @@ planning)").
 134. **The fossil ban skips factories in the pipeline** (playtest round 1): item 120's
      cancellation crashed on factory entries, which are not energy sources.
 
+## M9: mechanics pass after playtest round 1
+
+135. **Climate loans build the plant** in the host (`deals.activate`): the loan pays for
+     `amount / host unit cost` of capacity, queued in the host's pipeline like other deals.
+     It used to hand over cash the host need not spend while the lender was credited for the
+     plant anyway. AI hosts now count the principal as a real cost.
+136. **Factories age out** at 1/`industry.factory_lifespan` a year, in all 16 nations and in
+     the rest of the world alike, so shares hold steady unless someone builds.
+137. **The clean component scores sales, not capacity** (`scoring.sales_share`): the nation's
+     clean-tech equipment sales over the last four quarters as a share of all purchases by
+     the 16 nations, against its 2025 share of factory capacity. Idle factories (storage
+     lines nobody buys from) no longer score. Purchases are now recorded in the history.
+138. **The exported-cut credit winds down** over `credits.exported_cut_lifespan` (25 years),
+     as the plants the equipment went into retire; it used to grow forever.
+139. **The vote averages energy prices over the term**, like taxes (item 121), so a carbon
+     price cut just before the vote counts only for its own quarters.
+140. **The vote compares term-average jobs with the previous term's average**
+     (`elections.term_jobs`), not one quarter with another. One completion, factory or
+     disaster rebuild can no longer swing an election; the screen shows both figures.
+141. **First to net zero is judged on four-quarter averages.**
+142. **Carbon club members below the minimum price leave** (`diplomacy.enforce_club`), checked
+     every quarter; they used to stay at 0 $/t for years.
+143. **Deal capacity a nation can host is capped** at `deals.host_capacity_cap` (0.5) x its
+     energy demand. Accepting beyond it is refused, and AI financiers size offers to fit.
+144. **Rank is on the final score**, bonuses included, so it matches the leaderboard (design
+     doc note added). It was the combined index before bonuses.
+145. **3 domestic and 2 diplomatic slots a quarter** (the design doc's figures; were 2 and 1),
+     banking up to 6 and 4.
+146. **The market keeps a 3% reserve and fills near-term gaps.** `market.reserve_margin`
+     0 -> 0.03 (the winter peak), and besides orders at its horizon (the slowest build time,
+     8 years) it orders sources that build within `market.fast_horizon` (8 quarters) for any
+     gap expected by then. Without these, Vietnam's AI had 4-5% peak-quarter blackouts in
+     the 2040s once its fossil plants retired and an equity plant failed. The AI's own
+     spare-capacity check also caps clean output at the clean ceiling.
+147. **`"amount": "max"` is resolved by the engine** when the action resolves, from the
+     resources the nation has at that moment, and works for closing less than 1 EJ. The move
+     log keeps "max", which replays identically.
+148. **Interface additions** (no rule changes): your own open offers with expiry dates, offer
+     sizes, room left to host deals, the score's construction (combined index x world
+     multiplier + bonuses), the jobs baseline in the election forecast, a notice when you
+     leave the carbon club, when a credit sell order finds no buyer, and when a new order
+     will arrive after the game ends, clearer stocktake wording (the overshoot share is of
+     five years of 2025 emissions, after credits), and build times for grid, storage,
+     factories and removal in the action list.
+
 ## Open questions
 
 - **AI overshoot.** Cheap clean energy leads several low-ambition nations to cut far past their
@@ -554,11 +599,16 @@ planning)").
   (M8). Agent playtesting should probe whether players can pull the world under it.
 - **Fallen Government is rare by design now.** It needs a sustained blackout or an approval
   collapse; neglect is punished mainly through lost elections.
-- **Playtest round 1 findings** (docs/PLAYTEST_REPORT.md, Round 1): climate-loan credit for
-  plants never built, factory capacity that scores forever, pre-election price cuts, jobs that
-  swing the vote quarter by quarter, risk-free inbound deals, club membership at 0 $/t, a rank
-  that leaves out bonuses, and a late game with nothing to decide. Planned for M9.
-- **Cheap factories** still move the clean component a lot for small producers (item 127).
+- **Wind and solar stop being built late.** Their LCOE rises to 11-17 $/GJ once curtailed
+  (round 1), above coal; not yet investigated.
+- **Cheap first doses** of methane abatement, efficiency and electrification, and strong
+  research; not changed.
+- **The late game and Champion** are untested since M9's extra slots; the next playtest round
+  should check them.
+- **Resolved in M9:** climate-loan credit for plants never built, factory capacity scoring
+  forever, pre-election price cuts, jobs swinging the vote quarter by quarter, unlimited
+  inbound deals, club membership at 0 $/t, a rank that left out bonuses, first to net zero on
+  one quarter, and the "max" rejections (items 135-148).
 - **Disasters may dominate income** for exposed nations (the pilot took about ten hits of
   1-2.4% of GDP); to be judged across the M8 playtest round.
 - **Resolved in M8:** tax timing, always-accepted counters, the flickering clean-gain bonus,
