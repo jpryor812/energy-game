@@ -28,7 +28,7 @@ from sim import canonical
 
 DEFAULT_DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
-FILES = ("tuning", "techs", "countries", "events", "targets", "research")
+FILES = ("tuning", "techs", "countries", "events", "targets", "research", "regions")
 TUNABLE_STATUSES = frozenset({"placeholder", "calibrated"})
 TUNABLE_KEYS = frozenset({"value", "status", "note", "source", "unit"})
 PERSONALITIES = frozenset({"green_leader", "fossil_defender", "opportunist", "cautious_follower"})
@@ -335,6 +335,26 @@ REQUIRED_TUNING = (
     "ai.emissions_weight_floor",
     "ai.security_margin",
     "ai.min_utility",
+    "ai.region_share",
+    "ai.event_utility",
+    "ai.event_follow_share",
+    "ai.personalities.{personality}.event_propensity",
+    "ai.region_affinity",
+    "regions.intensity_decline",
+    "regions.fossil_lifespan",
+    "regions.clean_lifespan",
+    "regions.absorb_share",
+    "regions.absorb_years",
+    "regions.cost_response",
+    "regions.club_pull",
+    "regions.spread",
+    "regions.spread_retire",
+    "regions.cost_premium",
+    "regions.loan_rate",
+    "regions.loan_years",
+    "regions.trust_start",
+    "regions.trust_per_trillion",
+    "regions.trust_pull",
 )
 REQUIRED_SOURCE = {
     "all": (
@@ -381,6 +401,7 @@ class Config:
     events: dict[str, Any]
     targets: dict[str, Any]
     research: dict[str, Any]
+    regions: dict[str, Any]
 
     def to_dict(self) -> dict[str, Any]:
         return {name: getattr(self, name) for name in FILES}
@@ -473,6 +494,15 @@ class Config:
     def rtech(self, tech: str) -> dict[str, Any]:
         return self.research["techs"][tech]
 
+    # --- regions (M15) ----------------------------------------------------------------------
+
+    @property
+    def region_ids(self) -> list[str]:
+        return sorted(self.regions["regions"])
+
+    def reg(self, region: str, key: str) -> Any:
+        return _lookup(self.regions["regions"][region], key, f"regions.{region}")
+
 
 def _lookup(node: Any, dotted_path: str, where: str) -> Any:
     for part in dotted_path.split("."):
@@ -506,7 +536,55 @@ def load(data_dir: Path | str = DEFAULT_DATA_DIR) -> Config:
     _validate_targets(cfg)
     _validate_difficulty(cfg)
     _validate_research(cfg)
+    _validate_regions(cfg)
+    _validate_events(cfg)
     return cfg
+
+
+EVENT_FIELDS = {
+    "oil_discovery": ("weight", "target", "co2", "gdp_boost"),
+    "rainforest": ("weight", "target", "co2"),
+    "coal_pipeline": ("weight", "target", "energy"),
+    "adaptation_appeal": ("weight", "target", "gdp_loss", "trust_bonus"),
+}
+
+
+def _validate_events(cfg: Config) -> None:
+    """Minor-nation events (M15b): known types, their tunables, text and regions."""
+    spec = cfg.events.get("events")
+    if not isinstance(spec, dict):
+        raise ConfigError("events.yaml: 'events' must be a mapping")
+    _require(spec, ["rate", "first_turn", "max_open", "deadline", "leakage", "trust_hit"], "events")
+    for kind, t in spec.get("types", {}).items():
+        if kind not in EVENT_FIELDS:
+            raise ConfigError(f"events.yaml: unknown event type {kind}")
+        _require(t, list(EVENT_FIELDS[kind]), f"events.{kind}")
+        if not isinstance(t.get("text"), str):
+            raise ConfigError(f"events.yaml: {kind} needs a text")
+        regions = t.get("regions")
+        if not regions or any(r not in cfg.regions["regions"] for r in regions):
+            raise ConfigError(f"events.yaml: {kind} lists unknown or no regions")
+
+
+REGION_REQUIRED = (
+    "gdp", "growth", "population", "co2", "fossil_ef", "clean", "fossil", "clean_additions",
+    "fossil_production", "vulnerability",
+)  # fmt: skip
+
+
+def _validate_regions(cfg: Config) -> None:
+    """The rest-of-world regions (M15) and the sources nations can finance there."""
+    regions = cfg.regions.get("regions")
+    if not isinstance(regions, dict) or not regions:
+        raise ConfigError("regions.yaml: 'regions' must be a non-empty mapping")
+    for rid, spec in regions.items():
+        if rid in cfg.countries["nations"]:
+            raise ConfigError(f"regions.yaml: {rid} is also a nation id")
+        _require(spec, list(REGION_REQUIRED), f"regions.{rid}")
+    for key in ("finance_sources", "cost_sources"):
+        for source in cfg.tuning["regions"][key]:
+            if source not in cfg.techs["sources"] or cfg.requires(source):
+                raise ConfigError(f"tuning: regions.{key} has unknown or gated source {source}")
 
 
 def _validate_research(cfg: Config) -> None:

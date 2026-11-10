@@ -214,6 +214,7 @@ def apply_equipment(
     completed: dict[str, dict[str, float]],
     unit_cost: dict[str, float],
     dt: int,
+    regional: list[tuple[str, str, float]] | None = None,
 ) -> None:
     """Record clean-tech sales from this step's completed builds.
 
@@ -221,7 +222,11 @@ def apply_equipment(
     per source. Sets each nation's factory sales and equipment demand per technology, its
     clean-tech export rate (T$/yr) and no-tariff baseline (its 2025 share of others' purchases),
     and adds to suppliers' exported-cut rate (Mt/yr displaced abroad by their equipment).
+    `regional` lists capacity nations financed in the regions (M15) as (region, source, amount):
+    the region buys its equipment by sim.regions.supplier_weights, all of it an export.
     """
+    from sim import regions
+
     per_year = 4 / dt
     exports = {nid: 0.0 for nid in world.nations}
     expected = {nid: 0.0 for nid in world.nations}
@@ -249,6 +254,21 @@ def apply_equipment(
                 exports[supplier] += weights[supplier] * value
                 expected[supplier] += base.get(supplier, 0.0) * value
                 world.nations[supplier].exported_cut_rate += weights[supplier] * cut
+    for rid, source, amount in regional or []:
+        if source not in EQUIPMENT_OF or amount <= 0:
+            continue
+        tech = EQUIPMENT_OF[source]
+        value = cfg.src(source, "equipment_share") * unit_cost[source] * amount
+        cut = amount / cfg.src(source, "headroom") * cfg.reg(rid, "fossil_ef")
+        base = base_shares(cfg, tech)
+        weights = regions.supplier_weights(cfg, world, rid, tech)
+        for supplier in sorted(weights):
+            if supplier == ROW:
+                continue
+            sales[supplier][tech] += weights[supplier] * value
+            exports[supplier] += weights[supplier] * value
+            expected[supplier] += base.get(supplier, 0.0) * value
+            world.nations[supplier].exported_cut_rate += weights[supplier] * cut
     for nid, n in world.nations.items():
         n.cleantech_exports = exports[nid] * per_year
         n.base["cleantech_expected"] = expected[nid] * per_year

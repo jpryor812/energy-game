@@ -1,3 +1,61 @@
-# Event definitions. Empty in v0: events are a hook only (sim/events.py).
+# Minor-nation events (M15b, sim/events.py). A country in one of the rest-of-world regions faces a
+# choice with a world-level cost; any nation can pledge toward a shared fund by a deadline. If
+# pledges reach the target in time the bad outcome is avoided and contributors gain the region's
+# trust (and financed climate credit for avoided CO2); if not, pledges are refunded and the
+# outcome happens. Countries are unnamed ("a country in Sub-Saharan Africa"). All sizes and costs
+# are design assumptions (unsourced approximate), order of magnitude only.
 
-events: []
+events:
+  rate:
+    value: 0.08
+    status: placeholder
+    note: Chance per quarter that a new event opens (about one every three years; with at most two open at once, about 7-9 a game).
+  first_turn:
+    value: 4
+    status: placeholder
+    note: No events in the first year.
+  max_open:
+    value: 2
+    status: placeholder
+    note: Most events open at once.
+  deadline:
+    value: 8
+    unit: quarters
+    status: placeholder
+    note: Quarters pledges have to reach the target.
+  leakage:
+    value: 0.5
+    status: placeholder
+    note: Share of fossil supply kept in the ground that others replace (oil discoveries); avoided CO2 is credited net of it.
+  trust_hit:
+    value: 0.05
+    status: placeholder
+    note: Trust the region loses in every nation when an adaptation appeal goes unfunded.
+
+  types:
+    oil_discovery:
+      weight: {value: 1.0, status: placeholder, note: "Relative chance among event types."}
+      regions: [LAC, SSA, MEA, CAS, SEA]
+      text: "A country in {region} has found a large oil field. Developed, it adds about {co2:.0f} MtCO2 a year to world emissions and makes the region {gdp:.1%} richer. A keep-it-in-the-ground fund of {target:.3g} T$ would pay it to leave the oil."
+      co2: {value: 100, unit: MtCO2/yr, status: placeholder, note: "Roughly a 0.6 million barrel/day field burned; net of leakage when credited."}
+      gdp_boost: {value: 0.01, status: placeholder, note: "Share of the region's GDP added if the field is developed."}
+      target: {value: 0.1, unit: T$, status: placeholder, note: "Fund needed (on the order of $10-20 per tonne avoided over the game)."}
+    rainforest:
+      weight: {value: 1.0, status: placeholder, note: "Relative chance among event types."}
+      regions: [LAC, SSA, SEA, EAP]
+      text: "A country in {region} is weighing a logging and farming concession on a large rainforest, adding about {co2:.0f} MtCO2 a year of land-use emissions. A protection fund of {target:.3g} T$ would keep it standing."
+      co2: {value: 120, unit: MtCO2/yr, status: placeholder, note: "Land-use CO2 added for the rest of the game if logged."}
+      target: {value: 0.08, unit: T$, status: placeholder, note: "Fund needed."}
+    coal_pipeline:
+      weight: {value: 1.0, status: placeholder, note: "Relative chance among event types."}
+      regions: [SEA, SSA, MEA, CAS, EUR]
+      text: "A country in {region} plans {energy:.2g} EJ/yr of new coal power. Financing {target:.3g} T$ of solar instead would replace it."
+      energy: {value: 1.2, unit: EJ/yr, status: placeholder, note: "New energy the region builds either way: coal if unfunded, solar if funded."}
+      target: {value: 0.08, unit: T$, status: placeholder, note: "Fund needed (about the regional cost of that much solar)."}
+    adaptation_appeal:
+      weight: {value: 1.0, status: placeholder, note: "Relative chance among event types."}
+      regions: [LAC, MEA, SSA, SEA, EAP, EUR, CAS]
+      text: "After a major flood, a country in {region} appeals for {target:.3g} T$ of adaptation finance. Unfunded, the region loses {gdp_loss:.1%} of GDP and trusts every nation less."
+      gdp_loss: {value: 0.01, status: placeholder, note: "Share of the region's GDP lost if unfunded."}
+      target: {value: 0.05, unit: T$, status: placeholder, note: "Fund needed."}
+      trust_bonus: {value: 2.0, status: placeholder, note: "Contributors gain this many times the usual trust per T$."}

@@ -10,8 +10,10 @@ Regenerate the tables with `python -m sim.report bau`. The loose checks below ar
   Nigeria derived, see SOURCES.md) and 2025 GDP and population (IMF WEO). Capacity is sized so
   that dispatch at t=0 reproduces the 2024 mix exactly, and each nation's own 2024 emission
   factors reproduce its 2024 fossil-fuel CO2 exactly.
-- **World total.** The rest of the world, land use, and cement/flaring/other CO2 are exogenous
-  paths set so that the 2025 global total matches the Global Carbon Budget.
+- **World total.** The rest of the world (seven regions since M15, plus international
+  transport), land use, and cement/flaring/other CO2 are set so that the 2025 global total
+  matches the Global Carbon Budget. Calibration worlds run with seeded shocks and minor-nation
+  events off.
 - **What BAU means.** No nation takes any action; only the market builder runs (M2). It builds
   to meet demand, splitting new capacity half by the nation's 2019-2024 build trend and half by
   levelized cost (carbon price, learning curves, a rising system cost for wind and solar). Old
@@ -31,8 +33,8 @@ the balance report plays with disasters and disruptions on.
 
 | Metric | 2025 | 2030 | 2040 | 2049 |
 |---|---|---|---|---|
-| Global CO2 (Gt/yr) | 43.0 | 40.2 | 37.8 | 37.2 |
-| Warming, end of year (degC) | 1.40 | 1.54 | 1.77 | 1.94 |
+| Global CO2 (Gt/yr) | 43.2 | 40.9 | 38.3 | 36.8 |
+| Warming, end of year (degC) | 1.40 | 1.54 | 1.77 | 1.95 |
 
 ### Nations
 
@@ -41,18 +43,18 @@ the balance report plays with disasters and disruptions on.
 | AUS | 1.86 | 2.77 | 1.7 | 355 | 308 | 243 | 207 | 82% | 45% | 0.0% |
 | BRA | 2.31 | 3.66 | 1.9 | 420 | 393 | 381 | 432 | 46% | 26% | 0.0% |
 | CAN | 2.34 | 3.26 | 1.4 | 491 | 429 | 344 | 292 | 65% | 48% | 0.0% |
-| CHN | 20.12 | 43.68 | 3.3 | 11,400 | 10,825 | 10,219 | 9,804 | 77% | 51% | 0.0% |
+| CHN | 20.12 | 43.67 | 3.3 | 11,400 | 10,825 | 10,218 | 9,801 | 77% | 51% | 0.0% |
 | EUU | 21.49 | 28.79 | 1.2 | 2,217 | 1,729 | 1,134 | 779 | 64% | 32% | 0.0% |
 | GBR | 4.05 | 5.49 | 1.3 | 291 | 233 | 159 | 114 | 70% | 41% | 0.0% |
-| IDN | 1.49 | 3.85 | 4.0 | 778 | 858 | 1,145 | 1,534 | 87% | 53% | 0.0% |
-| IND | 4.08 | 14.52 | 5.4 | 3,006 | 3,262 | 4,063 | 4,898 | 87% | 58% | 0.0% |
+| IDN | 1.49 | 3.85 | 4.0 | 778 | 858 | 1,145 | 1,533 | 87% | 53% | 0.0% |
+| IND | 4.08 | 14.51 | 5.4 | 3,006 | 3,262 | 4,062 | 4,896 | 87% | 58% | 0.0% |
 | JPN | 4.47 | 5.20 | 0.6 | 904 | 765 | 568 | 436 | 80% | 50% | 0.0% |
 | MEX | 1.85 | 2.63 | 1.5 | 420 | 373 | 316 | 283 | 88% | 55% | 0.0% |
-| NGA | 0.30 | 0.63 | 3.1 | 111 | 111 | 125 | 149 | 93% | 54% | 0.0% |
+| NGA | 0.30 | 0.62 | 3.1 | 111 | 111 | 125 | 149 | 93% | 54% | 0.0% |
 | RUS | 2.59 | 3.03 | 0.7 | 1,650 | 1,556 | 1,425 | 1,331 | 86% | 63% | 0.0% |
-| SAU | 1.30 | 2.38 | 2.5 | 648 | 628 | 597 | 582 | 97% | 69% | 0.0% |
-| USA | 31.27 | 48.81 | 1.9 | 4,523 | 3,830 | 2,937 | 2,350 | 77% | 46% | 0.0% |
-| VNM | 0.52 | 1.64 | 5.0 | 325 | 364 | 534 | 802 | 74% | 40% | 0.0% |
+| SAU | 1.30 | 2.37 | 2.5 | 648 | 628 | 597 | 581 | 97% | 69% | 0.0% |
+| USA | 31.27 | 48.80 | 1.9 | 4,523 | 3,830 | 2,937 | 2,349 | 77% | 46% | 0.0% |
+| VNM | 0.52 | 1.64 | 5.0 | 325 | 364 | 534 | 801 | 74% | 40% | 0.0% |
 | ZAF | 0.43 | 0.58 | 1.2 | 427 | 376 | 301 | 250 | 92% | 57% | 0.0% |
 
 ## Against references
@@ -62,8 +64,8 @@ the balance report plays with disasters and disruptions on.
 | Global CO2 2025, incl. land use | ~43 Gt (GCB: fossil 38.6 + land use ~4.6, 2024) | 43.6 Gt | Match. Land use uses the 2015-2024 mean (5.0 Gt), slightly above 2024. |
 | Nation fossil CO2 at t=0 | Each nation's 2024 GCB value | Exact (by construction) | Match. 2025 annual values differ slightly due to growth and seasonality. |
 | Warming rate 2025-2035 | 0.27 [0.2-0.4] degC/decade (Forster et al. 2025) | 0.27 degC/decade | Match. The clean-air aerosol trend was set for this. |
-| Energy CO2 2049 | ~38 Gt, roughly flat (IEA WEO 2025 Current Policies) | ~33 Gt, slowly falling | About 13% low: since M4b the rest of the world decarbonises with the 16 nations. |
-| Warming 2049 | Passes 2 degC around 2050 (IEA WEO 2025 Current Policies) | 1.94 degC | Consistent. |
+| Energy CO2 2049 | ~38 Gt, roughly flat (IEA WEO 2025 Current Policies) | ~33 Gt, slowly falling | About 13% low: the market follows falling clean costs, and since M15 the regions' new energy does too. |
+| Warming 2049 | Passes 2 degC around 2050 (IEA WEO 2025 Current Policies) | 1.95 degC | Consistent. |
 | Real GDP growth 2025-2030 | IMF WEO projections | Within 0.5 pp for every nation | Match. |
 | Energy shortfall | None expected without shocks | Below 1% for every nation, every quarter | Match. |
 
@@ -94,32 +96,32 @@ M4b also builds factories, abates methane, funds forests and builds carbon remov
 
 | Metric | 2025 | 2030 | 2040 | 2049 |
 |---|---|---|---|---|
-| Global CO2 (Gt/yr) | 42.1 | 33.3 | 22.8 | 9.6 |
-| Warming, end of year (degC) | 1.39 | 1.50 | 1.59 | 1.66 |
+| Global CO2 (Gt/yr) | 42.3 | 34.4 | 24.2 | 10.7 |
+| Warming, end of year (degC) | 1.39 | 1.50 | 1.59 | 1.67 |
 
 ### Nations
 
 | Nation | GDP 2025 (T$) | GDP 2049 | Growth 2025-49 (%/yr) | CO2 2025 (Mt) | CO2 2030 | CO2 2040 | CO2 2049 | Fossil share 2025 | 2049 | Max shortfall |
 |---|---|---|---|---|---|---|---|---|---|---|
-| AUS | 1.86 | 2.88 | 1.8 | 346 | 221 | 136 | 14 | 81% | 6% | 0.0% |
-| BRA | 2.31 | 3.70 | 2.0 | 416 | 338 | 189 | 41 | 46% | 9% | 0.0% |
-| CAN | 2.34 | 3.31 | 1.4 | 480 | 315 | 176 | 44 | 64% | 8% | 0.0% |
-| CHN | 20.12 | 43.49 | 3.3 | 11,400 | 10,025 | 7,257 | 1,158 | 77% | 14% | 0.0% |
-| EUU | 21.39 | 29.25 | 1.3 | 2,188 | 1,323 | 155 | -300 | 64% | 6% | 0.0% |
-| GBR | 4.02 | 5.40 | 1.2 | 290 | 122 | 49 | 5 | 70% | 10% | 0.0% |
-| IDN | 1.49 | 3.97 | 4.2 | 763 | 704 | 855 | 420 | 87% | 25% | 0.0% |
-| IND | 4.08 | 14.77 | 5.5 | 2,981 | 2,781 | 2,813 | 2,242 | 87% | 31% | 0.0% |
+| AUS | 1.86 | 2.88 | 1.8 | 346 | 221 | 140 | 12 | 81% | 6% | 0.0% |
+| BRA | 2.31 | 3.70 | 2.0 | 416 | 338 | 231 | 102 | 46% | 18% | 0.0% |
+| CAN | 2.34 | 3.32 | 1.5 | 480 | 315 | 171 | 34 | 64% | 7% | 0.0% |
+| CHN | 20.12 | 43.46 | 3.3 | 11,400 | 10,025 | 7,276 | 1,190 | 77% | 17% | 0.0% |
+| EUU | 21.39 | 29.25 | 1.3 | 2,188 | 1,323 | 152 | -301 | 64% | 6% | 0.0% |
+| GBR | 4.02 | 5.40 | 1.2 | 290 | 122 | 50 | 4 | 70% | 8% | 0.0% |
+| IDN | 1.49 | 3.96 | 4.2 | 763 | 704 | 851 | 371 | 87% | 23% | 0.0% |
+| IND | 4.08 | 14.77 | 5.5 | 2,981 | 2,781 | 2,802 | 1,262 | 87% | 18% | 0.0% |
 | JPN | 4.47 | 5.36 | 0.8 | 894 | 569 | 186 | 47 | 80% | 6% | 0.0% |
 | MEX | 1.85 | 2.71 | 1.6 | 420 | 297 | 77 | 23 | 88% | 6% | 0.0% |
-| NGA | 0.30 | 0.63 | 3.2 | 111 | 96 | 72 | 74 | 93% | 32% | 0.0% |
-| RUS | 2.59 | 3.02 | 0.7 | 1,650 | 1,351 | 1,217 | 742 | 86% | 34% | 0.0% |
-| SAU | 1.30 | 2.33 | 2.5 | 648 | 516 | 391 | 334 | 97% | 51% | 0.0% |
-| USA | 31.27 | 49.59 | 1.9 | 4,523 | 3,420 | 1,099 | 321 | 77% | 6% | 0.0% |
-| VNM | 0.51 | 1.68 | 5.1 | 320 | 324 | 323 | 218 | 74% | 23% | 1.2% |
-| ZAF | 0.43 | 0.54 | 1.0 | 422 | 331 | 229 | 18 | 92% | 6% | 0.0% |
+| NGA | 0.30 | 0.63 | 3.2 | 111 | 96 | 74 | 69 | 93% | 29% | 0.0% |
+| RUS | 2.59 | 3.02 | 0.7 | 1,650 | 1,351 | 1,218 | 726 | 86% | 33% | 0.0% |
+| SAU | 1.30 | 2.33 | 2.5 | 648 | 516 | 392 | 332 | 97% | 51% | 0.0% |
+| USA | 31.27 | 49.58 | 1.9 | 4,523 | 3,420 | 1,099 | 321 | 77% | 6% | 0.0% |
+| VNM | 0.51 | 1.69 | 5.1 | 320 | 324 | 324 | 221 | 74% | 22% | 1.1% |
+| ZAF | 0.43 | 0.52 | 0.8 | 422 | 331 | 229 | 16 | 92% | 6% | 0.0% |
 
-Warming reaches 1.66 degC in 2049 (seed 1, no shocks, M13), against 1.94 degC with no
-action. By 2049 methane is down to
+Warming reaches 1.67 degC in 2049 (seed 1, no shocks or events, M15), against 1.95 degC with
+no action. By 2049 methane is down to
 about half its 2025 level, aerosols (and their cooling) are nearly gone, the forest fund has
 turned land use slightly negative, and AI nations run about 3.5 Gt/yr of carbon removal.
 
@@ -212,6 +214,14 @@ of building leaves global CO2 at 8.2 Gt in 2049 (6.2 in M11); warming ends at 1.
 M13 (6 seeds): with licensing, 6 of 7 pass as before; balanced and deal-maker bots complete 89%.
 In the AI world technologies spread fast through 154 licences, but capital spent on licences
 rather than building leaves global CO2 at 9.6 Gt in 2049; warming ends at 1.66 degC.
+
+M15 (6 seeds): with the rest of the world as seven regions, regional finance and minor-nation
+events, 6 of 7 pass as before (viable strategies TUNE); bot scores fall by up to a point as the
+regions cut more slowly than the old rest-of-world term. In the AI world (no events) the
+regions fall from 6.7 Gt to about 3.6 Gt by 2049 and warming ends at 1.67 degC; with events on,
+1.66-1.67 degC over seeds 1-3, since AI pledges alone reach only ~85% of each fund. The all-out
+world (tests/test_climate.py, now also financing the regions) ends at about 1.37 degC, just
+above 2025.
 
 ## Placeholders that matter most for balance
 

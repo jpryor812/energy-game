@@ -22,6 +22,7 @@ from sim import (
     elections,
     energy,
     jobs,
+    regions,
     research,
     scoring,
     tech,
@@ -225,7 +226,10 @@ def observe(game: Game) -> dict[str, Any]:
         for e in last.get("events", []):
             if e.get("nation") == me:
                 events.append(e)
-        others = [e for e in last.get("events", []) if e.get("nation") != me]
+        others = [
+            e for e in last.get("events", [])
+            if e.get("nation") != me and e.get("type") != "minor_event"
+        ]  # fmt: skip
         if others:
             events.append({"type": "elsewhere", "count": len(others)})
         if last.get("election"):
@@ -324,6 +328,8 @@ def observe(game: Game) -> dict[str, Any]:
             "coalition_tariff_on_you": _r(w.coalition_tariffs.get(me, 0.0)),
         },
         "relations": relations,
+        "regions": _regions(cfg, w, me),
+        "events": _minor_events(game),
         "research": tree,
         "ccs": {k: _r(v) for k, v in n.ccs.items() if v > 0},
         "deals": {
@@ -368,6 +374,71 @@ def observe(game: Game) -> dict[str, Any]:
             else None
         ),
     }
+
+
+def _minor_events(game: Game) -> dict[str, list[dict[str, Any]]]:
+    """Open minor-nation events and those closed in the last year (M15b)."""
+    from sim import events as ev
+
+    cfg, w, me = game.cfg, game.world, game.country
+    open_, recent = [], []
+    for e in w.minor_events:
+        row = {
+            "id": e["id"],
+            "type": e["type"],
+            "region": e["region"],
+            "text": ev.text(cfg, e),
+            "target": _r(e["target"], 4),
+            "pledged": _r(ev.pledged(e), 4),
+            "needed": _r(ev.remaining(e), 4),
+            "you_pledged": _r(e["pledges"].get(me, 0.0), 4),
+            "pledgers": sorted(e["pledges"]),
+            "deadline": _label(game, e["deadline"]),
+            "status": e["status"],
+        }
+        if e["status"] == ev.OPEN:
+            open_.append(row)
+        elif w.t - e["closed"] <= 4:
+            recent.append(row)
+    return {"open": open_, "recent": recent}
+
+
+def _most_trusted(cfg, trust: dict[str, float]) -> str | None:
+    """The nation a region trusts most, if any stands above the neutral start."""
+    best = max(sorted(trust), key=lambda k: trust[k], default=None)
+    if best is None or trust[best] <= cfg.tune("regions.trust_start") + 1e-9:
+        return None
+    return best
+
+
+def _regions(cfg, w, me: str) -> list[dict[str, Any]]:
+    """The rest-of-world regions (M15), with what you can still finance in each."""
+    out = []
+    for rid in sorted(w.regions):
+        r = w.regions[rid]
+        demand = r.clean + r.fossil
+        room = regions.room(cfg, w, rid)
+        out.append(
+            {
+                "id": rid,
+                "name": cfg.regions["regions"][rid]["name"],
+                "emissions": _r(r.emissions, 0),
+                "emissions_2025": _r(cfg.reg(rid, "co2"), 0),
+                "clean_share": _r(r.clean / demand if demand > 0 else 0.0),
+                "clean_of_new_energy": _r(r.clean_additions),
+                "gdp": _r(r.gdp),
+                "growth": _r(r.growth, 4),
+                "trust_in_you": _r(r.trust.get(me, 0.5)),
+                "financed_by_you": _r(r.financed.get(me, 0.0), 4),
+                "most_trusts": _most_trusted(cfg, r.trust),
+                "room_ej": _r(room, 4),
+                "room_tn": {
+                    s: _r(room / regions.delivered_per_trillion(cfg, w, s), 4)
+                    for s in cfg.tuning["regions"]["finance_sources"]
+                },
+            }
+        )
+    return out
 
 
 # --- text --------------------------------------------------------------------------------------
@@ -518,6 +589,8 @@ def render(obs: dict[str, Any], brief: bool = False) -> str:
                 for k, v in o["relations"].items()
             ),
         ]
+    lines += _regions_text(o.get("regions", []), brief)
+    lines += _events_text(o.get("events", {}))
     lines += _research(o.get("research", []), o.get("ccs", {}), brief)
     inbox, active = o["deals"]["inbox"], o["deals"]["active"]
     sent = o["deals"].get("sent", [])
@@ -572,6 +645,55 @@ def render(obs: dict[str, Any], brief: bool = False) -> str:
         lines.append(f"  leaders (score now): {board}")
         lines.append("  bonus races: " + "; ".join(_race(r, o["country"]) for r in o["races"]))
     return "\n".join(lines)
+
+
+def _events_text(evs: dict[str, list[dict[str, Any]]]) -> list[str]:
+    open_, recent = evs.get("open", []), evs.get("recent", [])
+    if not open_ and not recent:
+        return []
+    lines = [
+        "",
+        "EVENTS (pledge_to_event; funded at the end of the quarter the target is reached; "
+        "pledges refunded if the deadline passes first):",
+    ]
+    for e in open_:
+        lines.append(
+            f"  {e['id']} OPEN until {e['deadline']}: {e['text']} Pledged {e['pledged']:.3g} of "
+            f"{e['target']:.3g} T$ ({len(e['pledgers'])} nations; you {e['you_pledged']:.3g}); "
+            f"needs {e['needed']:.3g} more."
+        )
+    for e in recent:
+        lines.append(
+            f"  {e['id']} {e['status'].upper()} ({e['type']} in {e['region']}; pledged "
+            f"{e['pledged']:.3g} of {e['target']:.3g} T$, you {e['you_pledged']:.3g})"
+        )
+    return lines
+
+
+def _regions_text(regs: list[dict[str, Any]], brief: bool) -> list[str]:
+    if not regs:
+        return []
+    total = sum(r["emissions"] for r in regs)
+    start = sum(r["emissions_2025"] for r in regs)
+    lines = [
+        "",
+        f"REGIONS (rest of the world, not playable; finance_region lends for clean energy there): "
+        f"{total:,.0f} MtCO2/yr ({start:,.0f} in 2025)",
+    ]
+    if brief:
+        open_ = [f"{r['id']} {min(r['room_tn'].values()):.3g}" for r in regs if r["room_ej"] > 0]
+        lines.append("  can still finance now (T$): " + (", ".join(open_) or "none"))
+        return lines
+    for r in regs:
+        room = min(r["room_tn"].values())
+        lines.append(
+            f"  {r['id']} {r['name']}: {r['emissions']:,.0f} Mt, clean {r['clean_share']:.0%} "
+            f"(of new energy {r['clean_of_new_energy']:.0%}), GDP {r['gdp']:.3g} T$ growing "
+            f"{_pct(r['growth'])}; trusts you {r['trust_in_you']:.2f} (most: "
+            f"{r['most_trusts'] or 'no one yet'}); "
+            f"you financed {r['financed_by_you']:.3g} T$; room now {room:.3g} T$"
+        )
+    return lines
 
 
 def _research(tree: list[dict[str, Any]], ccs: dict[str, float], brief: bool) -> list[str]:

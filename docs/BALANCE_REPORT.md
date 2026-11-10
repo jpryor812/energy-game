@@ -18,7 +18,7 @@ Seeds: [1, 2, 3, 4, 5, 6]. World difficulty: normal unless stated. 216 main runs
 
 ## 1. Determinism: PASS
 
-India, balanced, seed 1, run twice: `e185b419e854d001` / `e185b419e854d001`.
+India, balanced, seed 1, run twice: `c050e69f9acfb50c` / `c050e69f9acfb50c`.
 Byte-identical across machines is not tested here: the simulation uses only plain Python floats and SHA-256-seeded streams, so it should hold.
 
 ## 2. No dominant bot: PASS
@@ -27,23 +27,23 @@ Expected score by nation and bot (mean over seeds; a lost game scores 0):
 
 | Nation | ai | all_clean | all_fossil | balanced | deal_maker | reckless | Best scripted |
 |---|---|---|---|---|---|---|---|
-| CHN | 58.3 | 0.0 | 47.3 | 57.3 | 58.8 | 0.0 | deal_maker |
-| EUU | 48.3 | 71.3 | 61.0 | 67.2 | 67.6 | 0.0 | all_clean |
-| IND | 48.3 | 9.0 | 39.2 | 47.6 | 48.9 | 0.0 | deal_maker |
-| RUS | 0.0 | 54.6 | 31.6 | 42.1 | 42.1 | 0.0 | all_clean |
-| USA | 54.8 | 67.7 | 53.4 | 65.9 | 66.7 | 0.0 | all_clean |
-| VNM | 37.0 | 27.7 | 40.3 | 45.1 | 47.9 | 0.0 | deal_maker |
+| CHN | 57.4 | 0.0 | 46.4 | 56.3 | 58.1 | 0.0 | deal_maker |
+| EUU | 47.0 | 70.3 | 60.0 | 66.3 | 66.6 | 0.0 | all_clean |
+| IND | 48.3 | 9.1 | 38.7 | 46.8 | 47.7 | 0.0 | deal_maker |
+| RUS | 0.0 | 53.3 | 31.1 | 41.3 | 41.6 | 0.0 | all_clean |
+| USA | 54.1 | 66.7 | 52.7 | 64.7 | 64.9 | 0.0 | all_clean |
+| VNM | 36.3 | 27.0 | 39.6 | 44.1 | 47.1 | 0.0 | deal_maker |
 
 Games completed / mean score of completed games:
 
 | Nation | ai | all_clean | all_fossil | balanced | deal_maker | reckless |
 |---|---|---|---|---|---|---|
-| CHN | 100% / 58.3 | 0% / - | 100% / 47.3 | 100% / 57.3 | 100% / 58.8 | 0% / - |
-| EUU | 67% / 72.4 | 100% / 71.3 | 100% / 61.0 | 100% / 67.2 | 100% / 67.6 | 0% / - |
-| IND | 83% / 58.0 | 17% / 53.8 | 83% / 47.1 | 83% / 57.1 | 83% / 58.6 | 0% / - |
-| RUS | 0% / - | 83% / 65.5 | 67% / 47.4 | 67% / 63.1 | 67% / 63.1 | 0% / - |
-| USA | 83% / 65.8 | 100% / 67.7 | 100% / 53.4 | 100% / 65.9 | 100% / 66.7 | 0% / - |
-| VNM | 67% / 55.5 | 50% / 55.3 | 83% / 48.4 | 83% / 54.1 | 83% / 57.5 | 0% / - |
+| CHN | 100% / 57.4 | 0% / - | 100% / 46.4 | 100% / 56.3 | 100% / 58.1 | 0% / - |
+| EUU | 67% / 70.6 | 100% / 70.3 | 100% / 60.0 | 100% / 66.3 | 100% / 66.6 | 0% / - |
+| IND | 83% / 57.9 | 17% / 54.7 | 83% / 46.4 | 83% / 56.1 | 83% / 57.3 | 0% / - |
+| RUS | 0% / - | 83% / 64.0 | 67% / 46.7 | 67% / 62.0 | 67% / 62.4 | 0% / - |
+| USA | 83% / 65.0 | 100% / 66.7 | 100% / 52.7 | 100% / 64.7 | 100% / 64.9 | 0% / - |
+| VNM | 67% / 54.5 | 50% / 54.1 | 83% / 47.5 | 83% / 53.0 | 83% / 56.6 | 0% / - |
 
 
 ## 3. Viable strategies: TUNE
@@ -70,12 +70,12 @@ Final scores, which multiply the relative index by country difficulty, by design
 
 | Nation | Economic index 2030: balanced | all_fossil | Final score, all_fossil: cooperative world | free-rider world | Warming: coop / free-rider |
 |---|---|---|---|---|---|
-| CHN | 52.6 | 56.4 | 49.6 | 37.1 | 1.73 / 1.98 |
-| EUU | 55.9 | 59.1 | 65.5 | 47.6 | 1.65 / 1.98 |
-| IND | 54.0 | 56.9 | 48.6 | 34.5 | 1.69 / 1.98 |
-| RUS | 54.8 | 54.4 | 48.0 | 31.3 | 1.67 / 1.98 |
-| USA | 53.0 | 53.7 | 51.2 | 36.9 | 1.69 / 1.98 |
-| VNM | 52.7 | 56.2 | 46.9 | 35.5 | 1.66 / 1.98 |
+| CHN | 52.6 | 56.4 | 47.7 | 36.8 | 1.75 / 1.99 |
+| EUU | 55.9 | 59.1 | 64.1 | 47.3 | 1.67 / 1.99 |
+| IND | 54.0 | 56.9 | 47.8 | 34.2 | 1.70 / 1.99 |
+| RUS | 54.8 | 54.4 | 47.0 | 31.0 | 1.69 / 1.99 |
+| USA | 53.0 | 53.7 | 50.8 | 36.6 | 1.70 / 1.99 |
+| VNM | 52.7 | 56.2 | 45.8 | 35.2 | 1.68 / 1.99 |
 
 Free-riding gains by 2030 for 5/6 nations; the free-rider's final score falls when everyone free-rides for 6/6. Both final-score worlds run the full game without elections.
 
@@ -98,12 +98,12 @@ Balanced bot, seed 1, each playable nation.
 
 | Difficulty | Expected score | Completed | Mean warming at end | Disasters per run | Disruptions per run |
 |---|---|---|---|---|---|
-| easy | 64.2 | 100% | 1.65 | 20.5 | 11.5 |
-| normal | 50.9 | 83% | 1.64 | 107.7 | 27.3 |
-| hard | 40.4 | 67% | 1.62 | 201.0 | 33.7 |
+| easy | 62.5 | 100% | 1.67 | 20.7 | 11.3 |
+| normal | 49.8 | 83% | 1.65 | 108.8 | 27.3 |
+| hard | 30.6 | 50% | 1.63 | 193.0 | 32.3 |
 
 ## Other signals
 
 - Elections lost per run, by bot: ai 0.3, all_clean 0.4, all_fossil 0.1, balanced 0.1, deal_maker 0.1, reckless 1.0
-- Endings, by bot: ai: Prosperous but Doomed 6, Shared Failure 18, Voted Out 12; all_clean: Prosperous but Doomed 14, Shared Failure 7, Voted Out 15; all_fossil: Prosperous but Doomed 1, Shared Failure 31, Voted Out 4; balanced: Prosperous but Doomed 11, Shared Failure 21, Voted Out 4; deal_maker: Prosperous but Doomed 11, Shared Failure 21, Voted Out 4; reckless: Voted Out 36
-- Rejected player actions across all runs: 98.
+- Endings, by bot: ai: Prosperous but Doomed 6, Shared Failure 18, Voted Out 12; all_clean: Prosperous but Doomed 11, Shared Failure 10, Voted Out 15; all_fossil: Prosperous but Doomed 1, Shared Failure 31, Voted Out 4; balanced: Prosperous but Doomed 10, Shared Failure 22, Voted Out 4; deal_maker: Prosperous but Doomed 10, Shared Failure 22, Voted Out 4; reckless: Voted Out 36
+- Rejected player actions across all runs: 460.

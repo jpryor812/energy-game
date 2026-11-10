@@ -251,6 +251,43 @@ def catalogue(cfg: Config) -> dict[str, dict[str, Any]]:
             "cost": "capital: amount",
             "example": {"type": "fund_forests", "amount": 0.02},
         },
+        "finance_region": {
+            "summary": "Lend for clean energy in a rest-of-world region (concessional): it is "
+            "built after the source's build time and displaces the region's fossil energy. The "
+            f"region repays at {_t(cfg, 'regions.loan_rate'):.0%} a year over "
+            f"{_t(cfg, 'regions.loan_years'):g} years (below the "
+            f"{_t(cfg, 'market.discount_rate'):.0%} discount rate, so it costs you a little), you "
+            "earn financed climate credit for the cut over the same years, the region trusts "
+            "you more, and its equipment is bought partly from the factories of nations it "
+            f"trusts. Build cost is {1 + _t(cfg, 'regions.cost_premium'):g} x the world unit "
+            "cost.",
+            "params": {
+                "region": cfg.region_ids,
+                "source": list(cfg.tuning["regions"]["finance_sources"]),
+                "amount": "T$, > 0",
+            },
+            "cost": "capital: amount",
+            "example": {
+                "type": "finance_region",
+                "region": cfg.region_ids[0],
+                "source": "solar",
+                "amount": 0.05,
+            },
+        },
+        "pledge_to_event": {
+            "summary": "Pledge capital toward an open minor-nation event's fund (see EVENTS: "
+            "keep an oil field in the ground, protect a rainforest, replace planned coal with "
+            "solar, or fund adaptation). If pledges reach the target by the deadline the bad "
+            "outcome is avoided, contributors gain the region's trust and earn financed climate "
+            "credit for their share of the CO2 avoided to the end of the game; if not, pledges "
+            "are refunded and the outcome happens.",
+            "params": {
+                "event_id": "an open event's id, e.g. E1",
+                "amount": "T$, > 0, up to what the fund still needs",
+            },  # fmt: skip
+            "cost": "capital: amount (refunded if the fund falls short)",
+            "example": {"type": "pledge_to_event", "event_id": "E1", "amount": 0.02},
+        },
         "make_pledge": {
             "summary": "Pledge emissions at a share of your 2025 level by a year. Breaking it "
             "costs trust with everyone.",

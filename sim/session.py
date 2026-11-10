@@ -309,6 +309,30 @@ def notices(cfg: Config, before: World, after: World, me: str) -> list[str]:
             f"{cfg.tune('diplomacy.club_min_carbon_price'):g} $/t."
         )
 
+    # Minor-nation events opened or closed this quarter (M15b).
+    from sim import events as ev
+
+    start = cfg.tune("time.start_year")
+    old = {e["id"]: e["status"] for e in before.minor_events}
+    for e in after.minor_events:
+        if e["id"] not in old:
+            out.append(
+                f"New event {e['id']}: {ev.text(cfg, e)} Pledge with pledge_to_event until "
+                f"{turn.quarter_label(e['deadline'], start)}."
+            )
+        elif old[e["id"]] != e["status"]:
+            share = ev.pledged(e) / e["target"]
+            mine = e["pledges"].get(me, 0.0)
+            if e["status"] == ev.FUNDED:
+                paid = f"; you paid {mine:.3g} T$" if mine else "; you did not pledge"
+                out.append(f"Event {e['id']} funded: the outcome is avoided{paid}.")
+            else:
+                back = f"; your {mine:.3g} T$ is refunded" if mine else ""
+                out.append(
+                    f"Event {e['id']} failed: pledges reached {share:.0%} of the target, so "
+                    f"the outcome happens ({e['type']} in {e['region']}){back}."
+                )
+
     # How the score moved this quarter, by component (M14).
     if before.history:
         old_s = scoring.score(cfg, before, me)

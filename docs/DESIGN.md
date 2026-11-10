@@ -284,6 +284,8 @@ Events interrupt your plan and force a response, in the style of Crusader Kings.
 | Investor offers green premium | A buyer wants cleaner supply from a partner | Co-fund the project; take the premium; decline |
 | Election year | Democracy reaches its election turn | Cut energy prices; run on a climate record; split the difference |
 
+**Minor-nation events (M15 build note, agreed with the user 2026-11-10).** The rest of the world is seven regions (not playable, not ranked), and the first events come from them: an unnamed country in a region finds oil, weighs a rainforest concession, plans coal power, or appeals for adaptation finance. Any nation can pledge toward a shared fund by a deadline (`pledge_to_event`); if the fund fills, the outcome is avoided and contributors gain trust and climate credit; if not, pledges are refunded and the outcome happens. Nations can also lend for clean energy in a region (`finance_region`), up to what it can absorb. These events are pure chance for now; state-triggered events, choices within the player's own nation, and advisers come later.
+
 **MVP scope.** About 40 events and four advisers, with each event tested for whether the choices are all costly and none is obviously best.
 
 ## AI nations and the path to a mock UN

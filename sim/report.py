@@ -32,11 +32,14 @@ def annual(history: list[dict[str, Any]], year: int, key: str, nid: str | None =
 
 
 def without_shocks(cfg: Config) -> Config:
-    """The same configuration with no disasters or factory disruptions."""
+    """The same configuration with no disasters, factory disruptions or minor-nation events
+    (M15b): the deterministic core."""
     tuning = copy.deepcopy(cfg.tuning)
     for key in ("disaster_rate", "disruption_rate"):
         tuning["shocks"][key]["value"] = 0.0
-    return dataclasses.replace(cfg, tuning=tuning)
+    events = copy.deepcopy(cfg.events)
+    events["events"]["rate"]["value"] = 0.0
+    return dataclasses.replace(cfg, tuning=tuning, events=events)
 
 
 def bau_world(cfg: Config, seed: int = 1) -> World:

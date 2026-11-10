@@ -200,6 +200,39 @@ class Nation:
 
 
 @dataclass
+class Region:
+    """One of the seven rest-of-world regions (M15): not playable, not ranked, no elections.
+    Energy in EJ/yr (primary, substitution method), emissions in MtCO2/yr, GDP in T$."""
+
+    id: str
+    gdp: float = 0.0
+    population: float = 0.0
+    clean: float = 0.0
+    fossil: float = 0.0
+    emissions: float = 0.0
+    fossil_production: float = 0.0
+    growth: float = 0.0
+    clean_additions: float = 0.0  # share of new energy that is clean, last quarter
+    extra_co2: float = 0.0  # M15b: MtCO2/yr from events (an oil field developed)
+    trust: dict[str, float] = field(default_factory=dict)  # its trust in each nation (0..1)
+    financed: dict[str, float] = field(default_factory=dict)  # T$ each nation has financed
+
+    _FLOATS = (
+        "gdp", "population", "clean", "fossil", "emissions", "fossil_production", "growth",
+        "clean_additions", "extra_co2",
+    )  # fmt: skip
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> Region:
+        return cls(
+            id=d["id"],
+            **{name: float(d[name]) for name in cls._FLOATS},
+            trust={k: float(v) for k, v in d["trust"].items()},
+            financed={k: float(v) for k, v in d["financed"].items()},
+        )
+
+
+@dataclass
 class World:
     t: int
     seed: int
@@ -234,6 +267,14 @@ class World:
     tech_firsts: dict[str, list[Any]] = field(default_factory=dict)
     # M13: licences sold: [buyer, seller, tech, price (T$), turn].
     licenses: list[list[Any]] = field(default_factory=list)
+    # M15: the rest of the world as regions, and the clean capacity nations finance there
+    # (one dict per project: financier, region, source, amount T$, delivered EJ/yr, online turn,
+    # end turn of repayments and credit).
+    regions: dict[str, Region] = field(default_factory=dict)
+    region_projects: list[dict[str, Any]] = field(default_factory=list)
+    # M15b: minor-nation events (sim.events): id, type, region, target (T$), opened, deadline,
+    # status (open, funded, failed), closed turn, pledges (nation -> T$).
+    minor_events: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
@@ -271,6 +312,12 @@ class World:
             tech_firsts={k: [str(v[0]), int(v[1])] for k, v in d["tech_firsts"].items()},
             licenses=[
                 [str(b), str(s), str(t), float(p), int(q)] for b, s, t, p, q in d["licenses"]
+            ],
+            regions={k: Region.from_dict(v) for k, v in d["regions"].items()},
+            region_projects=[dict(x) for x in d["region_projects"]],
+            minor_events=[
+                dict(e) | {"pledges": {k: float(v) for k, v in e["pledges"].items()}}
+                for e in d["minor_events"]
             ],
         )
 

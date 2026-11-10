@@ -10,7 +10,7 @@ Units: amounts of capacity in EJ/yr, money in T$, carbon price in $/tCO2, shares
 Diplomatic actions (M4): talks, tariffs, the carbon club, deals, and carbon credit orders.
 Domestic economy (M4b): taxes, tax credits, factories, domestic content, retraining, and
 electrification programmes. Climate levers (M4b): carbon removal, methane abatement, and the
-global forest fund.
+global forest fund. M15: concessional clean-energy finance for the rest-of-world regions.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from sim import construction, credits, deals, diplomacy, energy, research, tech, trade
+from sim import construction, credits, deals, diplomacy, energy, regions, research, tech, trade
 from sim.config import Config
 from sim.state import Construction, Nation, Pledge, World
 
@@ -659,6 +659,45 @@ def _forest_apply(cfg, world, n, act):
     n.forest_paid += act["amount"]
 
 
+# --- the regions (M15) ---------------------------------------------------------------------------
+
+
+def _region_check(cfg, world, n, act):
+    rid = _choice(act, "region", sorted(world.regions))
+    source = _choice(act, "source", list(cfg.tuning["regions"]["finance_sources"]))
+    amount = _positive(act)
+    most = regions.room(cfg, world, rid) / regions.delivered_per_trillion(cfg, world, source)
+    if amount > most * (1 + 1e-9):
+        raise Rejected(
+            f"{rid} can take only {most:.4g} T$ more of financed {source} for now (it absorbs "
+            "a limited amount of new clean energy a year; see REGIONS)"
+        )
+    return {"capital": amount}
+
+
+def _region_apply(cfg, world, n, act):
+    regions.finance(cfg, world, n.id, act["region"], act["source"], act["amount"])
+
+
+def _event_check(cfg, world, n, act):
+    from sim import events
+
+    event = events.find(world, act.get("event_id"))
+    if event is None or event["status"] != events.OPEN:
+        raise Rejected(f"no open event {act.get('event_id')!r} (see EVENTS)")
+    amount = _positive(act)
+    left = events.remaining(event)
+    if amount > left * (1 + 1e-9):
+        raise Rejected(f"{event['id']} needs only {left:.4g} T$ more")
+    return {"capital": amount}
+
+
+def _event_apply(cfg, world, n, act):
+    from sim import events
+
+    events.pledge(world, n.id, act["event_id"], act["amount"])
+
+
 SPECS: dict[str, Spec] = {
     "build_capacity": Spec(DOMESTIC, _build_check, _build_apply),
     "retire_capacity": Spec(DOMESTIC, _retire_check, _retire_apply),
@@ -686,6 +725,8 @@ SPECS: dict[str, Spec] = {
     "build_removal": Spec(DOMESTIC, _removal_check, _removal_apply),
     "methane_abatement": Spec(DOMESTIC, _spend_check, _methane_apply),
     "fund_forests": Spec(DIPLOMATIC, _spend_check, _forest_apply),
+    "finance_region": Spec(DIPLOMATIC, _region_check, _region_apply),
+    "pledge_to_event": Spec(DIPLOMATIC, _event_check, _event_apply),
     "make_pledge": Spec(DIPLOMATIC, _pledge_check, _pledge_apply),
     "open_talks": Spec(DIPLOMATIC, _talks_check, _talks_apply),
     "set_tariff": Spec(DIPLOMATIC, _tariff_check, _tariff_apply),
@@ -712,7 +753,7 @@ LINEAR = (  # actions whose cost is proportional to "amount", so "amount": "max"
     "build_capacity", "build_grid_storage", "build_removal", "build_factory", "invest_research",
     "invest_efficiency", "buy_influence", "adaptation_spend", "fund_retraining",
     "electrification_program", "methane_abatement", "fund_forests", "retire_capacity",
-    "fund_research", "retrofit_ccs",
+    "fund_research", "retrofit_ccs", "finance_region", "pledge_to_event",
 )  # fmt: skip
 
 
@@ -727,6 +768,17 @@ def max_amount(cfg: Config, world: World, n: Nation, act: dict[str, Any]) -> flo
         amount = min(amount, n.capacity.get(act.get("source"), 0.0) * (1 - 1e-9))
     if act["type"] == "fund_research" and act.get("tech") in cfg.research["techs"]:
         amount = min(amount, research.useful_funding(cfg, world, n, act["tech"]))
+    if act["type"] == "finance_region" and act.get("region") in world.regions:
+        source = act.get("source")
+        if source in cfg.tuning["regions"]["finance_sources"]:
+            per_tn = regions.delivered_per_trillion(cfg, world, source)
+            amount = min(amount, regions.room(cfg, world, act["region"]) / per_tn * (1 - 1e-9))
+    if act["type"] == "pledge_to_event":
+        from sim import events
+
+        event = events.find(world, act.get("event_id"))
+        if event is not None:
+            amount = min(amount, events.remaining(event))
     if act["type"] == "retrofit_ccs" and act.get("fuel") in research.CCS_FUELS:
         fuel = act["fuel"]
         amount = min(amount, n.capacity.get(fuel, 0.0) - n.ccs.get(fuel, 0.0))

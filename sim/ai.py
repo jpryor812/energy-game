@@ -33,6 +33,7 @@ from sim import (
     diplomacy,
     economy,
     energy,
+    regions,
     research,
     tech,
     trade,
@@ -454,7 +455,7 @@ def utility(cfg: Config, personality: str, eff: Effects, w_em: float, income) ->
 
 
 def _target(act: Action) -> str:
-    keys = ("source", "kind", "tech", "target", "deal_id", "bloc")
+    keys = ("region", "event_id", "source", "kind", "tech", "target", "deal_id", "bloc")
     return str(next((act[k] for k in keys if k in act), ""))
 
 
@@ -639,6 +640,12 @@ def diplomatic(cfg, world, nid, personality, ctx, w_em, income) -> list[tuple[fl
     offer = _deal_offer(cfg, world, nid, personality, w_em, income)
     if offer:
         out.append(offer)
+    region = region_candidate(cfg, world, nid, personality, w_em, income)
+    if region:
+        out.append(region)
+    pledge = event_candidate(cfg, world, nid, personality)
+    if pledge:
+        out.append(pledge)
 
     value, price = p("credit_value"), world.credit_price
     if n.credit_balance > 0 and price >= value:
@@ -655,6 +662,75 @@ def diplomatic(cfg, world, nid, personality, ctx, w_em, income) -> list[tuple[fl
             u = w_em * (value - price) / value
             out.append((u, {"type": "buy_credits", "amount": amount, "max_price": value}))
     return out
+
+
+def region_candidate(cfg, world, nid, personality, w_em, income) -> tuple[float, Action] | None:
+    """Concessional clean-energy finance for a region (M15), considered once a year (staggered
+    like deal offers): the region where a T$ cuts the most (highest emission factor, weighted by
+    how fossil it still is), with the cheaper source there. Utility: the financed credit plus
+    `region_affinity`, less the cost of lending below the discount rate."""
+    n = world.nations[nid]
+    if (world.t + sorted(world.nations).index(nid) + 2) % 4 or not world.regions:
+        return None
+    if n.capital <= _ai(cfg, "deal_reserve_years") * income[0]:
+        return None
+
+    def need(rid: str) -> float:
+        r = world.regions[rid]
+        return cfg.reg(rid, "fossil_ef") * r.fossil / max(r.clean + r.fossil, 1e-9)
+
+    open_ = [rid for rid in sorted(world.regions) if regions.room(cfg, world, rid) > 0]
+    if not open_:
+        return None
+    rid = max(open_, key=need)
+    sources = list(cfg.tuning["regions"]["finance_sources"])
+    per_tn = {s: regions.delivered_per_trillion(cfg, world, s) for s in sources}
+    source = max(sources, key=lambda s: (per_tn[s], s))
+    most = regions.room(cfg, world, rid) / per_tn[source] * (1 - 1e-9)
+    amount = min(_ai(cfg, "region_share") * n.capital, most)
+    if amount <= 0:
+        return None
+    cut = amount * per_tn[source] * cfg.reg(rid, "fossil_ef")
+    years = cfg.tune("regions.loan_years")
+    credit = cfg.tune("credits.weight_financed") * cut / max(n.base["emissions"], 1e-9) * 100
+    # Share of the loan lost by lending below the discount rate (present value of repayments).
+    pv = regions.payment_rate(cfg) / tech.crf(cfg.tune("market.discount_rate"), years)
+    cap_weight = _ai(cfg, "capital_cost_weight") / _p(cfg, personality, "budget_appetite")
+    u = (
+        _p(cfg, personality, "w_deals") * _ai(cfg, "region_affinity")
+        + w_em * credit
+        - cap_weight * amount * max(0.0, 1 - pv) / income[0]
+    )
+    return u, {"type": "finance_region", "region": rid, "source": source, "amount": amount}
+
+
+def event_candidate(cfg, world, nid, personality) -> tuple[float, Action] | None:
+    """A pledge to a minor-nation event's fund (M15b): this nation's fair share (its share of the
+    16 nations' GDP) x its personality's `event_propensity`, to the first open event it has not
+    pledged to. Cautious followers wait until others have pledged `event_follow_share`."""
+    from sim import events
+
+    n = world.nations[nid]
+    propensity = _p(cfg, personality, "event_propensity")
+    if propensity <= 0:
+        return None
+    gdp = sum(m.gdp for m in world.nations.values())
+    for event in events.open_events(world):
+        if nid in event["pledges"]:
+            continue
+        given = events.pledged(event) / event["target"]
+        if personality == "cautious_follower" and given < _ai(cfg, "event_follow_share"):
+            continue
+        amount = min(
+            event["target"] * n.gdp / gdp * propensity,
+            events.remaining(event),
+            max(0.0, n.capital),
+        )
+        if amount <= 1e-9:
+            continue
+        act = {"type": "pledge_to_event", "event_id": event["id"], "amount": amount}
+        return _ai(cfg, "event_utility") * propensity, act
+    return None
 
 
 def research_candidate(cfg: Config, world: World, nid: str, personality: str):

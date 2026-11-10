@@ -343,7 +343,8 @@ Decisions made with the user on 2026-11-08 are recorded in docs/DESIGN.md ("Deci
     (land becomes a net sink), half at 0.5 T$. Payers earn financed credit (0.75) for the avoided
     land-use CO2, in proportion to what they paid.
 89. **The rest of the world responds:** its energy CO2 is scaled by the 16 nations' carbon
-    intensity of energy relative to 2025 (clean technology spreads).
+    intensity of energy relative to 2025 (clean technology spreads). (M15: replaced by seven
+    regions, items 178-181; only international transport keeps this rule.)
 90. **"Colder than 2025" is reachable but extreme** (decided 2026-11-08): an all-out world ends
     2049 just below 1.36 degC (tested), but only with carbon removal of ~33 Gt/yr, far beyond
     current physical estimates. The AI world ends at ~1.66 degC.
@@ -702,6 +703,66 @@ planning)").
      decided with the user); licences and deals are their route. Joint research between nations
      is a possible later feature.
 
+## M15: rest-of-world regions and minor-nation events
+
+178. **Seven regions replace the single rest-of-world term** (agreed with the user 2026-11-10):
+     Latin America and Caribbean, Middle East and North Africa, Sub-Saharan Africa, South and
+     Southeast Asia, East Asia and Pacific (Korea, Taiwan, Oceania), rest of Europe (Turkey,
+     Ukraine, Norway, Switzerland, the Balkans), and Central Asia and Caucasus. Each is the sum
+     of its countries in the 2024 OWID energy and CO2 data and the IMF WEO (data/regions.yaml,
+     scripts/data_prep/build_regions.py), with the modelled nations and EU-27 left out. Regions
+     cover 6.7 of the 7.9 Gt rest-of-world fossil CO2; the remaining 1.2 Gt (international
+     shipping and aviation, mostly) keeps the old rule (grows 1%/yr, scaled by the 16 nations'
+     carbon intensity).
+179. **Where the energy breakdown is missing** (most of Sub-Saharan Africa and small states),
+     clean energy is low-carbon electricity x the world substitution factor and fossil energy is
+     fuel CO2 / the region's (or world's) emission factor. Region vulnerability is hand-entered
+     (unsourced approximate, like the nations').
+180. **Regional dynamics.** GDP grows at the 2025-2030 IMF trend less climate damage; energy use
+     grows with GDP less 1.5%/yr intensity decline; new energy (growth plus retirements at
+     1/35 of fossil and 1/30 of clean a year) is clean at the region's 2019-2024 share x (2025
+     clean cost / now)^1.5, plus 0.6 x the 16 nations' fall in carbon intensity (`spread`),
+     plus 0.2 x the carbon club's share of world GDP, up to the nations' clean ceiling. Fossil
+     plants also retire early at 5%/yr x that fall in intensity (`spread_retire`, stranded
+     assets). Regions burn their fossil energy at a fixed 2024 emission factor.
+181. **The rest of the world now cuts more slowly.** The old term fell one-for-one with the 16
+     nations' carbon intensity, which in the AI world took it from 7.9 to 1.6 Gt by 2049 —
+     faster than any plausible stock turnover. The regions fall from 6.7 to about 3.6 Gt in the
+     AI world (BAU: about 5.2 Gt). AI-world warming moves from 1.66 to 1.67 degC (seed 1, no
+     shocks); BAU from 1.94 to 1.95 degC.
+182. **`finance_region` (diplomatic slot).** A concessional loan (2%/yr over 15 years, against
+     the 7% discount rate, so the lender loses about 29% in present value) builds solar or
+     onshore wind in a region at 1.25 x the world unit cost after the source's build time; the
+     clean energy displaces fossil, the lender earns financed climate credit (weight 0.75) for
+     the cut over the 15 years, the region's trust rises by 2 per T$, and the equipment is
+     bought from the world's factories tilted toward trusted nations (all of it counted as
+     clean-tech exports). Its learning effect on world costs is left out.
+183. **Regions absorb only so much finance**: 1.5% of their energy use a year, over a rolling
+     two years, shared by all lenders first come first served, and never past the clean
+     ceiling. Without this limit, cheap solar let 5 T$ of AI lending displace 160 EJ/yr and
+     nearly empty the regions' fossil use by 2049. AI nations now lend about 0.5 T$ over a
+     game, China most.
+184. **AI lending**: once a year (staggered), to the open region where a T$ cuts most (emission
+     factor x fossil share), valued at its financed credit plus `region_affinity` (0.3 x
+     w_deals) less the concessional loss.
+185. **Minor-nation events** (data/events.yaml, sim/events.py): oil discovery, rainforest
+     concession, coal-power plan, adaptation appeal, in allowed regions, about one every three
+     years (at most two open; none in the first year or within 8 quarters of the end), drawn
+     from the "events" stream. Countries are unnamed. Sizes and costs are design assumptions:
+     oil 100 Mt/yr (credited at 50% for leakage) for 0.1 T$; rainforest 120 Mt/yr of land use
+     for 0.08 T$; 1.2 EJ/yr of coal or solar for 0.08 T$; adaptation 1% of the region's GDP
+     for 0.05 T$.
+186. **Shared funds are assurance contracts**: `pledge_to_event` pays at once; if pledges reach
+     the target by the deadline (8 quarters) the event is funded, contributors gain trust (x2
+     for adaptation) and financed credit for their share of the CO2 avoided to the end of the
+     game; otherwise all pledges are refunded and the outcome happens (more CO2 and a richer
+     region, more land-use CO2, new coal, or lost GDP and trust).
+187. **AI pledges are a fair share by personality**: target x the nation's share of the 16
+     nations' GDP x `event_propensity` (green leader 1.7, cautious follower 0.85 once 30% is
+     pledged, opportunist 0.6, fossil defender 0.05). With every nation AI-run the funds reach
+     about 85% of the target and fail, so a player's pledge usually decides. Calibration
+     worlds (docs/CALIBRATION.md) run with events off, like the other seeded shocks.
+
 ## Open questions
 
 - **AI overshoot.** Cheap clean energy leads several low-ambition nations to cut far past their
@@ -729,11 +790,13 @@ planning)").
   (round 1), above coal; not yet investigated.
 - **Cheap first doses** of methane abatement, efficiency and electrification, and strong
   research; not changed.
-- **Rest-of-world regions (planned, agreed with the user 2026-11-10):** keep the aggregate rest
-  of the world, but split it into about 6-8 regions with a few numbers each (income,
-  emissions, fossil reserves, forest, trust), plus occasional event-driven minor nations (e.g.
-  an oil discovery the world can pay to keep in the ground, finance a clean alternative to, buy
-  from, or ignore). Not built yet.
+- **"Colder than 2025" now just out of reach (M15).** With regions that replace fossil plants
+  only as they retire (or are stranded), the all-out world ends 2049 at about 1.37 degC, 0.01
+  above 2025, instead of just below (item 90, decided 2026-11-08). The test now checks it ends
+  within 0.02 degC of 2025. Faster regional turnover would restore it; to decide with the user.
+- **Regional finance may be strong for a player**: per T$ it cuts about as much as building
+  solar at home, outside the home clean ceiling, capped only by the regions' absorption.
+  To watch in the next playtest.
 - **The AI uses few of the new technologies** it researches (item 165); players can.
 - **The late game and Champion** are untested since M9's extra slots; the next playtest round
   should check them.

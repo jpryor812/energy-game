@@ -139,7 +139,7 @@ def test_shocks_are_seeded(cfg):
 
     assert events(1) == events(1)
     assert events(1) and events(1) != events(2)
-    assert all(e["type"] in ("disaster", "disruption") for e in events(1))
+    assert all(e["type"] in ("disaster", "disruption", "minor_event") for e in events(1))
 
 
 def test_disruption_shifts_share_and_raises_cost(cfg, world):

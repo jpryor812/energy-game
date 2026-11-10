@@ -82,8 +82,8 @@ Each run leaves `notes.md`, `report.md` and `transcript.jsonl` in its folder. `-
   domestic content, energy jobs and retraining, electrification programmes, and four-yearly
   economic elections (since M7, losing one ends the game).
 - **M4b part 2 (climate and cooling):** done. Short-lived warming (methane, aerosols), carbon
-  removal, a global forest fund, and a rest of the world that decarbonises with the 16 nations.
-  An all-out world can end colder than 2025.
+  removal, a global forest fund, and a rest of the world that decarbonises with the 16 nations
+  (seven regions since M15). An all-out world ended colder than 2025 (just above since M15).
 - **M5 (deals, difficulty, scoring, balance):** done. Equity-for-energy (with failure risk) and
   climate loans, world difficulty (easy/normal/hard) with seeded climate disasters and factory
   disruptions, absolute and relative scoring with country difficulty, a parallel batch harness,
@@ -123,3 +123,8 @@ Each run leaves `notes.md`, `report.md` and `transcript.jsonl` in its folder. `-
   fades after a term and faster builds are cheaper; the election line shows the swing range,
   the growth gap and the levers; score changes are reported each quarter; tax cuts to -2
   points; a "Staying in office" section in the playtest guide.
+- **M15 (rest of the world and minor-nation events):** the rest of the world is seven regions
+  built from 2024 data, whose new energy gets cleaner as clean tech gets cheaper and the big
+  economies cut; nations lend for clean energy there (`finance_region`, limited by what each
+  region can absorb), and seeded events (an oil discovery, a rainforest, a coal plan, an
+  adaptation appeal) ask the world to fill a shared fund (`pledge_to_event`).

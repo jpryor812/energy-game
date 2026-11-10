@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from sim import actions as acts
-from sim import ai, credits, deals, elections, energy, events, jobs, research, tech, trade
+from sim import ai, credits, deals, elections, energy, events, jobs, regions, research, tech, trade
 from sim import climate as climate_model
 from sim import construction as build
 from sim import diplomacy as diplo
@@ -98,7 +98,8 @@ def economy(world: World, cfg: Config, ctx: TurnContext) -> None:
 
 
 def climate(world: World, cfg: Config, ctx: TurnContext) -> None:
-    """Global emissions -> warming -> damage per nation."""
+    """The regions grow and repay (M15), then global emissions -> warming -> damage."""
+    regions.apply(world, cfg, ctx.dt)
     climate_model.apply(world, cfg, ctx.dt)
 
 

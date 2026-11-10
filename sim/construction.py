@@ -19,7 +19,7 @@ from __future__ import annotations
 import math
 from collections import defaultdict
 
-from sim import economy, energy, research, tech, trade
+from sim import economy, energy, regions, research, tech, trade
 from sim.config import Config
 from sim.energy import base_demand
 from sim.state import Construction, Nation, World
@@ -313,6 +313,9 @@ def apply(world: World, cfg: Config, dt: int) -> dict[str, float]:
             if s in clean:
                 n.clean_built += amount
         market_build(cfg, world, nid, n)
+    # M15: capacity financed in the regions buys equipment too (its learning effect is left out:
+    # the rest of the world's building is already assumed to scale with the 16 nations')
+    regional = regions.complete(cfg, world)
     costs = {s: tech.unit_cost(cfg, world, s) for s in trade.EQUIPMENT_OF}
-    trade.apply_equipment(cfg, world, by_nation, costs, dt)
+    trade.apply_equipment(cfg, world, by_nation, costs, dt, regional)
     return dict(completed)

@@ -74,6 +74,18 @@ fusion), for you only. Once any nation has a technology it is cheaper for others
 licence (`buy_license`) from a nation that sells it, and sell licences to what you researched
 (`set_license_price`, optionally refusing some nations); patents expire after ten years.
 
+**The rest of the world.** Seven regions (REGIONS on the screen) are not playable, but their
+emissions count toward warming, and they cut slowly unless helped. `finance_region` lends
+cheaply for solar or wind there: it costs you a little (the region repays below market rates),
+earns climate credit for the cut, wins the region's trust, and sells equipment from trusted
+nations' factories. Each region can absorb only so much a year, shared by all lenders.
+
+**Events.** Every few years a country in one of the regions faces a choice (EVENTS on the
+screen): an oil field, a rainforest, a coal plan, a disaster appeal. Any nation can pledge to a
+shared fund with `pledge_to_event`; if the fund reaches its target by the deadline the bad
+outcome is avoided and contributors gain trust and climate credit, and if not, every pledge is
+refunded. Other nations rarely fill a fund on their own.
+
 **Deals.** You can offer other nations clean-energy deals (loans, equipment on credit, energy as
 a service, equity) and answer offers in your inbox. Deals cut emissions abroad, earn returns and
 build trust; equity can be lost if the host becomes unreliable. A nation can host deal capacity

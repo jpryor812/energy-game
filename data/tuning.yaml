@@ -256,6 +256,75 @@ climate:
     source: gcb
     note: Cement, flaring and other industry CO2, 2024. Held constant.
 
+regions:  # M15: the rest of the world as seven regions (data/regions.yaml)
+  intensity_decline:
+    value: 0.015
+    status: placeholder
+    note: Annual fall in a region's energy use per unit of GDP (world primary-energy intensity has fallen ~1.5-2%/yr).
+  fossil_lifespan:
+    value: 35
+    unit: years
+    status: placeholder
+    note: Fossil energy a region retires each year is 1/lifespan of what it uses; the replacement counts as new energy.
+  clean_lifespan:
+    value: 30
+    unit: years
+    status: placeholder
+    note: Clean energy a region retires each year is 1/lifespan of what it uses.
+  cost_sources: [solar, onshore_wind]  # world clean cost index for regional adoption
+  cost_response:
+    value: 1.5
+    status: placeholder
+    note: Clean share of a region's new energy = its 2019-2024 share x (2025 clean cost / clean cost now)^this. Set so the regions in the AI world cut about as fast as the old single rest-of-world term.
+  spread:
+    value: 0.6
+    status: placeholder
+    note: Extra clean share of new energy in every region per unit fall in the 16 nations' carbon intensity since 2025 (the pre-M15 rest of the world followed that intensity one for one).
+  spread_retire:
+    value: 0.05
+    status: placeholder
+    note: Extra share of a region's fossil energy retired early each year per unit fall in the 16 nations' carbon intensity (stranded plants). Keeps "colder than 2025" reachable in an all-out world (ASSUMPTIONS 90).
+  club_pull:
+    value: 0.2
+    status: placeholder
+    note: Extra clean share of new energy in every region per unit of the carbon club's share of world GDP (exporters to the club decarbonise to keep access).
+  finance_sources: [solar, onshore_wind]  # what finance_region can build
+  absorb_share:
+    value: 0.015
+    status: placeholder
+    note: Financed clean energy a region can take each year, as a share of its energy use (grids, institutions, project pipelines), shared by all lenders.
+  absorb_years:
+    value: 2
+    unit: years
+    status: placeholder
+    note: Rolling window over which absorb_share applies, so lenders can bunch projects within it.
+  cost_premium:
+    value: 0.25
+    status: placeholder
+    note: Extra build cost in a region over the world unit cost (higher financing and logistics costs).
+  loan_rate:
+    value: 0.02
+    status: placeholder
+    note: Concessional rate a region repays finance_region loans at (below the 7% discount rate, so lending costs the lender).
+  loan_years:
+    value: 15
+    unit: years
+    status: placeholder
+    note: Years a region repays a finance_region loan; the lender earns financed climate credit for the same years.
+  trust_start:
+    value: 0.5
+    status: placeholder
+    note: A region's starting trust in every nation (neutral).
+  trust_per_trillion:
+    value: 2.0
+    unit: per T$
+    status: placeholder
+    note: Trust a region gains in a nation per T$ it finances there (capped at 1).
+  trust_pull:
+    value: 1.0
+    status: placeholder
+    note: How much a region's trust tilts its financed equipment purchases toward a nation's factories (weight x (1 + pull x (trust - 0.5))).
+
 slots:
   domestic_per_quarter:
     value: 3
@@ -619,6 +688,7 @@ scoring:
 ai:
   personalities:
     green_leader:
+      event_propensity: {value: 1.7, status: placeholder, note: "M15b - pledge to minor-nation event funds as this multiple of the nation's share of the 16 nations' GDP (0 = never)."}
       research_priority: [next_gen_solar, advanced_batteries, green_hydrogen, long_duration_storage, hvdc_supergrid, floating_offshore_wind, enhanced_geothermal, advanced_removal, small_modular_reactors, advanced_fission, fusion, ccs]  # M12 tech-tree order (cautious followers research only what others already have)
       research_utility: {value: 0.8, status: placeholder, note: "M12 - utility of funding tech-tree research each quarter, against other candidate actions."}
       preferred_deal: climate_loan  # deal type this personality offers as financier
@@ -635,6 +705,7 @@ ai:
       follow_strength: {value: 0.0, status: placeholder, note: "How strongly peers' emission cuts raise the emissions weight (cautious follower)."}
       budget_appetite: {value: 1.5, status: placeholder, note: "Divides the capital-cost weight: higher spends more readily."}
     fossil_defender:
+      event_propensity: {value: 0.05, status: placeholder, note: "M15b - pledge to minor-nation event funds as this multiple of the nation's share of the 16 nations' GDP (0 = never)."}
       research_priority: [ccs, advanced_removal, small_modular_reactors, hvdc_supergrid, advanced_fission, next_gen_solar, advanced_batteries, enhanced_geothermal, green_hydrogen, floating_offshore_wind, long_duration_storage, fusion]  # M12 tech-tree order (cautious followers research only what others already have)
       research_utility: {value: 0.3, status: placeholder, note: "M12 - utility of funding tech-tree research each quarter, against other candidate actions."}
       preferred_deal: equipment_on_credit  # deal type this personality offers as financier
@@ -651,6 +722,7 @@ ai:
       follow_strength: {value: 0.0, status: placeholder, note: "How strongly peers' emission cuts raise the emissions weight (cautious follower)."}
       budget_appetite: {value: 0.8, status: placeholder, note: "Divides the capital-cost weight: higher spends more readily."}
     opportunist:
+      event_propensity: {value: 0.6, status: placeholder, note: "M15b - pledge to minor-nation event funds as this multiple of the nation's share of the 16 nations' GDP (0 = never)."}
       research_priority: [next_gen_solar, small_modular_reactors, advanced_batteries, hvdc_supergrid, enhanced_geothermal, advanced_fission, green_hydrogen, floating_offshore_wind, long_duration_storage, advanced_removal, fusion, ccs]  # M12 tech-tree order (cautious followers research only what others already have)
       research_utility: {value: 0.6, status: placeholder, note: "M12 - utility of funding tech-tree research each quarter, against other candidate actions."}
       preferred_deal: equity_for_energy  # deal type this personality offers as financier
@@ -667,6 +739,7 @@ ai:
       follow_strength: {value: 0.0, status: placeholder, note: "How strongly peers' emission cuts raise the emissions weight (cautious follower)."}
       budget_appetite: {value: 1.0, status: placeholder, note: "Divides the capital-cost weight: higher spends more readily."}
     cautious_follower:
+      event_propensity: {value: 0.85, status: placeholder, note: "M15b - pledge to minor-nation event funds as this multiple of the nation's share of the 16 nations' GDP (0 = never)."}
       research_priority: [next_gen_solar, advanced_batteries, hvdc_supergrid, floating_offshore_wind, green_hydrogen, enhanced_geothermal, long_duration_storage, small_modular_reactors, advanced_removal, ccs, advanced_fission, fusion]  # M12 tech-tree order (cautious followers research only what others already have)
       research_utility: {value: 0.3, status: placeholder, note: "M12 - utility of funding tech-tree research each quarter, against other candidate actions."}
       preferred_deal: equipment_on_credit  # deal type this personality offers as financier
@@ -718,6 +791,10 @@ ai:
   methane_share: {value: 0.05, status: placeholder, note: "Share of capital an AI considers for methane abatement."}
   removal_share: {value: 0.1, status: placeholder, note: "Share of capital an AI considers for carbon removal."}
   forest_share: {value: 0.03, status: placeholder, note: "Share of capital an AI considers paying into the forest fund."}
+  region_share: {value: 0.03, status: placeholder, note: "M15 - share of capital an AI considers lending for clean energy in a region (finance_region)."}
+  event_utility: {value: 1.0, status: placeholder, note: "M15b - utility of a pledge to a minor-nation event, times the personality's event_propensity."}
+  event_follow_share: {value: 0.3, status: placeholder, note: "M15b - cautious followers pledge only once others have pledged this share of the target."}
+  region_affinity: {value: 0.3, status: placeholder, note: "M15 - extra utility for financing a region, scaled by w_deals (development finance as soft power)."}
   methane_horizon: {value: 20, status: placeholder, note: "Years over which an AI spreads avoided methane warming to compare it with CO2 cuts."}
   removal_energy_cap: {value: 0.25, status: placeholder, note: "An AI keeps carbon removal's energy use below this share of its economy's energy demand."}
   host_growth_weight: {value: 1.0, status: placeholder, note: "M8 - when choosing whom to offer a deal, an AI financier ranks hosts by trust x (emissions intensity relative to the 16-nation average + this x baseline growth relative to the average), so fast-growing clean nations still get offers."}

@@ -1,13 +1,15 @@
 """Emissions -> warming -> damage.
 
-Global CO2 each step = the modelled nations' net CO2 (energy CO2 minus carbon removal) + rest of
-world energy CO2 + land-use CO2 + other fossil CO2 (cement, flaring).
+Global CO2 each step = the modelled nations' net CO2 (energy CO2 minus carbon removal) + the
+regions' energy CO2 + international transport CO2 + land-use CO2 + other fossil CO2 (cement,
+flaring).
 
-- The rest of the world decarbonises in step with the 16 nations: its energy CO2 grows at
-  `rest_of_world_growth` but is scaled by the 16 nations' carbon intensity of energy relative to
-  2025 (clean technology spreads).
+- The rest of the world is seven regions (M15, sim.regions), each with its own energy CO2.
+  International shipping and aviation CO2 (the rest-of-world total less the regions) grows at
+  `rest_of_world_growth`, scaled by the 16 nations' carbon intensity of energy relative to 2025.
 - Land-use CO2 follows its trend, cut by the global forest fund (`fund_forests` actions): up to
   `forest_max_cut` of it (above 1, land turns into a net sink), half at `forest_half_fund` T$.
+  Forests logged after unfunded rainforest events (M15b, sim.events) add on top.
 - Other fossil CO2 is held constant.
 
 Warming (M4b) has two parts:
@@ -32,6 +34,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from sim import regions
 from sim.config import FUELS, Config
 from sim.state import Nation, World
 
@@ -84,10 +87,11 @@ def exogenous_co2(cfg: Config, world: World) -> dict[str, float]:
     ci_ratio = carbon_intensity(world) / base_ci if base_ci > 0 else 1.0
     land = _c(cfg, "land_use_co2") * (1 + _c(cfg, "land_use_trend")) ** years
     return {
-        "rest_of_world": _c(cfg, "rest_of_world_co2")
+        "regions": regions.total_emissions(world),
+        "transport": world.base.get("transport_co2", 0.0)
         * (1 + _c(cfg, "rest_of_world_growth")) ** years
         * ci_ratio,
-        "land_use": land * (1 - forest_cut(cfg, world)),
+        "land_use": land * (1 - forest_cut(cfg, world)) + world.base.get("land_use_extra", 0.0),
         "other_fossil": _c(cfg, "other_fossil_co2"),
     }
 
@@ -134,6 +138,11 @@ def init(cfg: Config, world: World) -> None:
         n.supply.get("coal", 0.0) + n.supply.get("oil", 0.0) for n in world.nations.values()
     )
     world.methane_index = 1.0
+    # M15: what the regions leave out of the rest of the world (international shipping and
+    # aviation, small territories) keeps the old single-term rule.
+    world.base["transport_co2"] = max(
+        0.0, _c(cfg, "rest_of_world_co2") - world.base.get("regions_co2", 0.0)
+    )
 
 
 # --- the step ------------------------------------------------------------------------------------
