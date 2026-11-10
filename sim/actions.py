@@ -188,6 +188,18 @@ def _adaptation_apply(cfg, world, n, act):
     n.adaptation += act["amount"]
 
 
+def _permitting_check(cfg, world, n, act):
+    level = _num(act, "level", 0.0, 1.0)
+    rise = max(0.0, level - n.permitting)
+    return {"political_capital": cfg.tune("permitting.pc_per_level") * rise}
+
+
+def _permitting_apply(cfg, world, n, act):
+    """Permitting reform (M10): faster builds for new orders, at a cost in approval and in the
+    vote that grows with how much is built (sim.economy, sim.elections)."""
+    n.permitting = float(act["level"])
+
+
 def _cap_check(cfg, world, n, act):
     level = _num(act, "level", 0.0, _a(cfg, "activity_cap_max"))
     return {"political_capital": _a(cfg, "activity_pc_cost") * max(0.0, level - n.activity_cap)}
@@ -517,7 +529,7 @@ def _ban_apply(cfg, world, n, act):
             for c in n.pipeline
             if c.source.startswith(construction.FACTORY)  # factories are not energy sources
             or not energy.is_fossil(cfg, c.source)
-            or c.complete_turn - int(cfg.src(c.source, "build_time")) <= world.t
+            or c.complete_turn - construction.build_time(cfg, n, c.source) <= world.t
         ]
     n.fossil_ban = 1.0 if act["on"] else 0.0
 
@@ -570,6 +582,7 @@ SPECS: dict[str, Spec] = {
     "set_domestic_content": Spec(DOMESTIC, _content_check, _content_apply),
     "fund_retraining": Spec(DOMESTIC, _spend_check, _retraining_apply),
     "set_fossil_ban": Spec(DOMESTIC, _ban_check, _ban_apply),
+    "set_permitting": Spec(DOMESTIC, _permitting_check, _permitting_apply),
     "electrification_program": Spec(DOMESTIC, _spend_check, _electrification_apply),
     "build_removal": Spec(DOMESTIC, _removal_check, _removal_apply),
     "methane_abatement": Spec(DOMESTIC, _spend_check, _methane_apply),

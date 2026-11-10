@@ -13,7 +13,20 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from sim import climate, deals, diplomacy, elections, energy, jobs, scoring, tech, trade, turn
+from sim import (
+    climate,
+    construction,
+    deals,
+    diplomacy,
+    economy,
+    elections,
+    energy,
+    jobs,
+    scoring,
+    tech,
+    trade,
+    turn,
+)
 from sim.catalogue import catalogue
 from sim.session import Game
 
@@ -247,6 +260,11 @@ def observe(game: Game) -> dict[str, Any]:
                 "methane_cut_other": _r(climate.abatement(cfg, n, "other")),
                 "activity_cap": _r(n.activity_cap),
                 "pledge_on_track": diplomacy.pledge_on_track(cfg, w, me),
+                "permitting": _r(n.permitting),
+                "permitting_opposition": economy.permitting_opposition(cfg, me),
+                "build_times": {
+                    s: construction.build_time(cfg, n, s) for s in ("grid", "wind", "solar")
+                },
             },
         },
         "emissions": emissions,
@@ -517,7 +535,10 @@ def _race(r: dict[str, Any], me: str) -> str:
 
 def _effects(e: dict[str, Any]) -> str:
     pledge = {None: "none", True: "on track", False: "off track"}[e["pledge_on_track"]]
+    times = ", ".join(f"{s} {q}" for s, q in e["build_times"].items())
     return (
+        f"  permitting reform {e['permitting']:.2f} (build quarters now: {times}); your "
+        f"country's opposition to it x{e['permitting_opposition']:g}\n"
         f"  policy effects: retraining removes {e['retraining_relief']:.0%} of the fossil-job "
         f"penalty at elections | rebate removes {e['rebate_price_relief']:.0%} of the growth drag "
         f"from energy prices | methane cut {e['methane_cut_fossil']:.0%} (fossil), "

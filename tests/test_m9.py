@@ -86,9 +86,9 @@ def test_price_cut_before_the_vote_counts_only_for_its_quarter(cfg):
     start = w.term_start["price"]
     n.energy_price = start * 1.2
     for _ in range(3):
-        elections.track(w)
+        elections.track(cfg, w)
     n.energy_price = start * 0.9
-    elections.track(w)
+    elections.track(cfg, w)
     assert elections.term_price_rise(w) == pytest.approx((0.2 * 3 - 0.1) / 4)
 
 
@@ -99,9 +99,9 @@ def test_jobs_vote_compares_term_averages(cfg):
     n = w.nations["AAA"]
     base = dict(n.jobs)
     for _ in range(3):
-        elections.track(w)
+        elections.track(cfg, w)
     n.jobs = {k: v * 3 for k, v in base.items()}  # one quarter's spike
-    elections.track(w)
+    elections.track(cfg, w)
     avg = elections.term_jobs(w)
     for k, v in base.items():
         assert avg[k] == pytest.approx(v * 1.5)

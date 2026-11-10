@@ -99,6 +99,11 @@ REQUIRED_TUNING = (
     "slots.domestic_bank_cap",
     "slots.diplomatic_bank_cap",
     "market.cost_weight",
+    "permitting.max_cut",
+    "permitting.pc_per_level",
+    "permitting.vote_weight",
+    "permitting.approval_hit",
+    "permitting.default_opposition",
     "market.fast_horizon",
     "market.cost_temperature",
     "market.discount_rate",
@@ -318,7 +323,14 @@ REQUIRED_TUNING = (
     "ai.min_utility",
 )
 REQUIRED_SOURCE = {
-    "all": ("build_time", "lifespan", "capital_cost", "learning_rate", "global_installed"),
+    "all": (
+        "build_time",
+        "permitting_share",
+        "lifespan",
+        "capital_cost",
+        "learning_rate",
+        "global_installed",
+    ),
     "fossil": ("variable_cost", "emission_factor", "headroom", "coverage_share"),
     "clean_dispatchable": ("variable_cost", "emission_factor", "headroom", "coverage_share"),
     "variable_renewable": ("variable_cost", "emission_factor", "headroom", "coverage_share"),

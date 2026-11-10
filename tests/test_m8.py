@@ -83,9 +83,9 @@ def test_a_tax_rise_reversed_before_the_vote_still_costs_votes(cfg):
     n = w.nations["AAA"]
     n.tax_change = 0.03
     for _ in range(3):
-        elections.track(w)
+        elections.track(cfg, w)
     n.tax_change = 0.0
-    elections.track(w)
+    elections.track(cfg, w)
     assert elections.term_tax_rise(w) == pytest.approx(0.03 * 3 / 4)
     assert elections.vote(cfg, w)["taxes"] < 0
 

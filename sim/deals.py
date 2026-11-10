@@ -124,7 +124,7 @@ def activate(cfg: Config, world: World, deal: Deal) -> None:
     cost = build_cost(cfg, world, deal)
     fin.capital -= cost
     source = deal.terms["source"]
-    online = world.t + int(cfg.src(source, "build_time"))
+    online = world.t + construction.build_time(cfg, host, source)
     if deal.type == "climate_loan":
         # The loan pays for clean capacity built in the host at the host's unit cost (M9: it
         # used to be cash the host need not spend, while the lender was credited anyway);

@@ -147,6 +147,8 @@ class Nation:
     # M5 shocks.
     disaster_loss: float = 0.0
     fossil_ban: float = 0.0
+    # M10: permitting reform level (0..1).
+    permitting: float = 0.0
     disruption: dict[str, float] = field(default_factory=dict)
     disruption_until: dict[str, float] = field(default_factory=dict)
 
@@ -160,7 +162,7 @@ class Nation:
         "cleantech_exports", "tariff_revenue", "trade_drag", "credit_balance", "credits_bought",
         "period_emissions", "exported_cut_rate", "tax_change", "build_rate", "retraining",
         "electrification", "methane_abatement", "forest_paid", "removals", "extra_demand",
-        "disaster_loss", "fossil_ban",
+        "disaster_loss", "fossil_ban", "permitting",
     )  # fmt: skip
     _FLOAT_MAPS = (
         "capacity", "subsidies", "tariffs", "supply", "fossil_production", "fossil_exports",

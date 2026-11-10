@@ -6,3 +6,6 @@ __pycache__/
 .ruff_cache/
 .DS_Store
 games/
+
+# Secrets (M10): API keys for the playtest runner live here, never in git
+.env

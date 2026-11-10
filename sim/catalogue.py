@@ -166,6 +166,16 @@ def catalogue(cfg: Config) -> dict[str, dict[str, Any]]:
             "cost": f"{pc}: {_t(cfg, 'actions.fossil_ban_pc'):g} to switch on",
             "example": {"type": "set_fossil_ban", "on": True},
         },
+        "set_permitting": {
+            "summary": "Permitting and zoning reform: new plants, grid and storage (yours, the "
+            "market's and deals') build faster, cutting part of each source's permitting time "
+            "(grid and wind most). Local opposition costs approval and votes, more the more "
+            "you build and the stronger your country's opposition (shown on the screen).",
+            "params": {"level": "0 (none) to 1 (full reform)"},
+            "cost": f"{pc}: {_t(cfg, 'permitting.pc_per_level'):g} per unit raised; lowering is "
+            "free",
+            "example": {"type": "set_permitting", "level": 0.5},
+        },
         "electrification_program": {
             "summary": "Electrify transport, heat and industry: raises how much of demand wind, "
             "solar and other clean power can serve.",

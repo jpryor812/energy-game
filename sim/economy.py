@@ -44,6 +44,12 @@ def baseline_disaster_loss(cfg: Config, nid: str) -> float:
     return min(1.0, chance) * 4 * cfg.tune(s + "disaster_gdp_loss")
 
 
+def permitting_opposition(cfg: Config, nid: str) -> float:
+    """How strongly a nation's public pushes back on permitting reform (M10)."""
+    spec = cfg.nat_spec(nid).get("permitting_opposition")
+    return spec["value"] if spec else cfg.tune("permitting.default_opposition")
+
+
 def growth_terms(cfg: Config, nid: str, n: Nation, t: int, dt: int = 1) -> dict[str, float]:
     share_short = n.shortfall / n.demand if n.demand > 0 else 0.0
     base_price = n.base.get("energy_price", 0.0)
@@ -172,6 +178,7 @@ def apply_growth(world: World, cfg: Config, dt: int) -> None:
             + cfg.tune(pol + "approval_price_hit") * terms["E"]
             + cfg.tune(pol + "approval_damage_hit") * terms["C"]
             + cfg.tune("actions.activity_approval_hit") * n.activity_cap
+            + cfg.tune("permitting.approval_hit") * n.permitting * permitting_opposition(cfg, nid)
         )
         pull = 1 - (1 - reversion) ** years
         n.approval = min(1.0, max(0.0, n.approval + pull * (baseline - n.approval) - hit * years))

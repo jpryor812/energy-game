@@ -274,6 +274,27 @@ slots:
     status: placeholder
     note: Most diplomatic slots that can be held, this quarter's included (M8). A year's worth.
 
+permitting:
+  max_cut:
+    value: 0.75
+    status: placeholder
+    note: M10 - at reform level 1, this share of each source's permitting time (permitting_share x build_time) is cut. Grid at full reform goes from 12 to 7 quarters, wind from 8 to 5. Design assumption.
+  pc_per_level:
+    value: 10
+    status: placeholder
+    note: M10 - political capital to raise permitting reform by one full level (0 -> 1); lowering it is free. The same as the fossil ban; most nations start with about 11.
+  vote_weight:
+    value: 0.4
+    status: placeholder
+    note: M10 - vote share lost per unit of (reform level x permitting opposition x share of energy demand completed per year), averaged over the term. Full reform with 10% of demand built a year costs about 0.04 of the vote at opposition 1.0. Design assumption.
+  approval_hit:
+    value: 0.03
+    status: placeholder
+    note: M10 - approval lost per year per unit of reform level x permitting opposition, while reform is on. 0.1 took the EU's approval from 0.53 to 0.18 in four years, a risk of collapse; 0.03 costs about 0.1.
+  default_opposition:
+    value: 1.0
+    status: placeholder
+    note: M10 - permitting opposition for nations that do not set one in countries.yaml.
 market:
   fast_horizon:
     value: 8

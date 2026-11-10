@@ -576,6 +576,30 @@ planning)").
      five years of 2025 emissions, after credits), and build times for grid, storage,
      factories and removal in the action list.
 
+## M10: permitting and zoning reform
+
+149. **Permitting reform** (`set_permitting`, level 0-1, decided with the user 2026-11-09).
+     Each source's build time includes a permitting share (data/techs.yaml: grid 0.6,
+     wind 0.5, hydro and other renewables 0.4, nuclear and solar 0.35, fossil and removal
+     0.3, storage 0.25); reform at level L cuts `permitting.max_cut` (0.75) x L of it. At
+     full reform grid takes 7 quarters instead of 12, wind 5 instead of 8. It applies to new
+     orders from the player, the market and deals in the nation, fossil plants included
+     unless a ban is on. Orders already placed keep their dates. Raising it costs
+     `permitting.pc_per_level` (10) political capital per level; lowering is free.
+150. **Local opposition** enters the vote (an addition to the purely economic vote, decided
+     with the user): reform level x the nation's permitting opposition x the share of energy
+     demand completed per year, averaged over the term, x `permitting.vote_weight` (0.4). It
+     also costs approval (`permitting.approval_hit`, 0.03 a year per unit of level x
+     opposition). Full reform from 2025 costs about 0.008-0.02 of the 2028 vote and 0.03-0.11
+     of approval, depending on the nation.
+151. **Permitting opposition by nation** (countries.yaml, design assumption set with the user,
+     unsourced): EU 1.3, USA 1.0, China 0.6, Russia, India and Vietnam 0.4; others 1.0
+     (`permitting.default_opposition`; AI nations do not use reform). It stands for how
+     strongly local consultation, legal challenge and project opposition push back.
+152. **Reform buys speed, not output.** The market builds the same volume either way, so
+     reform does not raise GDP by itself; it helps a player who needs capacity, grid or
+     deal plants sooner (curtailment, stocktakes, blackouts).
+
 ## Open questions
 
 - **AI overshoot.** Cheap clean energy leads several low-ambition nations to cut far past their

@@ -18,7 +18,7 @@ Seeds: [1, 2, 3, 4, 5, 6]. World difficulty: normal unless stated. 216 main runs
 
 ## 1. Determinism: PASS
 
-India, balanced, seed 1, run twice: `90b1a5bfb74c000a` / `90b1a5bfb74c000a`.
+India, balanced, seed 1, run twice: `49168b45f69cdcbe` / `49168b45f69cdcbe`.
 Byte-identical across machines is not tested here: the simulation uses only plain Python floats and SHA-256-seeded streams, so it should hold.
 
 ## 2. No dominant bot: PASS

@@ -72,9 +72,19 @@ def complete(n: Nation, t: int) -> dict[str, float]:
     return dict(done)
 
 
+def build_time(cfg: Config, n: Nation | None, source: str) -> int:
+    """Quarters to build `source` in nation `n`: the source's build time, less the part of its
+    permitting time that the nation's permitting reform cuts (M10). At least one quarter."""
+    base = cfg.src(source, "build_time")
+    if n is None or n.permitting <= 0:
+        return int(base)
+    cut = cfg.tune("permitting.max_cut") * n.permitting * cfg.src(source, "permitting_share")
+    return max(1, round(base * (1 - cut)))
+
+
 def queue(cfg: Config, n: Nation, source: str, amount: float, t: int) -> None:
     if amount > 0:
-        n.pipeline.append(Construction(source, amount, t + int(cfg.src(source, "build_time"))))
+        n.pipeline.append(Construction(source, amount, t + build_time(cfg, n, source)))
 
 
 COST_DRIVEN = ("coal", "gas", "oil", "other_renewables", "solar", "wind")
@@ -97,10 +107,11 @@ def market_sources(cfg: Config, nid: str) -> list[str]:
     return sorted(set(cfg.nat_spec(nid)["bau"]["mix"]) | set(cost_candidates(cfg, nid)))
 
 
-def horizon_quarters(cfg: Config, nid: str) -> int:
+def horizon_quarters(cfg: Config, nid: str, n: Nation | None = None) -> int:
     """Market orders are delivered this many quarters after they are placed: the slowest build
-    time among the sources it may build. Faster sources start later, so the mix arrives together."""
-    return max(int(cfg.src(s, "build_time")) for s in market_sources(cfg, nid))
+    time among the sources it may build (after `n`'s permitting reform, if given). Faster
+    sources start later, so the mix arrives together."""
+    return max(build_time(cfg, n, s) for s in market_sources(cfg, nid))
 
 
 def market_mix(cfg: Config, world: World, nid: str, n: Nation) -> dict[str, float]:
@@ -206,7 +217,7 @@ def split_gap(
     sources by their mix weights (or the cheapest fossil source if the mix has none)."""
     mix = market_mix(cfg, world, nid, n)
     if lead is not None:  # only sources that can be built in time (M9 short-range orders)
-        fast = {s: w for s, w in mix.items() if cfg.src(s, "build_time") <= lead}
+        fast = {s: w for s, w in mix.items() if build_time(cfg, n, s) <= lead}
         total_w = sum(fast.values())
         mix = {s: w / total_w for s, w in fast.items()} if total_w > 0 else {}
     if n.fossil_ban:  # no new fossil plants: their share goes to clean sources
@@ -230,7 +241,7 @@ def split_gap(
         if not fossil:
             options = [s for s in cost_candidates(cfg, nid) if energy.is_fossil(cfg, s)]
             if lead is not None:
-                options = [s for s in options if cfg.src(s, "build_time") <= lead]
+                options = [s for s in options if build_time(cfg, n, s) <= lead]
             if not options:
                 return alloc
             fossil = {min(options, key=lambda s: (tech.lcoe(cfg, world, n, s), s)): 1.0}
@@ -251,9 +262,10 @@ def market_build(cfg: Config, world: World, nid: str, n: Nation) -> None:
     """Order for delivery at the horizon, then (M9) fill any gap still expected within
     `market.fast_horizon` quarters with sources that can be built that quickly, so a sudden
     loss of capacity (a failed equity plant, retirements) does not leave years of blackouts."""
-    order(cfg, world, nid, n, world.t, world.t + horizon_quarters(cfg, nid))
+    horizon = horizon_quarters(cfg, nid, n)
+    order(cfg, world, nid, n, world.t, world.t + horizon)
     fast = int(cfg.tune("market.fast_horizon"))
-    if fast < horizon_quarters(cfg, nid):
+    if fast < horizon:
         order(cfg, world, nid, n, world.t, world.t + fast, fast=True)
 
 

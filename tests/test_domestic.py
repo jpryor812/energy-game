@@ -134,7 +134,8 @@ def test_elections_are_seeded_and_deterministic(cfg):
     a = runner.play(cfg, 1, "AAA", "balanced", until=20).elections
     b = runner.play(cfg, 1, "AAA", "balanced", until=20).elections
     assert a == b and a[0]["t"] == 15
-    assert set(a[0]["parts"]) == {"incumbency", "growth", "jobs", "prices", "taxes", "swing"}
+    parts = {"incumbency", "growth", "jobs", "prices", "taxes", "local_opposition", "swing"}
+    assert set(a[0]["parts"]) == parts
     other = runner.play(cfg, 7, "AAA", "balanced", until=20).elections
     assert other[0]["parts"]["swing"] != a[0]["parts"]["swing"]
 

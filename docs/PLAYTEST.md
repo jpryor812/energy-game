@@ -42,6 +42,10 @@ carbon prices, closing plants and tax rises) and can buy influence (spent on tal
 demand, choosing by cost: your carbon price, subsidies, tax credits and fossil ban change what
 they build. Your own `build_capacity` orders come on top.
 
+**Permitting reform** (`set_permitting`) makes new plants, grid and storage build faster, but
+local opposition costs approval and votes, more the more you build; how much depends on your
+country (shown on the screen).
+
 **Deals.** You can offer other nations clean-energy deals (loans, equipment on credit, energy as
 a service, equity) and answer offers in your inbox. Deals cut emissions abroad, earn returns and
 build trust; equity can be lost if the host becomes unreliable. A nation can host deal capacity

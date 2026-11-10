@@ -11,6 +11,9 @@ The vote is purely economic (decided with the user, 2026-11-08):
            like taxes: a price cut just before the vote counts only for its own quarters)
          - tax_weight x tax raised over the term, averaged over its quarters (M8: so a rise
            reversed just before the vote still counts for the quarters it was in force)
+         - permitting.vote_weight x local opposition (M10): permitting reform level x the
+           nation's permitting opposition x share of energy demand completed per year,
+           averaged over the term (building fast under reform draws a backlash)
          + a seeded swing (normal, `swing_sd`, from the "elections" RNG stream)
 
 Win at `threshold` or more. Losing ends the game: the player is voted out (decided with the user,
@@ -63,6 +66,7 @@ def start_term(world: World) -> None:
         "tax_sum": 0.0,
         "tax_quarters": 0.0,
         "price_sum": 0.0,
+        "opposition_sum": 0.0,
     } | {f"jobs_{k}": v for k, v in baseline.items()}
 
 
@@ -84,13 +88,32 @@ def term_price_rise(world: World) -> float:
     return world.nations[world.player].energy_price / start["price"] - 1
 
 
-def track(world: World) -> None:
+def local_opposition_now(cfg: Config, world: World) -> float:
+    """This quarter's backlash to permitting reform: level x opposition x the share of energy
+    demand completed per year (M10)."""
+    p = world.nations[world.player]
+    if p.permitting <= 0 or p.demand <= 0:
+        return 0.0
+    built = p.build_rate / p.demand
+    return p.permitting * economy.permitting_opposition(cfg, world.player) * built
+
+
+def term_opposition(world: World) -> float:
+    """Local opposition averaged over the term so far."""
+    start = world.term_start
+    q = start.get("tax_quarters", 0.0)
+    return start.get("opposition_sum", 0.0) / q if q > 0 else 0.0
+
+
+def track(cfg: Config, world: World) -> None:
     """Record this quarter's tax rate and energy price for the term averages."""
     start = world.term_start
     if "tax_sum" not in start:  # a save from before M8
         start["tax_sum"], start["tax_quarters"] = 0.0, 0.0
     start.setdefault("price_sum", 0.0)  # before M9
+    start.setdefault("opposition_sum", 0.0)  # before M10
     p = world.nations[world.player]
+    start["opposition_sum"] += local_opposition_now(cfg, world)
     start["tax_sum"] += p.tax_change - start["tax"]
     start["price_sum"] += p.energy_price / start["price"] - 1
     for k, v in p.jobs.items():
@@ -114,6 +137,7 @@ def vote(cfg: Config, world: World) -> dict[str, float]:
         "jobs": _e(cfg, "jobs_weight") * jobs.weighted_change(cfg, p, before, term_jobs(world)),
         "prices": -_e(cfg, "price_weight") * term_price_rise(world),
         "taxes": -_e(cfg, "tax_weight") * term_tax_rise(world),
+        "local_opposition": -cfg.tune("permitting.vote_weight") * term_opposition(world),
         "swing": rng.stream(world.seed, "elections", world.t, nid).gauss(0, _e(cfg, "swing_sd")),
     }
     return parts
@@ -124,7 +148,7 @@ def run(cfg: Config, world: World) -> dict[str, Any] | None:
     player is still in office; return a log."""
     if world.player is None or not in_power(world):
         return None
-    track(world)
+    track(cfg, world)
     if not due(cfg, world.t):
         return None
     parts = vote(cfg, world)
