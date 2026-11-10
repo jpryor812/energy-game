@@ -263,7 +263,8 @@ def observe(game: Game) -> dict[str, Any]:
                 "permitting": _r(n.permitting),
                 "permitting_opposition": economy.permitting_opposition(cfg, me),
                 "build_times": {
-                    s: construction.build_time(cfg, n, s) for s in ("grid", "wind", "solar")
+                    s: construction.build_time(cfg, n, s)
+                    for s in ("grid", "onshore_wind", "offshore_wind", "solar")
                 },
             },
         },

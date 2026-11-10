@@ -78,7 +78,9 @@ def test_curtailment_beyond_absorb_limit(cfg, world):
     d = energy.dispatch(cfg, n, energy.base_demand(n))
     assert d.curtailment > 0
     limit = energy.vre_absorb_limit(cfg, n, d.demand)
-    assert d.supply["solar"] + d.supply["wind"] == pytest.approx(limit)
+    assert d.supply["solar"] + d.supply["onshore_wind"] + d.supply[
+        "offshore_wind"
+    ] == pytest.approx(limit)
 
 
 def test_season_factor_averages_to_one_over_a_year(cfg):

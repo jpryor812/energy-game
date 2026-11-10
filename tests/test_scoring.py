@@ -86,8 +86,9 @@ def test_bonuses(cfg, noop_world):
         w.history[i]["nations"]["BBB"]["emissions"] = 0.0
     for i in range(20, 24):
         w.history[i]["nations"]["AAA"]["emissions"] = 0.0
-    w.nations["BBB"].emissions = 0.5 * w.nations["BBB"].base["emissions"]
-    w.nations["AAA"].emissions = 0.9 * w.nations["AAA"].base["emissions"]
+    for h in w.history[-4:]:  # the reduction race reads the last four quarters (M8)
+        h["nations"]["BBB"]["emissions"] = 0.5 * w.nations["BBB"].base["emissions"]
+        h["nations"]["AAA"]["emissions"] = 0.9 * w.nations["AAA"].base["emissions"]
     b = scoring.bonuses(cfg, w)
     assert "first_net_zero" in b["BBB"] and "first_net_zero" not in b["AAA"]
     assert "largest_reduction" in b["BBB"]

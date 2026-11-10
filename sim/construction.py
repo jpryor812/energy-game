@@ -87,15 +87,29 @@ def queue(cfg: Config, n: Nation, source: str, amount: float, t: int) -> None:
         n.pipeline.append(Construction(source, amount, t + build_time(cfg, n, source)))
 
 
-COST_DRIVEN = ("coal", "gas", "oil", "other_renewables", "solar", "wind")
+COST_DRIVEN = (
+    "coal", "gas", "oil", "bioenergy", "geothermal", "solar", "onshore_wind", "offshore_wind",
+)  # fmt: skip
+
+
+NEEDS_RESOURCE = ("geothermal",)  # M11: buildable only where the nation already uses it
+
+
+def has_resource(cfg: Config, nid: str, source: str) -> bool:
+    """Whether the nation can build `source` at all: conventional geothermal needs suitable
+    ground, which we take as the nation already using some (M11)."""
+    if source not in NEEDS_RESOURCE:
+        return True
+    return cfg.nat(nid, f"start.energy.{source}") > 0
 
 
 def cost_candidates(cfg: Config, nid: str) -> list[str]:
     """Sources the market may pick on cost. Nuclear and hydro are policy-driven and appear only
-    through the trend mix; coal only where the nation already uses it."""
+    through the trend mix; coal only where the nation already uses it; geothermal only where it
+    has the resource."""
     out = []
     for s in COST_DRIVEN:
-        if s not in cfg.energy_source_ids:
+        if s not in cfg.energy_source_ids or not has_resource(cfg, nid, s):
             continue
         if s == "coal" and cfg.nat(nid, "start.energy.coal") <= 0:
             continue
@@ -299,6 +313,6 @@ def apply(world: World, cfg: Config, dt: int) -> dict[str, float]:
             if s in clean:
                 n.clean_built += amount
         market_build(cfg, world, nid, n)
-    costs = {s: tech.unit_cost(cfg, world, s) for s in trade.EQUIPMENT}
+    costs = {s: tech.unit_cost(cfg, world, s) for s in trade.EQUIPMENT_OF}
     trade.apply_equipment(cfg, world, by_nation, costs, dt)
     return dict(completed)

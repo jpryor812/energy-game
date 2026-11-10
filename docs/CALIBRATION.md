@@ -31,29 +31,29 @@ the balance report plays with disasters and disruptions on.
 
 | Metric | 2025 | 2030 | 2040 | 2049 |
 |---|---|---|---|---|
-| Global CO2 (Gt/yr) | 43.6 | 41.8 | 39.4 | 38.7 |
-| Warming, end of year (degC) | 1.39 | 1.53 | 1.77 | 1.96 |
+| Global CO2 (Gt/yr) | 43.0 | 40.2 | 37.8 | 37.2 |
+| Warming, end of year (degC) | 1.40 | 1.54 | 1.77 | 1.94 |
 
 ### Nations
 
 | Nation | GDP 2025 (T$) | GDP 2049 | Growth 2025-49 (%/yr) | CO2 2025 (Mt) | CO2 2030 | CO2 2040 | CO2 2049 | Fossil share 2025 | 2049 | Max shortfall |
 |---|---|---|---|---|---|---|---|---|---|---|
-| AUS | 1.86 | 2.77 | 1.7 | 363 | 321 | 256 | 218 | 84% | 48% | 0.0% |
-| BRA | 2.31 | 3.65 | 1.9 | 435 | 432 | 427 | 476 | 48% | 29% | 0.0% |
-| CAN | 2.34 | 3.27 | 1.4 | 502 | 446 | 359 | 303 | 66% | 49% | 0.0% |
-| CHN | 20.12 | 43.60 | 3.3 | 11,531 | 11,286 | 10,720 | 10,169 | 79% | 54% | 0.0% |
-| EUU | 21.49 | 28.70 | 1.2 | 2,288 | 1,882 | 1,223 | 858 | 66% | 35% | 0.0% |
-| GBR | 4.05 | 5.48 | 1.3 | 300 | 247 | 168 | 121 | 72% | 44% | 0.0% |
-| IDN | 1.49 | 3.85 | 4.0 | 788 | 909 | 1,235 | 1,652 | 88% | 57% | 0.0% |
-| IND | 4.08 | 14.49 | 5.4 | 3,036 | 3,387 | 4,222 | 4,997 | 88% | 59% | 0.0% |
-| JPN | 4.47 | 5.19 | 0.6 | 926 | 811 | 612 | 471 | 82% | 54% | 0.0% |
-| MEX | 1.85 | 2.62 | 1.5 | 428 | 393 | 338 | 304 | 89% | 57% | 0.0% |
-| NGA | 0.30 | 0.63 | 3.2 | 113 | 115 | 130 | 156 | 94% | 55% | 0.0% |
-| RUS | 2.59 | 3.06 | 0.7 | 1,674 | 1,620 | 1,512 | 1,421 | 87% | 66% | 0.0% |
-| SAU | 1.30 | 2.41 | 2.6 | 655 | 645 | 622 | 604 | 98% | 70% | 0.0% |
-| USA | 31.27 | 48.75 | 1.9 | 4,629 | 4,019 | 3,101 | 2,542 | 79% | 49% | 0.0% |
-| VNM | 0.52 | 1.63 | 4.9 | 330 | 385 | 554 | 814 | 76% | 41% | 0.0% |
-| ZAF | 0.43 | 0.58 | 1.2 | 433 | 392 | 314 | 260 | 94% | 59% | 0.0% |
+| AUS | 1.86 | 2.77 | 1.7 | 355 | 308 | 243 | 207 | 82% | 45% | 0.0% |
+| BRA | 2.31 | 3.66 | 1.9 | 420 | 393 | 381 | 432 | 46% | 26% | 0.0% |
+| CAN | 2.34 | 3.26 | 1.4 | 491 | 429 | 344 | 292 | 65% | 48% | 0.0% |
+| CHN | 20.12 | 43.68 | 3.3 | 11,400 | 10,825 | 10,219 | 9,804 | 77% | 51% | 0.0% |
+| EUU | 21.49 | 28.79 | 1.2 | 2,217 | 1,729 | 1,134 | 779 | 64% | 32% | 0.0% |
+| GBR | 4.05 | 5.49 | 1.3 | 291 | 233 | 159 | 114 | 70% | 41% | 0.0% |
+| IDN | 1.49 | 3.85 | 4.0 | 778 | 858 | 1,145 | 1,534 | 87% | 53% | 0.0% |
+| IND | 4.08 | 14.52 | 5.4 | 3,006 | 3,262 | 4,063 | 4,898 | 87% | 58% | 0.0% |
+| JPN | 4.47 | 5.20 | 0.6 | 904 | 765 | 568 | 436 | 80% | 50% | 0.0% |
+| MEX | 1.85 | 2.63 | 1.5 | 420 | 373 | 316 | 283 | 88% | 55% | 0.0% |
+| NGA | 0.30 | 0.63 | 3.1 | 111 | 111 | 125 | 149 | 93% | 54% | 0.0% |
+| RUS | 2.59 | 3.03 | 0.7 | 1,650 | 1,556 | 1,425 | 1,331 | 86% | 63% | 0.0% |
+| SAU | 1.30 | 2.38 | 2.5 | 648 | 628 | 597 | 582 | 97% | 69% | 0.0% |
+| USA | 31.27 | 48.81 | 1.9 | 4,523 | 3,830 | 2,937 | 2,350 | 77% | 46% | 0.0% |
+| VNM | 0.52 | 1.64 | 5.0 | 325 | 364 | 534 | 802 | 74% | 40% | 0.0% |
+| ZAF | 0.43 | 0.58 | 1.2 | 427 | 376 | 301 | 250 | 92% | 57% | 0.0% |
 
 ## Against references
 
@@ -63,7 +63,7 @@ the balance report plays with disasters and disruptions on.
 | Nation fossil CO2 at t=0 | Each nation's 2024 GCB value | Exact (by construction) | Match. 2025 annual values differ slightly due to growth and seasonality. |
 | Warming rate 2025-2035 | 0.27 [0.2-0.4] degC/decade (Forster et al. 2025) | 0.27 degC/decade | Match. The clean-air aerosol trend was set for this. |
 | Energy CO2 2049 | ~38 Gt, roughly flat (IEA WEO 2025 Current Policies) | ~33 Gt, slowly falling | About 13% low: since M4b the rest of the world decarbonises with the 16 nations. |
-| Warming 2049 | Passes 2 degC around 2050 (IEA WEO 2025 Current Policies) | 1.96 degC | Consistent. |
+| Warming 2049 | Passes 2 degC around 2050 (IEA WEO 2025 Current Policies) | 1.94 degC | Consistent. |
 | Real GDP growth 2025-2030 | IMF WEO projections | Within 0.5 pp for every nation | Match. |
 | Energy shortfall | None expected without shocks | Below 1% for every nation, every quarter | Match. |
 
@@ -94,31 +94,31 @@ M4b also builds factories, abates methane, funds forests and builds carbon remov
 
 | Metric | 2025 | 2030 | 2040 | 2049 |
 |---|---|---|---|---|
-| Global CO2 (Gt/yr) | 42.0 | 33.1 | 22.5 | 6.4 |
+| Global CO2 (Gt/yr) | 41.9 | 33.0 | 22.1 | 6.2 |
 | Warming, end of year (degC) | 1.40 | 1.50 | 1.59 | 1.65 |
 
 ### Nations
 
 | Nation | GDP 2025 (T$) | GDP 2049 | Growth 2025-49 (%/yr) | CO2 2025 (Mt) | CO2 2030 | CO2 2040 | CO2 2049 | Fossil share 2025 | 2049 | Max shortfall |
 |---|---|---|---|---|---|---|---|---|---|---|
-| AUS | 1.86 | 2.81 | 1.7 | 346 | 217 | 82 | 21 | 81% | 25% | 0.0% |
-| BRA | 2.31 | 3.69 | 2.0 | 417 | 327 | 216 | -66 | 46% | 12% | 0.0% |
-| CAN | 2.34 | 3.21 | 1.3 | 480 | 304 | 206 | 37 | 64% | 22% | 0.0% |
-| CHN | 20.12 | 43.42 | 3.3 | 11,296 | 9,850 | 7,143 | 706 | 77% | 6% | 0.0% |
-| EUU | 21.40 | 29.42 | 1.3 | 2,184 | 1,345 | 419 | -692 | 64% | 1% | 0.0% |
-| GBR | 4.03 | 5.31 | 1.2 | 290 | 116 | 61 | -80 | 70% | 6% | 0.0% |
-| IDN | 1.49 | 3.90 | 4.1 | 760 | 685 | 699 | 620 | 87% | 39% | 0.0% |
-| IND | 4.08 | 14.78 | 5.5 | 2,976 | 2,771 | 2,682 | 401 | 87% | 6% | 0.0% |
-| JPN | 4.47 | 5.33 | 0.7 | 895 | 571 | 182 | 61 | 80% | 7% | 0.0% |
-| MEX | 1.85 | 2.72 | 1.6 | 417 | 290 | 76 | 23 | 88% | 6% | 0.0% |
-| NGA | 0.30 | 0.62 | 3.1 | 109 | 87 | 64 | 14 | 93% | 6% | 0.0% |
-| RUS | 2.59 | 2.90 | 0.5 | 1,630 | 1,212 | 1,150 | 878 | 86% | 45% | 0.0% |
-| SAU | 1.30 | 2.28 | 2.4 | 638 | 463 | 317 | 261 | 97% | 43% | 0.0% |
-| USA | 31.27 | 49.55 | 1.9 | 4,480 | 3,251 | 1,314 | 132 | 77% | 6% | 0.0% |
-| VNM | 0.51 | 1.67 | 5.0 | 316 | 321 | 273 | 243 | 74% | 16% | 0.0% |
-| ZAF | 0.43 | 0.54 | 0.9 | 422 | 319 | 250 | 106 | 92% | 30% | 0.0% |
+| AUS | 1.86 | 2.81 | 1.7 | 346 | 216 | 83 | 24 | 81% | 23% | 0.0% |
+| BRA | 2.31 | 3.69 | 2.0 | 416 | 318 | 82 | -129 | 46% | 1% | 0.0% |
+| CAN | 2.34 | 3.27 | 1.4 | 477 | 307 | 190 | 54 | 64% | 23% | 0.0% |
+| CHN | 20.12 | 43.54 | 3.3 | 11,292 | 9,854 | 7,029 | 676 | 77% | 6% | 0.0% |
+| EUU | 21.40 | 29.14 | 1.3 | 2,182 | 1,299 | 526 | -655 | 64% | 6% | 0.0% |
+| GBR | 4.03 | 5.35 | 1.2 | 290 | 117 | 62 | -81 | 70% | 6% | 0.0% |
+| IDN | 1.49 | 3.94 | 4.1 | 759 | 655 | 857 | 132 | 86% | 6% | 0.0% |
+| IND | 4.08 | 14.80 | 5.5 | 2,973 | 2,772 | 2,656 | 865 | 87% | 12% | 0.0% |
+| JPN | 4.47 | 5.33 | 0.7 | 894 | 564 | 187 | 47 | 80% | 6% | 0.0% |
+| MEX | 1.85 | 2.72 | 1.6 | 416 | 283 | 76 | 22 | 88% | 6% | 0.0% |
+| NGA | 0.30 | 0.62 | 3.1 | 109 | 91 | 72 | 27 | 93% | 11% | 0.0% |
+| RUS | 2.59 | 2.85 | 0.4 | 1,628 | 1,186 | 1,114 | 776 | 86% | 40% | 0.0% |
+| SAU | 1.30 | 2.28 | 2.4 | 638 | 468 | 345 | 210 | 97% | 34% | 0.0% |
+| USA | 31.27 | 49.75 | 2.0 | 4,475 | 3,252 | 1,070 | 313 | 77% | 6% | 0.0% |
+| VNM | 0.51 | 1.70 | 5.1 | 316 | 320 | 258 | 265 | 74% | 18% | 0.0% |
+| ZAF | 0.43 | 0.57 | 1.2 | 422 | 319 | 212 | 20 | 92% | 6% | 0.0% |
 
-Warming reaches 1.65 degC in 2049 (seed 1, no shocks, M9), against 1.96 degC with no
+Warming reaches 1.65 degC in 2049 (seed 1, no shocks, M11), against 1.94 degC with no
 action. By 2049 methane is down to
 about half its 2025 level, aerosols (and their cooling) are nearly gone, the forest fund has
 turned land use slightly negative, and AI nations run about 3.5 Gt/yr of carbon removal.
@@ -199,6 +199,11 @@ M9 (6 seeds) again passes 6 of 7, viable strategies TUNE; balanced and deal-make
 hosts can take, and the market's 3% reserve take global CO2 in 2049 from 9.9 to 6.4 Gt; China
 ends at 0.7 Gt and India at 0.4 Gt, but warming still ends at 1.65 degC. No nation has a
 blackout above 0.1% (Vietnam had 4-5% before the reserve, item 146).
+
+M11 (6 seeds): splitting wind into onshore and offshore and other renewables into bioenergy and
+geothermal leaves the picture unchanged: 6 of 7 pass, viable strategies TUNE, balanced and
+deal-maker bots complete 86% and 92% of games. Business-as-usual warming in 2049 moves from
+1.96 to 1.94 degC; the AI world still ends at 1.65 degC.
 
 ## Placeholders that matter most for balance
 

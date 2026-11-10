@@ -154,7 +154,7 @@ def test_removal_cost_reports_its_floor(cfg):
     assert not tech.at_floor(cfg, w, "carbon_removal")
     w.tech_state["carbon_removal"] = 1e6
     assert tech.at_floor(cfg, w, "carbon_removal")
-    assert not tech.at_floor(cfg, w, "wind")  # no floor set
+    assert not tech.at_floor(cfg, w, "onshore_wind")  # no floor set
 
 
 def test_warming_must_be_falling_for_a_good_world(cfg):
@@ -185,7 +185,7 @@ def test_free_actions_work_with_negative_capital(cfg):
         "AAA",
         [
             {"type": "set_tax_rate", "level": 0.0},
-            {"type": "build_capacity", "source": "wind", "amount": 0.1},
+            {"type": "build_capacity", "source": "onshore_wind", "amount": 0.1},
         ],
     )
     assert free["ok"], free

@@ -110,3 +110,6 @@ Each run leaves `notes.md`, `report.md` and `transcript.jsonl` in its folder. `-
 - **M10 (permitting reform):** done. `set_permitting` speeds up builds (grid and wind most)
   at a cost in approval and a local-opposition term in the vote that varies by country, and
   `scripts/playtest_agent.py` runs a playtest agent through OpenRouter (key in `.env`).
+- **M11 (more energy sources):** done. Wind is split into onshore and offshore wind and other
+  renewables into bioenergy and geothermal (13 sources in all). The country split shares are
+  approximate and marked as placeholders until checked against Ember or IRENA.

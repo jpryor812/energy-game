@@ -28,9 +28,11 @@ nations:
         gas: {value: 32.479171, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         nuclear: {value: 7.227536, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         hydro: {value: 2.096014, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        wind: {value: 4.021765, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
+        onshore_wind: {value: 4.021765, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        offshore_wind: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 2.688844, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        other_renewables: {value: 3.269189, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other)."}
+        bioenergy: {value: 3.125345, status: "placeholder", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0.044 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        geothermal: {value: 0.143844, status: "placeholder", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0.044 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       production:
         coal: {value: 10.612228, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
         oil: {value: 35.918582, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
@@ -53,9 +55,10 @@ nations:
     bau:
       mix:
         gas: {value: 0.3485, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        other_renewables: {value: 0.0683, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        bioenergy: {value: 0.0653, status: "placeholder", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute other_renewables figure: 0.044 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        geothermal: {value: 0.003, status: "placeholder", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute other_renewables figure: 0.044 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 0.3264, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        wind: {value: 0.2568, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        onshore_wind: {value: 0.2568, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       retire_rate:
         coal: {value: 0.06967, status: "calibrated", source: "energy_institute", note: "Observed annual decline in use 2019-2024."}
   GBR:
@@ -79,9 +82,11 @@ nations:
         gas: {value: 2.226859, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         nuclear: {value: 0.356382, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         hydro: {value: 0.050612, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        wind: {value: 0.738068, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
+        onshore_wind: {value: 0.332131, status: "placeholder", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0.55 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        offshore_wind: {value: 0.405937, status: "placeholder", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0.55 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 0.129859, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        other_renewables: {value: 0.623218, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other)."}
+        bioenergy: {value: 0.623218, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        geothermal: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       production:
         coal: {value: 0.002995, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
         oil: {value: 1.27273, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
@@ -99,9 +104,10 @@ nations:
       vulnerability: {value: 0.6, status: "placeholder", note: "Unsourced approximate relative index (1 = typical)."}
     bau:
       mix:
-        other_renewables: {value: 0.2425, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        bioenergy: {value: 0.2425, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 0.0772, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        wind: {value: 0.6803, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        onshore_wind: {value: 0.3061, status: "placeholder", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute wind figure: 0.55 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        offshore_wind: {value: 0.3742, status: "placeholder", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute wind figure: 0.55 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       retire_rate:
         coal: {value: 0.073814, status: "calibrated", source: "energy_institute", note: "Observed annual decline in use 2019-2024."}
         gas: {value: 0.045008, status: "calibrated", source: "energy_institute", note: "Observed annual decline in use 2019-2024."}
@@ -127,9 +133,11 @@ nations:
         gas: {value: 3.273977, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         nuclear: {value: 0.745513, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         hydro: {value: 0.697601, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        wind: {value: 0.101326, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
+        onshore_wind: {value: 0.098286, status: "placeholder", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0.03 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        offshore_wind: {value: 0.00304, status: "placeholder", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0.03 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 0.8491, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        other_renewables: {value: 0.64463, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other)."}
+        bioenergy: {value: 0.618845, status: "placeholder", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0.04 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        geothermal: {value: 0.025785, status: "placeholder", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0.04 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       production:
         coal: {value: 0.013147, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
         oil: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
@@ -151,9 +159,11 @@ nations:
       mix:
         hydro: {value: 0.0555, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
         nuclear: {value: 0.2293, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        other_renewables: {value: 0.3111, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        bioenergy: {value: 0.2987, status: "placeholder", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute other_renewables figure: 0.04 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        geothermal: {value: 0.0124, status: "placeholder", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute other_renewables figure: 0.04 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 0.3543, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        wind: {value: 0.0498, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        onshore_wind: {value: 0.0483, status: "placeholder", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute wind figure: 0.03 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        offshore_wind: {value: 0.0015, status: "placeholder", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute wind figure: 0.03 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       retire_rate:
         gas: {value: 0.034014, status: "calibrated", source: "energy_institute", note: "Observed annual decline in use 2019-2024."}
         oil: {value: 0.033354, status: "calibrated", source: "energy_institute", note: "Observed annual decline in use 2019-2024."}
@@ -179,9 +189,11 @@ nations:
         gas: {value: 11.62841, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         nuclear: {value: 5.703282, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         hydro: {value: 3.23564, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        wind: {value: 4.298652, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
+        onshore_wind: {value: 3.739827, status: "placeholder", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0.13 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        offshore_wind: {value: 0.558825, status: "placeholder", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0.13 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 2.659709, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        other_renewables: {value: 3.149903, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other)."}
+        bioenergy: {value: 3.090055, status: "placeholder", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0.019 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        geothermal: {value: 0.059848, status: "placeholder", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0.019 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       production:
         coal: {value: 2.943518, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
         oil: {value: 0.672278, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
@@ -205,7 +217,8 @@ nations:
       mix:
         hydro: {value: 0.1361, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
         solar: {value: 0.517, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        wind: {value: 0.3469, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        onshore_wind: {value: 0.3018, status: "placeholder", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute wind figure: 0.13 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        offshore_wind: {value: 0.0451, status: "placeholder", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute wind figure: 0.13 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       retire_rate:
         coal: {value: 0.0843, status: "calibrated", source: "energy_institute", note: "Observed annual decline in use 2019-2024."}
         gas: {value: 0.038268, status: "calibrated", source: "energy_institute", note: "Observed annual decline in use 2019-2024."}
@@ -232,9 +245,11 @@ nations:
         gas: {value: 15.638087, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         nuclear: {value: 3.958682, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         hydro: {value: 11.891012, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        wind: {value: 8.754498, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
+        onshore_wind: {value: 7.879048, status: "placeholder", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0.1 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        offshore_wind: {value: 0.87545, status: "placeholder", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0.1 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 7.36718, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        other_renewables: {value: 4.316008, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other)."}
+        bioenergy: {value: 4.316008, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        geothermal: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       production:
         coal: {value: 94.482083, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
         oil: {value: 8.913319, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
@@ -261,9 +276,10 @@ nations:
         hydro: {value: 0.0174, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
         nuclear: {value: 0.0269, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
         oil: {value: 0.1219, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        other_renewables: {value: 0.0544, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        bioenergy: {value: 0.0544, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 0.1696, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        wind: {value: 0.1624, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        onshore_wind: {value: 0.1462, status: "placeholder", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute wind figure: 0.1 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        offshore_wind: {value: 0.0162, status: "placeholder", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute wind figure: 0.1 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
   BRA:
     name: "Brazil"
     playable: false
@@ -285,9 +301,11 @@ nations:
         gas: {value: 1.1291, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         nuclear: {value: 0.138535, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         hydro: {value: 3.628224, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        wind: {value: 0.952625, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
+        onshore_wind: {value: 0.952625, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        offshore_wind: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 0.626227, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        other_renewables: {value: 1.961939, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other)."}
+        bioenergy: {value: 1.961939, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        geothermal: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       production:
         coal: {value: 0.107356, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
         oil: {value: 7.62318, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
@@ -307,9 +325,9 @@ nations:
       mix:
         hydro: {value: 0.0536, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
         oil: {value: 0.2147, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        other_renewables: {value: 0.0706, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        bioenergy: {value: 0.0706, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 0.3672, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        wind: {value: 0.2939, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        onshore_wind: {value: 0.2939, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       retire_rate:
         coal: {value: 0.038121, status: "calibrated", source: "energy_institute", note: "Observed annual decline in use 2019-2024."}
   AUS:
@@ -333,9 +351,11 @@ nations:
         gas: {value: 1.331726, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         nuclear: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         hydro: {value: 0.112824, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        wind: {value: 0.287456, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
+        onshore_wind: {value: 0.287456, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        offshore_wind: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 0.440888, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        other_renewables: {value: 0.090212, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other)."}
+        bioenergy: {value: 0.090212, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        geothermal: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       production:
         coal: {value: 11.817266, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
         oil: {value: 0.624334, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
@@ -354,9 +374,9 @@ nations:
     bau:
       mix:
         oil: {value: 0.126, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        other_renewables: {value: 0.0321, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        bioenergy: {value: 0.0321, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 0.597, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        wind: {value: 0.2449, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        onshore_wind: {value: 0.2449, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       retire_rate:
         coal: {value: 0.027558, status: "calibrated", source: "energy_institute", note: "Observed annual decline in use 2019-2024."}
         gas: {value: 0.034351, status: "calibrated", source: "energy_institute", note: "Observed annual decline in use 2019-2024."}
@@ -381,9 +401,11 @@ nations:
         gas: {value: 4.37337, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         nuclear: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         hydro: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        wind: {value: 0.013982, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
+        onshore_wind: {value: 0.013982, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        offshore_wind: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 0.072263, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        other_renewables: {value: 0.005274, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other)."}
+        bioenergy: {value: 0.005274, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        geothermal: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       production:
         coal: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
         oil: {value: 21.359743, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
@@ -404,9 +426,9 @@ nations:
         coal: {value: 0.0017, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
         gas: {value: 0.3198, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
         oil: {value: 0.6015, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        other_renewables: {value: 0.0044, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        bioenergy: {value: 0.0044, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 0.0606, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        wind: {value: 0.012, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        onshore_wind: {value: 0.012, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
   RUS:
     name: "Russia"
     playable: true
@@ -429,9 +451,11 @@ nations:
         gas: {value: 17.172846, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         nuclear: {value: 1.894082, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         hydro: {value: 1.848618, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        wind: {value: 0.040104, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
+        onshore_wind: {value: 0.040104, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        offshore_wind: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 0.025672, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        other_renewables: {value: 0.181879, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other)."}
+        bioenergy: {value: 0.178241, status: "placeholder", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0.02 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        geothermal: {value: 0.003638, status: "placeholder", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0.02 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       production:
         coal: {value: 9.119401, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
         oil: {value: 22.038606, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
@@ -454,9 +478,10 @@ nations:
         hydro: {value: 0.0477, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
         nuclear: {value: 0.013, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
         oil: {value: 0.354, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        other_renewables: {value: 0.007, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        bioenergy: {value: 0.0069, status: "placeholder", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute other_renewables figure: 0.02 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        geothermal: {value: 0.0001, status: "placeholder", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute other_renewables figure: 0.02 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 0.0069, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        wind: {value: 0.0153, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        onshore_wind: {value: 0.0153, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
   IND:
     name: "India"
     playable: true
@@ -479,9 +504,11 @@ nations:
         gas: {value: 2.530145, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         nuclear: {value: 0.48033, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         hydro: {value: 1.374394, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        wind: {value: 0.715997, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
+        onshore_wind: {value: 0.715997, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        offshore_wind: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 1.200766, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        other_renewables: {value: 0.637322, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other)."}
+        bioenergy: {value: 0.637322, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        geothermal: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       production:
         coal: {value: 18.054536, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
         oil: {value: 1.376874, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
@@ -506,9 +533,9 @@ nations:
         gas: {value: 0.0532, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
         nuclear: {value: 0.0104, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
         oil: {value: 0.1142, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        other_renewables: {value: 0.0275, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        bioenergy: {value: 0.0275, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 0.1039, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        wind: {value: 0.0203, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        onshore_wind: {value: 0.0203, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
   IDN:
     name: "Indonesia"
     playable: false
@@ -530,9 +557,11 @@ nations:
         gas: {value: 1.701781, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         nuclear: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         hydro: {value: 0.232567, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        wind: {value: 0.004234, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
+        onshore_wind: {value: 0.004234, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        offshore_wind: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 0.008122, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        other_renewables: {value: 0.91314, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other)."}
+        bioenergy: {value: 0.757906, status: "placeholder", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0.17 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        geothermal: {value: 0.155234, status: "placeholder", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0.17 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       production:
         coal: {value: 16.971181, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
         oil: {value: 1.25267, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
@@ -554,7 +583,8 @@ nations:
         gas: {value: 0.0896, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
         hydro: {value: 0.0167, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
         oil: {value: 0.0327, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        other_renewables: {value: 0.1603, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        bioenergy: {value: 0.133, status: "placeholder", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute other_renewables figure: 0.17 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        geothermal: {value: 0.0273, status: "placeholder", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute other_renewables figure: 0.17 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 0.0027, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
   VNM:
     name: "Vietnam"
@@ -578,9 +608,11 @@ nations:
         gas: {value: 0.219557, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         nuclear: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         hydro: {value: 0.779033, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        wind: {value: 0.111924, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
+        onshore_wind: {value: 0.098493, status: "placeholder", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0.12 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        offshore_wind: {value: 0.013431, status: "placeholder", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0.12 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 0.227081, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        other_renewables: {value: 0.080266, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other)."}
+        bioenergy: {value: 0.080266, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        geothermal: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       production:
         coal: {value: 1.027616, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
         oil: {value: 0.356044, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
@@ -603,9 +635,10 @@ nations:
         coal: {value: 0.3692, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
         hydro: {value: 0.1726, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
         oil: {value: 0.1633, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        other_renewables: {value: 0.0316, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        bioenergy: {value: 0.0316, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 0.1674, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        wind: {value: 0.0959, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        onshore_wind: {value: 0.0844, status: "placeholder", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute wind figure: 0.12 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        offshore_wind: {value: 0.0115, status: "placeholder", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute wind figure: 0.12 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       retire_rate:
         gas: {value: 0.091294, status: "calibrated", source: "energy_institute", note: "Observed annual decline in use 2019-2024."}
   ZAF:
@@ -629,9 +662,11 @@ nations:
         gas: {value: 0.171756, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         nuclear: {value: 0.068486, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         hydro: {value: 0.009659, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        wind: {value: 0.097463, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
+        onshore_wind: {value: 0.097463, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        offshore_wind: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 0.057953, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        other_renewables: {value: 0.020444, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other)."}
+        bioenergy: {value: 0.020444, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        geothermal: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       production:
         coal: {value: 5.562713, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
         oil: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
@@ -651,9 +686,9 @@ nations:
       mix:
         gas: {value: 0.2427, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
         hydro: {value: 0.0404, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        other_renewables: {value: 0.0209, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        bioenergy: {value: 0.0209, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 0.1886, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        wind: {value: 0.5074, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        onshore_wind: {value: 0.5074, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       retire_rate:
         nuclear: {value: 0.103232, status: "calibrated", source: "energy_institute", note: "Observed annual decline in use 2019-2024."}
   NGA:
@@ -676,10 +711,12 @@ nations:
         oil: {value: 1.100317, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Derived: fuel CO2 2024 / world emission factor; hydro, solar from 2023 electricity."}
         gas: {value: 0.755715, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Derived: fuel CO2 2024 / world emission factor; hydro, solar from 2023 electricity."}
         nuclear: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Derived: fuel CO2 2024 / world emission factor; hydro, solar from 2023 electricity."}
-        wind: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Derived: fuel CO2 2024 / world emission factor; hydro, solar from 2023 electricity."}
+        onshore_wind: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Derived: fuel CO2 2024 / world emission factor; hydro, solar from 2023 electricity. M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        offshore_wind: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Derived: fuel CO2 2024 / world emission factor; hydro, solar from 2023 electricity. M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         hydro: {value: 0.080338, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Derived: fuel CO2 2024 / world emission factor; hydro, solar from 2023 electricity."}
         solar: {value: 0.000952, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Derived: fuel CO2 2024 / world emission factor; hydro, solar from 2023 electricity."}
-        other_renewables: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other)."}
+        bioenergy: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        geothermal: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       production:
         coal: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
         oil: {value: 3.303133, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
@@ -721,9 +758,11 @@ nations:
         gas: {value: 4.627274, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         nuclear: {value: 0.750449, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         hydro: {value: 3.013441, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        wind: {value: 0.411188, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
+        onshore_wind: {value: 0.411188, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        offshore_wind: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 0.082681, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        other_renewables: {value: 0.460037, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other)."}
+        bioenergy: {value: 0.460037, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        geothermal: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       production:
         coal: {value: 1.14336, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
         oil: {value: 12.139463, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
@@ -743,7 +782,7 @@ nations:
       mix:
         gas: {value: 0.6799, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
         solar: {value: 0.0941, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        wind: {value: 0.226, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        onshore_wind: {value: 0.226, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       retire_rate:
         coal: {value: 0.136636, status: "calibrated", source: "energy_institute", note: "Observed annual decline in use 2019-2024."}
         nuclear: {value: 0.034723, status: "calibrated", source: "energy_institute", note: "Observed annual decline in use 2019-2024."}
@@ -768,9 +807,11 @@ nations:
         gas: {value: 3.609162, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         nuclear: {value: 0.108058, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
         hydro: {value: 0.206719, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        wind: {value: 0.173459, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
+        onshore_wind: {value: 0.173459, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        offshore_wind: {value: 0.0, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method. M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
         solar: {value: 0.225864, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy use 2024, substitution method."}
-        other_renewables: {value: 0.108691, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other)."}
+        bioenergy: {value: 0.069562, status: "placeholder", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0.36 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
+        geothermal: {value: 0.039129, status: "placeholder", unit: "EJ/yr", source: "energy_institute", note: "Primary energy minus the listed sources (bioenergy, geothermal, other). M11 split of the Energy Institute other_renewables figure: 0.36 geothermal share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       production:
         coal: {value: 0.129085, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
         oil: {value: 4.034837, status: "calibrated", unit: "EJ/yr", source: "energy_institute", note: "Production 2024."}
@@ -792,6 +833,6 @@ nations:
         nuclear: {value: 0.0187, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
         oil: {value: 0.2151, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
         solar: {value: 0.3079, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
-        wind: {value: 0.0548, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute)."}
+        onshore_wind: {value: 0.0548, status: "calibrated", source: "energy_institute", note: "Share of positive change in use 2019-2024 (energy_institute). M11 split of the Energy Institute wind figure: 0 offshore share (unsourced approximate, scripts/data_prep/source_splits.py)."}
       retire_rate:
         coal: {value: 0.122107, status: "calibrated", source: "energy_institute", note: "Observed annual decline in use 2019-2024."}

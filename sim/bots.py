@@ -29,7 +29,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from sim import actions, tech
+from sim import actions, construction, tech
 from sim.config import Config
 from sim.state import Nation, World
 
@@ -79,9 +79,9 @@ def factory(cfg: Config, n: Nation, tech: str, share: float) -> Action | None:
 def cheapest_clean(cfg: Config, world: World, n: Nation) -> str:
     """Cheapest clean source by levelized cost; wind and solar include their rising system cost,
     and are skipped once output is already being curtailed."""
-    options = ["other_renewables"]
+    options = [s for s in ("bioenergy", "geothermal") if construction.has_resource(cfg, n.id, s)]
     if n.curtailment <= 0:
-        options += ["solar", "wind"]
+        options += ["solar", "onshore_wind", "offshore_wind"]
     if n.capacity.get("nuclear", 0.0) > 0:
         options.append("nuclear")
     return min(options, key=lambda s: (tech.lcoe(cfg, world, n, s), s))
@@ -146,7 +146,7 @@ def all_clean(cfg: Config, world: World, nid: str) -> list[Action]:
             {"type": "rebate", "share": 0.5},
         ]
     elif world.t == 1:
-        wanted.append({"type": "set_subsidy", "source": "wind", "share": 0.3})
+        wanted.append({"type": "set_subsidy", "source": "onshore_wind", "share": 0.3})
     wanted.append(build(cfg, world, n, cheapest_clean(cfg, world, n), 0.5))
     if q == 0 and n.curtailment > 0:
         wanted.append(build(cfg, world, n, "storage", 0.2))

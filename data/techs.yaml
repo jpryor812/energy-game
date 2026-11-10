@@ -78,7 +78,7 @@ sources:
     headroom: {value: 1.0, status: placeholder, note: "Output set by water, no spare at t=0."}
     global_installed: {value: 39.0987, status: calibrated, note: "World primary energy use 2024 (energy_institute)."}
     coverage_share: {value: 0.7483, status: calibrated, note: "16 modelled nations' share of world use, 2024 (energy_institute)."}
-  wind:
+  onshore_wind:
     category: variable_renewable
     equipment_share: {value: 0.5, status: placeholder, note: "Share of build cost that is traded equipment (modules, turbines, cells). Unsourced approximate."}
     variable_cost: {value: 0.0, status: placeholder, note: "No fuel; O&M treated as fixed."}
@@ -89,8 +89,21 @@ sources:
     capital_cost: {value: 0.04, status: placeholder, note: "~$1,100/kW onshore, CF 0.35. Unsourced approximate."}
     learning_rate: {value: 0.12, status: placeholder, note: "Literature range ~10-15% per doubling. Unsourced approximate."}
     headroom: {value: 1.0, status: placeholder, note: "Output set by weather."}
-    global_installed: {value: 22.0481, status: calibrated, note: "World primary energy use 2024 (energy_institute)."}
-    coverage_share: {value: 0.9399, status: calibrated, note: "16 modelled nations' share of world use, 2024 (energy_institute)."}
+    global_installed: {value: 20.0638, status: placeholder, note: "World wind primary energy 2024 (energy_institute) x 0.91 onshore (M11 split, unsourced approximate)."}
+    coverage_share: {value: 0.9403, status: placeholder, note: "16 modelled nations' share of world onshore wind, 2024, after the M11 split."}
+  offshore_wind:
+    category: variable_renewable
+    equipment_share: {value: 0.5, status: placeholder, note: "Share of build cost that is traded equipment (turbines, foundations, cables). Unsourced approximate."}
+    variable_cost: {value: 0.0, status: placeholder, note: "No fuel; O&M treated as fixed."}
+    emission_factor: {value: 0.0, status: calibrated, note: "No direct CO2."}
+    build_time: {value: 12, status: placeholder, note: "M11 - typical 3-year build after consent. Unsourced approximate."}
+    permitting_share: {value: 0.55, status: placeholder, note: "M11 - seabed leasing and consenting are a large part of the lead time. Design assumption, unsourced approximate."}
+    lifespan: {value: 25, status: placeholder, note: "Typical turbine life. Unsourced approximate."}
+    capital_cost: {value: 0.087, status: placeholder, note: "M11 - ~$2,800/kW, CF 0.41 (IRENA order of magnitude, not re-checked). Unsourced approximate."}
+    learning_rate: {value: 0.1, status: placeholder, note: "M11 - slower than onshore. Unsourced approximate."}
+    headroom: {value: 1.0, status: placeholder, note: "Output set by weather."}
+    global_installed: {value: 1.9843, status: placeholder, note: "World wind primary energy 2024 (energy_institute) x 0.09 offshore (M11 split, unsourced approximate)."}
+    coverage_share: {value: 0.9357, status: placeholder, note: "16 modelled nations' share of world offshore wind, 2024, after the M11 split."}
   solar:
     category: variable_renewable
     equipment_share: {value: 0.5, status: placeholder, note: "Share of build cost that is traded equipment (modules, turbines, cells). Unsourced approximate."}
@@ -104,7 +117,7 @@ sources:
     headroom: {value: 1.0, status: placeholder, note: "Output set by weather."}
     global_installed: {value: 18.542, status: calibrated, note: "World primary energy use 2024 (energy_institute)."}
     coverage_share: {value: 0.8987, status: calibrated, note: "16 modelled nations' share of world use, 2024 (energy_institute)."}
-  other_renewables:
+  bioenergy:
     category: clean_dispatchable
     variable_cost: {value: 3.0, status: placeholder, note: "Mostly biomass fuel cost. Unsourced approximate."}
     emission_factor: {value: 0.0, status: placeholder, note: "Biogenic CO2 counted as zero, as in energy CO2 inventories."}
@@ -114,8 +127,20 @@ sources:
     capital_cost: {value: 0.06, status: placeholder, note: "Unsourced approximate."}
     learning_rate: {value: 0.05, status: placeholder, note: "Unsourced approximate."}
     headroom: {value: 1.0, status: placeholder, note: "No spare at t=0."}
-    global_installed: {value: 19.1109, status: calibrated, note: "World primary energy use 2024 (energy_institute)."}
-    coverage_share: {value: 0.8614, status: calibrated, note: "16 modelled nations' share of world use, 2024 (energy_institute)."}
+    global_installed: {value: 18.2318, status: placeholder, note: "World other-renewables primary energy 2024 (energy_institute) less geothermal (M11 split, unsourced approximate)."}
+    coverage_share: {value: 0.8795, status: placeholder, note: "16 modelled nations' share of world bioenergy, 2024, after the M11 split."}
+  geothermal:
+    category: clean_dispatchable
+    variable_cost: {value: 1.0, status: placeholder, note: "M11 - O&M only, no fuel. Unsourced approximate."}
+    emission_factor: {value: 0.0, status: placeholder, note: "Small CO2 from geothermal fluids ignored. Unsourced approximate."}
+    build_time: {value: 16, status: placeholder, note: "M11 - drilling and plant, about 4 years. Unsourced approximate."}
+    permitting_share: {value: 0.4, status: placeholder, note: "M11 - exploration licences and permits. Design assumption, unsourced approximate."}
+    lifespan: {value: 30, status: placeholder, note: "Unsourced approximate."}
+    capital_cost: {value: 0.063, status: placeholder, note: "M11 - ~$4,000/kW, CF 0.8 (IRENA order of magnitude, not re-checked). Unsourced approximate."}
+    learning_rate: {value: 0.05, status: placeholder, note: "Mature conventional technology. Unsourced approximate."}
+    headroom: {value: 1.0, status: placeholder, note: "Runs near full output; no spare at t=0."}
+    global_installed: {value: 0.8791, status: placeholder, note: "~97 TWh of geothermal power x 0.009 EJ/TWh (substitution), 4.6% of world other renewables (M11 split, unsourced approximate)."}
+    coverage_share: {value: 0.4863, status: placeholder, note: "16 modelled nations' share of world geothermal, 2024, after the M11 split (the Philippines, Turkey, New Zealand, Kenya and Iceland are not modelled)."}
   storage:
     category: enabler
     equipment_share: {value: 0.6, status: placeholder, note: "Share of build cost that is traded equipment (modules, turbines, cells). Unsourced approximate."}

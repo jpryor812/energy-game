@@ -173,7 +173,10 @@ def candidates(cfg: Config, world: World, nid: str, personality: str) -> list[Ac
     for share in _ai(cfg, "retire_shares"):
         if coal > 0:
             out.append({"type": "retire_capacity", "source": "coal", "amount": share * coal})
-    clean = [s for s in ("solar", "wind", "other_renewables") if s in buildable]
+    clean = [
+        s for s in ("solar", "onshore_wind", "offshore_wind", "bioenergy", "geothermal")
+        if s in buildable and construction.has_resource(cfg, nid, s)
+    ]  # fmt: skip
     if clean:
         best = min(clean, key=lambda s: (tech.lcoe(cfg, world, n, s), s))
         if n.subsidies.get(best, 0.0) < _ai(cfg, "subsidy_share"):
@@ -509,7 +512,10 @@ def _deal_offer(cfg, world, nid, personality, w_em, income) -> tuple[float, Acti
         return None
     _, hid = max(hosts)
     host = world.nations[hid]
-    options = [s for s in ("solar", "wind", "other_renewables") if s in cfg.energy_source_ids]
+    options = [
+        s for s in ("solar", "onshore_wind", "offshore_wind", "bioenergy", "geothermal")
+        if s in cfg.energy_source_ids and construction.has_resource(cfg, hid, s)
+    ]  # fmt: skip
     source = min(options, key=lambda s: (tech.lcoe(cfg, world, host, s), s))
     kind = cfg.tuning["ai"]["personalities"][personality]["preferred_deal"]
     unit = tech.nation_unit_cost(cfg, world, n, source)

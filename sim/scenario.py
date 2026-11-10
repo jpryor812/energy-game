@@ -124,7 +124,7 @@ def init_jobs(cfg: Config, world: World) -> None:
                 done[c.source] = done.get(c.source, 0.0) + c.amount
         first_year[nid] = done
         n.build_rate = sum(done.values())
-    costs = {s: tech.unit_cost(cfg, world, s) for s in trade.EQUIPMENT}
+    costs = {s: tech.unit_cost(cfg, world, s) for s in trade.EQUIPMENT_OF}
     trade.apply_equipment(cfg, world, first_year, costs, 4)
     for n in world.nations.values():
         n.exported_cut_rate = 0.0

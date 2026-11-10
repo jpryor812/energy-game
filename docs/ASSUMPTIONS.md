@@ -600,6 +600,30 @@ planning)").
      reform does not raise GDP by itself; it helps a player who needs capacity, grid or
      deal plants sooner (curtailment, stocktakes, blackouts).
 
+## M11: more of today's energy sources
+
+153. **Wind is split into onshore and offshore wind; other renewables into bioenergy and
+     geothermal.** The Energy Institute figures give wind as one number and geothermal inside
+     a residual with bioenergy, so the split uses hand-entered 2024 shares
+     (scripts/data_prep/source_splits.py), unsourced approximate and marked placeholder where
+     they matter: offshore share of wind generation (UK 0.55, EU 0.13, Vietnam 0.12 counting
+     near-shore wind, China 0.10, Japan 0.03, others 0) and geothermal share of other
+     renewables (Mexico 0.36, Indonesia 0.17, USA 0.044, Japan 0.04, Russia 0.02, EU 0.019,
+     others 0). World shares 0.09 and 0.046. The trend build mix is split the same way.
+     `build_countries.py` applies the same split when regenerating.
+154. **Offshore wind** costs about twice onshore per unit of output (~$2,800/kW at capacity
+     factor 0.41), takes 12 quarters to build and has a higher permitting share (0.55).
+     **Geothermal** is firm clean power (~$4,000/kW, CF 0.8, 16 quarters). Both IRENA order of
+     magnitude, not re-checked. **Bioenergy** keeps the old other-renewables values.
+155. **Conventional geothermal needs the resource**: only nations already using it (USA, EU,
+     Japan, Mexico, Indonesia, Russia) can build it, by market or player order. Next-generation
+     geothermal, to be added with the tech tree, would lift this.
+156. **One wind factory line serves both winds** (`trade.EQUIPMENT_OF`): factories, tariffs,
+     domestic content and disruptions stay per factory line (solar, wind, storage), while
+     equipment cost shares are per source.
+157. **Not split**: marine energy and solar thermal power are too small to model yet;
+     traditional biomass is not in the Energy Institute primary energy figures used here.
+
 ## Open questions
 
 - **AI overshoot.** Cheap clean energy leads several low-ambition nations to cut far past their

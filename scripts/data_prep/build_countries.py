@@ -25,6 +25,9 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from source_splits import NOTE, share, split  # noqa: E402  (M11)
+
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "data" / "countries.yaml"
 
@@ -73,6 +76,21 @@ HAND = {
     "MEX": dict(issuer=False, carbon=1, vuln=1.2),
 }
 OTHER_NOTE = "Primary energy minus the listed sources (bioenergy, geothermal, other)."
+
+
+def energy_value(nid, s, value, e_note, src_e):
+    """An energy entry; M11 split sources note their (unsourced approximate) split share."""
+    split_of = share(nid, s)
+    if split_of is None:
+        return tun(value, e_note, src_e, "EJ/yr")
+    old, frac, what = split_of
+    base = OTHER_NOTE if old == "other_renewables" else e_note
+    exact = frac in (0.0, 1.0)
+    note = base + " " + NOTE.format(old=old, share=1 - frac if s in ("onshore_wind", "bioenergy")
+                                     else frac, what=what)  # fmt: skip
+    return tun(value, note, src_e, "EJ/yr", "calibrated" if exact else "placeholder")
+
+
 # Exports of goods and services, share of GDP. EU: extra-EU exports only (the World Bank EU
 # figure includes trade between members). Nigeria: no recent World Bank value. Both unsourced
 # approximate.
@@ -136,6 +154,7 @@ def main(raw: Path) -> None:
     world_primary = num(world, "primary_energy_consumption") * TWH_TO_EJ
     world_use["other_renewables"] = world_primary - sum(world_use.values())
     ef = {f: num(wco2, f"{f}_co2") / world_use[f] for f in FUELS}
+    world_use = split(None, world_use)  # M11: onshore/offshore wind, bioenergy/geothermal
     hydro_factor = num(world, "hydro_consumption") / num(world, "hydro_electricity")
     solar_factor = num(world, "solar_consumption") / num(world, "solar_electricity")
 
@@ -168,6 +187,7 @@ def main(raw: Path) -> None:
             use = {s: num(e_now, f"{s}_consumption") * TWH_TO_EJ for s in SOURCES}
             primary = num(e_now, "primary_energy_consumption") * TWH_TO_EJ
             use["other_renewables"] = max(0.0, primary - sum(use.values()))
+        use = split(nid, use)  # M11
         for s in use:
             modelled_use[s] += use[s]
         c_now = co2[(name, DATA_YEAR)]
@@ -201,6 +221,7 @@ def main(raw: Path) -> None:
                     rate = 1 - (b / a) ** (1 / 5)
                     if rate > 1 / LIFESPAN[s]:
                         retire[s] = rate
+        mix = split(nid, mix)  # M11
         # Round mix to 4 dp and fix the largest share so the sum is exactly 1.
         mix = {s: round(v, 4) for s, v in mix.items() if round(v, 4) > 0}
         top = max(mix, key=mix.get)
@@ -301,15 +322,7 @@ def main(raw: Path) -> None:
                     "share of GDP",
                     "calibrated" if open_src else "placeholder",
                 ),
-                "energy": {
-                    s: tun(
-                        use[s],
-                        e_note if s != "other_renewables" else OTHER_NOTE,
-                        src_e,
-                        "EJ/yr",
-                    )
-                    for s in use
-                },
+                "energy": {s: energy_value(nid, s, use[s], e_note, src_e) for s in use},
                 "production": {
                     f: tun(production[f], f"Production {DATA_YEAR}.", src_e, "EJ/yr") for f in FUELS
                 },

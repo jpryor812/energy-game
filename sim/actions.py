@@ -80,6 +80,8 @@ def _build_check(cfg, world, n, act):
     s = _choice(act, "source", cfg.energy_source_ids)
     if n.fossil_ban and energy.is_fossil(cfg, s):
         raise Rejected(f"your fossil ban is on: no new {s} plants")
+    if not construction.has_resource(cfg, n.id, s):
+        raise Rejected(f"you have no {s} resource to build on")
     amount = _positive(act)
     return {"capital": tech.nation_unit_cost(cfg, world, n, s) * amount}
 

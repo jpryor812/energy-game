@@ -8,11 +8,11 @@ from sim.scenario import new_world
 
 def test_reform_shortens_build_times_most_where_permitting_is_slowest(cfg):
     n = new_world(cfg, seed=1).nations["AAA"]
-    before = {s: construction.build_time(cfg, n, s) for s in ("grid", "wind", "storage")}
+    before = {s: construction.build_time(cfg, n, s) for s in ("grid", "onshore_wind", "storage")}
     n.permitting = 1.0
     after = {s: construction.build_time(cfg, n, s) for s in before}
     assert all(after[s] <= before[s] for s in before)
-    assert after["grid"] < before["grid"] and after["wind"] < before["wind"]
+    assert after["grid"] < before["grid"] and after["onshore_wind"] < before["onshore_wind"]
     cut = {s: 1 - after[s] / before[s] for s in before}
     assert cut["grid"] > cut["storage"]
     assert min(after.values()) >= 1
@@ -21,10 +21,10 @@ def test_reform_shortens_build_times_most_where_permitting_is_slowest(cfg):
 def test_orders_placed_under_reform_arrive_sooner(cfg):
     w = new_world(cfg, seed=1)
     n = w.nations["AAA"]
-    construction.queue(cfg, n, "wind", 1.0, w.t)
+    construction.queue(cfg, n, "onshore_wind", 1.0, w.t)
     slow = n.pipeline[-1].complete_turn
     n.permitting = 1.0
-    construction.queue(cfg, n, "wind", 1.0, w.t)
+    construction.queue(cfg, n, "onshore_wind", 1.0, w.t)
     assert n.pipeline[-1].complete_turn < slow
     assert construction.horizon_quarters(cfg, "AAA", n) <= construction.horizon_quarters(cfg, "AAA")
 

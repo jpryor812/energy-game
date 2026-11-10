@@ -25,7 +25,15 @@ from sim.state import Nation, World
 
 CLUB = "carbon_club"
 ROW = "ROW"
-EQUIPMENT = ("solar", "wind", "storage")
+EQUIPMENT = ("solar", "wind", "storage")  # clean-tech factory lines
+# Which factory line supplies each source's traded equipment (M11: one wind line makes turbines
+# for both onshore and offshore wind).
+EQUIPMENT_OF = {
+    "solar": "solar",
+    "onshore_wind": "wind",
+    "offshore_wind": "wind",
+    "storage": "storage",
+}
 
 
 def club_members(world: World) -> list[str]:
@@ -155,23 +163,25 @@ def content_premium(cfg: Config, world: World, buyer: str, tech: str) -> float:
     return cfg.tune("industry.domestic_content_penalty") * max(0.0, required - can_make)
 
 
-def cost_premium(cfg: Config, world: World, buyer: str, tech: str) -> float:
+def cost_premium(cfg: Config, world: World, buyer: str, source: str) -> float:
     """Extra share of build cost from the buyer's own equipment tariffs and content rules."""
-    if tech not in EQUIPMENT:
+    if source not in EQUIPMENT_OF:
         return 0.0
+    tech = EQUIPMENT_OF[source]
     weights = supplier_weights(cfg, world, buyer, tech)
     paid = sum(w * tariff(world, buyer, s) for s, w in weights.items() if s not in (buyer, ROW))
-    tariffs = cfg.src(tech, "equipment_share") * paid
+    tariffs = cfg.src(source, "equipment_share") * paid
     return (
         tariffs
         + content_premium(cfg, world, buyer, tech)
-        + disruption_premium(cfg, world, buyer, tech)
+        + disruption_premium(cfg, world, buyer, source)
     )
 
 
-def disruption_premium(cfg: Config, world: World, buyer: str, tech: str) -> float:
+def disruption_premium(cfg: Config, world: World, buyer: str, source: str) -> float:
     """Extra equipment cost while factories abroad are disrupted: the share of world capacity
     knocked out (outside the buyer's own factories) x the penalty."""
+    tech = EQUIPMENT_OF.get(source, source)
     total = sum(n.factory_capacity.get(tech, 0.0) for n in world.nations.values())
     total += world.base.get(f"row_capacity_{tech}", 0.0)
     if total <= 0:
@@ -182,7 +192,10 @@ def disruption_premium(cfg: Config, world: World, buyer: str, tech: str) -> floa
         if nid != buyer
     )
     return (
-        cfg.src(tech, "equipment_share") * cfg.tune("shocks.disruption_cost_penalty") * lost / total
+        cfg.src(source, "equipment_share")
+        * cfg.tune("shocks.disruption_cost_penalty")
+        * lost
+        / total
     )
 
 
@@ -216,14 +229,15 @@ def apply_equipment(
     demand = {nid: {t: 0.0 for t in EQUIPMENT} for nid in world.nations}
     for buyer in sorted(completed):
         b = world.nations[buyer]
-        for tech, amount in sorted(completed[buyer].items()):
-            if tech not in EQUIPMENT or amount <= 0:
+        for source, amount in sorted(completed[buyer].items()):
+            if source not in EQUIPMENT_OF or amount <= 0:
                 continue
-            value = cfg.src(tech, "equipment_share") * unit_cost[tech] * amount
+            tech = EQUIPMENT_OF[source]
+            value = cfg.src(source, "equipment_share") * unit_cost[source] * amount
             demand[buyer][tech] += value
             cut = 0.0
-            if tech in cfg.vre_ids:
-                cut = amount / cfg.src(tech, "headroom") * displaced_ef(cfg, b)
+            if source in cfg.vre_ids:
+                cut = amount / cfg.src(source, "headroom") * displaced_ef(cfg, b)
             weights = supplier_weights(cfg, world, buyer, tech)
             base = base_shares(cfg, tech)
             for supplier in sorted(weights):

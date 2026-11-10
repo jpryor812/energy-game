@@ -41,3 +41,13 @@ Every real-world value in `data/*.yaml` names a source key below in its `source`
 | Short-lived warming (methane 0.5 degC, aerosols 0.25 degC, fossil methane share 35%, methane lifetime 12 years) | Approximate, shaped on IPCC AR6 and Global Methane Budget figures from memory; not re-checked. Aerosol cooling set modest by decision. |
 | Carbon removal costs, learning, cost floor, energy use; forest fund response | Unsourced approximate game-design values. The removal scale reachable in an all-out world (~33 Gt/yr by 2049) is far beyond current physical estimates, by design. |
 | Hard-currency issuers | USA, EU, Japan, UK, Canada and Australia borrow in their own currency: no hard-currency debt, FX reserves not tracked. |
+
+## M11 source splits (unsourced approximate)
+
+Offshore wind and geothermal shares by country are hand-entered approximations in
+`scripts/data_prep/source_splits.py` (offshore share of wind generation; geothermal share of
+"other renewables" primary energy, from approximate geothermal TWh x 0.009 EJ/TWh). To verify:
+Ember yearly electricity data (wind, bioenergy, other renewables by country) and IRENA
+Renewable Energy Statistics (offshore wind and geothermal capacity and generation by country).
+Offshore wind and geothermal costs in `data/techs.yaml` are IRENA order of magnitude (Renewable
+Power Generation Costs), not re-checked.

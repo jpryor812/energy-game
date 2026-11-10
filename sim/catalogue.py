@@ -33,7 +33,8 @@ def catalogue(cfg: Config) -> dict[str, dict[str, Any]]:
             "summary": "Order new generating capacity; it comes online after the source's build "
             "time (quarters: "
             + ", ".join(f"{x} {int(cfg.src(x, 'build_time'))}" for x in cfg.energy_source_ids)
-            + "). Fossil sources are refused while your fossil ban is on.",
+            + "). Fossil sources are refused while your fossil ban is on; geothermal only where "
+            "you already have the resource.",
             "params": {"source": sources, "amount": "EJ/yr of capacity, > 0"},
             "cost": "capital: unit cost x amount (see the cost table in `show`)",
             "example": {"type": "build_capacity", "source": "solar", "amount": 0.3},

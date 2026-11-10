@@ -170,7 +170,7 @@ def test_pledge_uses_diplomatic_slot(cfg, world):
 def test_capital_moves_only_by_income_and_spending(cfg, world):
     """Same world with and without a build: capital differs by exactly the build cost."""
     plain = turn.step(world, cfg)
-    act = {"type": "build_capacity", "source": "wind", "amount": 1.0}
+    act = {"type": "build_capacity", "source": "onshore_wind", "amount": 1.0}
     cost = actions.cost(cfg, world, world.nations["AAA"], act)["capital"]
     built = turn.step(world, cfg, actions={"AAA": [act]})
     assert plain.nations["AAA"].capital - built.nations["AAA"].capital == pytest.approx(cost)
