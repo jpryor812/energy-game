@@ -113,3 +113,6 @@ Each run leaves `notes.md`, `report.md` and `transcript.jsonl` in its folder. `-
 - **M11 (more energy sources):** done. Wind is split into onshore and offshore wind and other
   renewables into bioenergy and geothermal (13 sources in all). The country split shares are
   approximate and marked as placeholders until checked against Ember or IRENA.
+- **M12 (tech tree):** done. Twelve technologies (`fund_research`): upgrades to existing
+  sources, carbon-capture retrofits, and new sources from small modular reactors to fusion.
+  Research is time-based and faster with more funding; AI nations race too.

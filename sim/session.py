@@ -264,6 +264,16 @@ def notices(cfg: Config, before: World, after: World, me: str) -> list[str]:
             + "."
         )
 
+    # Research completed this quarter (M12).
+    for nid, tid in rec.get("research", []):
+        first = after.tech_firsts.get(tid, [None])[0] == nid
+        gives = cfg.rtech(tid).get("unlocks", []) + cfg.rtech(tid).get("enables", [])
+        what = f" (unlocks {', '.join(gives)})" if gives else ""
+        if nid == me:
+            out.append(f"Research complete: {tid}{what}.")
+        elif first:
+            out.append(f"{nid} is the first to complete {tid}{what}; it now costs others less.")
+
     # Orders that will not arrive before the game ends (M9).
     end = int(cfg.tune("time.turns"))
     known = {(c.source, c.complete_turn, c.amount) for c in nb.pipeline}

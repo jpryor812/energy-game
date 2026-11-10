@@ -20,7 +20,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from sim import construction, credits, deals, diplomacy, energy, tech, trade
+from sim import construction, credits, deals, diplomacy, energy, research, tech, trade
 from sim.config import Config
 from sim.state import Construction, Nation, Pledge, World
 
@@ -82,6 +82,8 @@ def _build_check(cfg, world, n, act):
         raise Rejected(f"your fossil ban is on: no new {s} plants")
     if not construction.has_resource(cfg, n.id, s):
         raise Rejected(f"you have no {s} resource to build on")
+    if not research.can_build(cfg, n, s):
+        raise Rejected(f"{s} needs the {cfg.requires(s)} technology (research it first)")
     amount = _positive(act)
     return {"capital": tech.nation_unit_cost(cfg, world, n, s) * amount}
 
@@ -93,6 +95,8 @@ def _build_apply(cfg, world, n, act):
 def _grid_check(cfg, world, n, act):
     enablers = [s for s in cfg.source_ids if cfg.category(s) == "enabler"]
     s = _choice(act, "kind", enablers)
+    if not research.can_build(cfg, n, s):
+        raise Rejected(f"{s} needs the {cfg.requires(s)} technology (research it first)")
     amount = _positive(act)
     return {"capital": tech.nation_unit_cost(cfg, world, n, s) * amount}
 
@@ -200,6 +204,40 @@ def _permitting_apply(cfg, world, n, act):
     """Permitting reform (M10): faster builds for new orders, at a cost in approval and in the
     vote that grows with how much is built (sim.economy, sim.elections)."""
     n.permitting = float(act["level"])
+
+
+def _fund_research_check(cfg, world, n, act):
+    tech = _choice(act, "tech", cfg.tech_ids)
+    why = research.blocked(cfg, n, tech)
+    if why:
+        raise Rejected(why)
+    amount = _positive(act)
+    useful = research.useful_funding(cfg, world, n, tech)
+    if amount > useful + 1e-9:
+        raise Rejected(
+            f"only {useful:.4g} T$ speeds {tech} this quarter (its minimum research time is "
+            f'{cfg.rtech(tech)["min_quarters"]["value"]} quarters); use "max"'
+        )
+    return {"capital": amount}
+
+
+def _fund_research_apply(cfg, world, n, act):
+    research.fund(cfg, world, n, act["tech"], act["amount"])
+
+
+def _ccs_check(cfg, world, n, act):
+    fuel = _choice(act, "fuel", list(research.CCS_FUELS))
+    if not research.can(cfg, n, "ccs_retrofit"):
+        raise Rejected("carbon-capture retrofits need the ccs technology (research it first)")
+    amount = _positive(act)
+    room = n.capacity.get(fuel, 0.0) - n.ccs.get(fuel, 0.0)
+    if amount > room + 1e-9:
+        raise Rejected(f"only {room:.4g} EJ/yr of {fuel} plants are left to retrofit")
+    return {"capital": cfg.tune("research.ccs_capital_cost") * amount}
+
+
+def _ccs_apply(cfg, world, n, act):
+    n.ccs[act["fuel"]] = n.ccs.get(act["fuel"], 0.0) + act["amount"]
 
 
 def _cap_check(cfg, world, n, act):
@@ -335,6 +373,11 @@ def _deal_terms(cfg, act) -> dict:
 def _propose_check(cfg, world, n, act):
     _target(world, n, act)
     terms = _deal_terms(cfg, act)
+    if not research.can_build(cfg, n, terms["source"]):  # M12: the financier supplies it
+        need = cfg.requires(terms["source"])
+        raise Rejected(f"{terms['source']} needs the {need} technology, which you do not have")
+    if not construction.has_resource(cfg, act["target"], terms["source"]):
+        raise Rejected(f"{act['target']} has no {terms['source']} resource")
     cost = terms["amount"]  # a climate loan lends cash
     if act["deal_type"] != "climate_loan":
         cost = tech.nation_unit_cost(cfg, world, n, terms["source"]) * terms["amount"]
@@ -585,6 +628,8 @@ SPECS: dict[str, Spec] = {
     "fund_retraining": Spec(DOMESTIC, _spend_check, _retraining_apply),
     "set_fossil_ban": Spec(DOMESTIC, _ban_check, _ban_apply),
     "set_permitting": Spec(DOMESTIC, _permitting_check, _permitting_apply),
+    "fund_research": Spec(DOMESTIC, _fund_research_check, _fund_research_apply),
+    "retrofit_ccs": Spec(DOMESTIC, _ccs_check, _ccs_apply),
     "electrification_program": Spec(DOMESTIC, _spend_check, _electrification_apply),
     "build_removal": Spec(DOMESTIC, _removal_check, _removal_apply),
     "methane_abatement": Spec(DOMESTIC, _spend_check, _methane_apply),
@@ -615,6 +660,7 @@ LINEAR = (  # actions whose cost is proportional to "amount", so "amount": "max"
     "build_capacity", "build_grid_storage", "build_removal", "build_factory", "invest_research",
     "invest_efficiency", "buy_influence", "adaptation_spend", "fund_retraining",
     "electrification_program", "methane_abatement", "fund_forests", "retire_capacity",
+    "fund_research", "retrofit_ccs",
 )  # fmt: skip
 
 
@@ -627,6 +673,11 @@ def max_amount(cfg: Config, world: World, n: Nation, act: dict[str, Any]) -> flo
     amount = min(limits) * (1 - 1e-9) if limits else 0.0
     if act["type"] == "retire_capacity":
         amount = min(amount, n.capacity.get(act.get("source"), 0.0) * (1 - 1e-9))
+    if act["type"] == "fund_research" and act.get("tech") in cfg.research["techs"]:
+        amount = min(amount, research.useful_funding(cfg, world, n, act["tech"]))
+    if act["type"] == "retrofit_ccs" and act.get("fuel") in research.CCS_FUELS:
+        fuel = act["fuel"]
+        amount = min(amount, n.capacity.get(fuel, 0.0) - n.ccs.get(fuel, 0.0))
     if amount <= 0:
         raise Rejected("nothing left to spend on this")
     return amount

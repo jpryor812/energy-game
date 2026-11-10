@@ -106,7 +106,7 @@ FIXTURE_TARGETS = {
 @pytest.fixture(scope="session")
 def fixture_dir(tmp_path_factory) -> Path:
     d = tmp_path_factory.mktemp("data")
-    for name in ("tuning", "techs", "events"):
+    for name in ("tuning", "techs", "events", "research"):
         src = config.DEFAULT_DATA_DIR / f"{name}.yaml"
         (d / f"{name}.yaml").write_text(src.read_text())
     (d / "countries.yaml").write_text(yaml.safe_dump(FIXTURE_COUNTRIES, sort_keys=True))

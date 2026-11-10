@@ -24,6 +24,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from sim import research
 from sim.config import FUELS, Config
 from sim.state import Nation, World
 
@@ -78,14 +79,16 @@ def electrification_bonus(cfg: Config, nation: Nation | None) -> float:
 def vre_max_share(cfg: Config, t: int, nation: Nation | None = None) -> float:
     """Most of primary demand wind and solar can serve at turn t: the electrifiable share,
     rising linearly from 2025 to the final turn, plus the nation's electrification bonus."""
-    return min(1.0, _ramp(cfg, "vre_max_share", t) + electrification_bonus(cfg, nation))
+    bonus = electrification_bonus(cfg, nation) + research.hydrogen_bonus(cfg, nation)  # M12
+    return min(1.0, _ramp(cfg, "vre_max_share", t) + bonus)
 
 
 def clean_max_share(cfg: Config, t: int, nation: Nation | None = None) -> float:
     """Most of primary demand all non-fossil sources together can serve at turn t, standing in
     for end-use conversion (vehicles, heating, industry); rises linearly to the final turn, plus
     the nation's electrification bonus."""
-    return min(1.0, _ramp(cfg, "clean_max_share", t) + electrification_bonus(cfg, nation))
+    bonus = electrification_bonus(cfg, nation) + research.hydrogen_bonus(cfg, nation)  # M12
+    return min(1.0, _ramp(cfg, "clean_max_share", t) + bonus)
 
 
 def production_credit(nation: Nation, source: str) -> float:
@@ -166,7 +169,10 @@ def dispatch(cfg: Config, nation: Nation, demand: float, t: int = 0) -> Dispatch
     delivered = sum(supply.values())
     all_cost = {s: marginal_cost(cfg, nation.id, s, nation.carbon_price) for s in supply}
     price = sum(supply[s] * all_cost[s] for s in supply) / delivered if delivered > 0 else 0.0
-    emissions = sum(supply[s] * emission_factor(cfg, nation.id, s) for s in supply)
+    emissions = sum(
+        supply[s] * emission_factor(cfg, nation.id, s) * research.capture_factor(cfg, nation, s)
+        for s in supply
+    )  # M12: carbon-capture retrofits
     return Dispatch(demand, supply, shortfall, curtailment, price, emissions)
 
 

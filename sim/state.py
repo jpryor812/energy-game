@@ -149,6 +149,11 @@ class Nation:
     fossil_ban: float = 0.0
     # M10: permitting reform level (0..1).
     permitting: float = 0.0
+    # M12 research: progress (0..1) per technology, technologies finished, and coal or gas
+    # capacity retrofitted with carbon capture (EJ/yr).
+    research_progress: dict[str, float] = field(default_factory=dict)
+    techs: list[str] = field(default_factory=list)
+    ccs: dict[str, float] = field(default_factory=dict)
     disruption: dict[str, float] = field(default_factory=dict)
     disruption_until: dict[str, float] = field(default_factory=dict)
 
@@ -168,7 +173,7 @@ class Nation:
         "capacity", "subsidies", "tariffs", "supply", "fossil_production", "fossil_exports",
         "fossil_imports", "base", "research", "climate_credit", "tax_credits",
         "factory_capacity", "factory_sales", "equipment_demand", "domestic_content", "jobs",
-        "disruption", "disruption_until",
+        "disruption", "disruption_until", "research_progress", "ccs",
     )  # fmt: skip
 
     @classmethod
@@ -181,6 +186,7 @@ class Nation:
             **{name: {k: float(v) for k, v in d[name].items()} for name in cls._FLOAT_MAPS},
             pipeline=[Construction.from_dict(c) for c in d["pipeline"]],
             slots_banked={k: int(v) for k, v in d["slots_banked"].items()},
+            techs=[str(x) for x in d["techs"]],
             pledge=Pledge.from_dict(d["pledge"]) if d["pledge"] is not None else None,
         )
 
@@ -216,6 +222,8 @@ class World:
     difficulty: str = "normal"
     aerosol_index: float = 1.0
     forest_fund: float = 0.0
+    # M12: who finished each technology first, and when: tech -> [nation, turn].
+    tech_firsts: dict[str, list[Any]] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
@@ -250,6 +258,7 @@ class World:
             difficulty=str(d["difficulty"]),
             aerosol_index=float(d["aerosol_index"]),
             forest_fund=float(d["forest_fund"]),
+            tech_firsts={k: [str(v[0]), int(v[1])] for k, v in d["tech_firsts"].items()},
         )
 
     def to_json(self, *, indent: int | None = 2) -> str:

@@ -1,0 +1,100 @@
+# The tech tree (M12). Each technology has a total research cost (T$), a minimum research time
+# (quarters, however much is spent), prerequisites, an optional earliest year, and effects:
+#   cost         unit-cost multiplier on a source, for the nation that has the technology
+#   build_time   build-time multiplier on a source
+#   unlocks      sources (data/techs.yaml, marked `requires`) the nation may build
+#   enables      special abilities ("ccs_retrofit")
+# Future-technology numbers are design assumptions: order-of-magnitude, unsourced.
+# A technology a nation finishes works only for it (until licensing, M13).
+
+spillover:
+  value: 0.4
+  status: placeholder
+  note: Research cost cut for everyone once any nation has finished a technology (knowledge spreads). Decided with the user, 2026-11-09.
+
+techs:
+  next_gen_solar:
+    name: "Next-generation solar (tandem cells)"
+    cost: {value: 0.15, status: placeholder, note: "Design assumption, unsourced."}
+    min_quarters: {value: 8, status: placeholder, note: "Design assumption."}
+    requires: []
+    effects:
+      cost:
+        solar: {value: 0.8, status: placeholder, note: "20% cheaper solar. Design assumption."}
+  advanced_batteries:
+    name: "Advanced batteries"
+    cost: {value: 0.15, status: placeholder, note: "Design assumption, unsourced."}
+    min_quarters: {value: 8, status: placeholder, note: "Design assumption."}
+    requires: []
+    effects:
+      cost:
+        storage: {value: 0.75, status: placeholder, note: "25% cheaper storage. Design assumption."}
+  floating_offshore_wind:
+    name: "Floating offshore wind"
+    cost: {value: 0.2, status: placeholder, note: "Design assumption, unsourced."}
+    min_quarters: {value: 12, status: placeholder, note: "Design assumption."}
+    requires: []
+    effects:
+      cost:
+        offshore_wind: {value: 0.85, status: placeholder, note: "Deeper, windier sites; 15% cheaper per unit of output. Design assumption."}
+  hvdc_supergrid:
+    name: "HVDC supergrid"
+    cost: {value: 0.2, status: placeholder, note: "Design assumption, unsourced."}
+    min_quarters: {value: 12, status: placeholder, note: "Design assumption."}
+    requires: []
+    effects:
+      cost:
+        grid: {value: 0.75, status: placeholder, note: "25% cheaper grid. Design assumption."}
+      build_time:
+        grid: {value: 0.75, status: placeholder, note: "25% faster grid builds. Design assumption."}
+  advanced_removal:
+    name: "Advanced carbon removal"
+    cost: {value: 0.3, status: placeholder, note: "Design assumption, unsourced."}
+    min_quarters: {value: 12, status: placeholder, note: "Design assumption."}
+    requires: []
+    effects:
+      cost:
+        carbon_removal: {value: 0.5, status: placeholder, note: "Halves removal cost, below the learning floor. Design assumption."}
+  ccs:
+    name: "Carbon capture on power plants"
+    cost: {value: 0.25, status: placeholder, note: "Design assumption, unsourced."}
+    min_quarters: {value: 12, status: placeholder, note: "Design assumption."}
+    requires: []
+    enables: [ccs_retrofit]
+  small_modular_reactors:
+    name: "Small modular reactors"
+    cost: {value: 0.4, status: placeholder, note: "Design assumption, unsourced."}
+    min_quarters: {value: 16, status: placeholder, note: "Design assumption."}
+    requires: []
+    unlocks: [smr]
+  enhanced_geothermal:
+    name: "Enhanced geothermal"
+    cost: {value: 0.3, status: placeholder, note: "Design assumption, unsourced."}
+    min_quarters: {value: 12, status: placeholder, note: "Design assumption."}
+    requires: []
+    unlocks: [enhanced_geothermal]
+  green_hydrogen:
+    name: "Green hydrogen (electrolysers)"
+    cost: {value: 0.3, status: placeholder, note: "Design assumption, unsourced."}
+    min_quarters: {value: 12, status: placeholder, note: "Design assumption."}
+    requires: []
+    unlocks: [electrolysers]
+  long_duration_storage:
+    name: "Long-duration storage"
+    cost: {value: 0.25, status: placeholder, note: "Design assumption, unsourced."}
+    min_quarters: {value: 12, status: placeholder, note: "Design assumption."}
+    requires: [advanced_batteries]
+    unlocks: [long_duration_storage]
+  advanced_fission:
+    name: "Advanced fission reactors"
+    cost: {value: 0.6, status: placeholder, note: "Design assumption, unsourced."}
+    min_quarters: {value: 20, status: placeholder, note: "Design assumption."}
+    requires: [small_modular_reactors]
+    unlocks: [advanced_fission]
+  fusion:
+    name: "Fusion power"
+    cost: {value: 2.0, status: placeholder, note: "The capstone: only the largest economies can fund it alone. Design assumption, unsourced."}
+    min_quarters: {value: 40, status: placeholder, note: "Ten years at best. Design assumption."}
+    earliest_year: {value: 2040, status: placeholder, note: "Cannot finish before 2040 however much is spent. Design assumption."}
+    requires: [advanced_fission]
+    unlocks: [fusion]

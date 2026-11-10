@@ -22,6 +22,7 @@ from sim import (
     elections,
     energy,
     jobs,
+    research,
     scoring,
     tech,
     trade,
@@ -157,6 +158,32 @@ def observe(game: Game) -> dict[str, Any]:
         if o != me
     }
 
+    # Research (M12)
+    tree = []
+    for tid in cfg.tech_ids:
+        spec = cfg.rtech(tid)
+        first = w.tech_firsts.get(tid)
+        row = {
+            "tech": tid,
+            "name": spec["name"],
+            "progress": _r(n.research_progress.get(tid, 0.0)),
+            "have": research.has(n, tid),
+            "cost_now": _r(research.cost_now(cfg, w, tid), 3),
+            "min_quarters": spec["min_quarters"]["value"],
+            "useful_now": _r(research.useful_funding(cfg, w, p, tid), 4),
+            "blocked": research.blocked(cfg, n, tid),
+            "first": [first[0], _label(game, first[1])] if first else None,
+            "owners": sorted(o for o, m in w.nations.items() if research.has(m, tid)),
+            "gives": spec.get("unlocks", [])
+            + spec.get("enables", [])
+            + [
+                f"{s} {kind.replace('_', ' ')} x{v['value']:g}"
+                for kind in ("cost", "build_time")
+                for s, v in spec.get("effects", {}).get(kind, {}).items()
+            ],
+        }  # fmt: skip
+        tree.append(row)
+
     # Deals
     inbox, mine, sent = [], [], []
     expiry = int(cfg.tune("deals.proposal_expiry"))
@@ -280,6 +307,8 @@ def observe(game: Game) -> dict[str, Any]:
             "coalition_tariff_on_you": _r(w.coalition_tariffs.get(me, 0.0)),
         },
         "relations": relations,
+        "research": tree,
+        "ccs": {k: _r(v) for k, v in n.ccs.items() if v > 0},
         "deals": {
             "inbox": inbox,
             "sent": sent,
@@ -461,6 +490,7 @@ def render(obs: dict[str, Any], brief: bool = False) -> str:
                 for k, v in o["relations"].items()
             ),
         ]
+    lines += _research(o.get("research", []), o.get("ccs", {}), brief)
     inbox, active = o["deals"]["inbox"], o["deals"]["active"]
     sent = o["deals"].get("sent", [])
     lines.append("")
@@ -514,6 +544,48 @@ def render(obs: dict[str, Any], brief: bool = False) -> str:
         lines.append(f"  leaders (score now): {board}")
         lines.append("  bonus races: " + "; ".join(_race(r, o["country"]) for r in o["races"]))
     return "\n".join(lines)
+
+
+def _research(tree: list[dict[str, Any]], ccs: dict[str, float], brief: bool) -> list[str]:
+    if not tree:
+        return []
+    out = [
+        "",
+        "RESEARCH (fund_research; cost T$ now / minimum quarters; a technology someone already has "
+        "costs less):",
+    ]
+    have = [r["tech"] for r in tree if r["have"]]
+    out.append("  you have: " + (", ".join(have) if have else "nothing yet"))
+    for r in tree:
+        if not r["have"] and r["progress"] > 0:
+            out.append(
+                f"  in progress: {r['tech']} {r['progress']:.0%} (cost {r['cost_now']:.3g}, spend "
+                f"up to {r['useful_now']:.3g} this quarter; gives {', '.join(r['gives'])})"
+            )
+    ready = [r for r in tree if not r["have"] and r["progress"] <= 0 and not r["blocked"]]
+    if ready:
+        out.append(
+            "  available: "
+            + "; ".join(
+                f"{r['tech']} {r['cost_now']:.3g}/{r['min_quarters']}q -> {', '.join(r['gives'])}"
+                for r in ready
+            )
+        )
+    locked = [r for r in tree if not r["have"] and r["blocked"] and r["progress"] <= 0]
+    if locked and not brief:
+        out.append("  locked: " + "; ".join(f"{r['tech']} ({r['blocked']})" for r in locked))
+    firsts = [r for r in tree if r["first"]]
+    if firsts:
+        out.append(
+            "  breakthroughs: "
+            + ", ".join(
+                f"{r['tech']} {r['first'][0]} {r['first'][1]} ({len(r['owners'])} have it)"
+                for r in firsts
+            )
+        )
+    if ccs:
+        out.append("  carbon capture fitted: " + _kv(ccs, "{:.2f}") + " EJ/yr")
+    return out
 
 
 def _other(d: dict[str, Any], me: str) -> str:

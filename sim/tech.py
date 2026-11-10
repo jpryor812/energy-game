@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import math
 
-from sim import energy, trade
+from sim import energy, research, trade
 from sim.config import Config
 from sim.state import Nation, World
 
@@ -62,7 +62,12 @@ def nation_unit_cost(cfg: Config, world: World, nation: Nation, source: str) -> 
     """The nation's build cost: world cost, less its research, plus its tariff and content
     premiums."""
     premium = trade.cost_premium(cfg, world, nation.id, source)
-    return unit_cost(cfg, world, source) * research_multiplier(cfg, nation, source) * (1 + premium)
+    return (
+        unit_cost(cfg, world, source)
+        * research_multiplier(cfg, nation, source)
+        * research.cost_multiplier(cfg, nation, source)  # M12 tech tree
+        * (1 + premium)
+    )
 
 
 def crf(rate: float, years: float) -> float:

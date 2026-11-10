@@ -33,6 +33,7 @@ from sim import (
     diplomacy,
     economy,
     energy,
+    research,
     tech,
     trade,
 )
@@ -153,7 +154,7 @@ def context(cfg: Config, world: World, nid: str) -> Context:
 def candidates(cfg: Config, world: World, nid: str, personality: str) -> list[Action]:
     n = world.nations[nid]
     out: list[Action] = []
-    buildable = set(construction.market_sources(cfg, nid))
+    buildable = set(construction.market_sources(cfg, nid, n))
     if n.capacity.get("nuclear", 0.0) > 0:
         buildable.add("nuclear")
     for s in sorted(buildable):
@@ -162,8 +163,17 @@ def candidates(cfg: Config, world: World, nid: str, personality: str) -> list[Ac
             amount = share * n.capital / unit
             if amount > 0:
                 out.append({"type": "build_capacity", "source": s, "amount": amount})
-    if n.curtailment > 0:
-        out.append({"type": "build_grid_storage", "kind": "storage", "amount": n.curtailment})
+    if n.curtailment > 0:  # M12: any storage-like enabler it has researched
+        for kind in ("storage", "long_duration_storage", "electrolysers"):
+            if kind in cfg.source_ids and research.can_build(cfg, n, kind):
+                out.append({"type": "build_grid_storage", "kind": kind, "amount": n.curtailment})
+    if research.can(cfg, n, "ccs_retrofit"):  # M12: carbon capture on its coal and gas plants
+        unit = cfg.tune("research.ccs_capital_cost")
+        for fuel in research.CCS_FUELS:
+            room = n.capacity.get(fuel, 0.0) - n.ccs.get(fuel, 0.0)
+            amount = min(room, _ai(cfg, "factory_share") * max(0.0, n.capital) / unit)
+            if amount > 1e-6:
+                out.append({"type": "retrofit_ccs", "fuel": fuel, "amount": amount})
     cap = _p(cfg, personality, "carbon_price_max")
     for step in _ai(cfg, "carbon_steps"):
         if n.carbon_price < cap:
@@ -255,7 +265,10 @@ def _price_growth(cfg: Config, n: Nation, price_change: float) -> float:
 def estimate(cfg: Config, world: World, nid: str, act: Action, ctx: Context) -> Effects:
     n = ctx.n
     base_em = max(n.base.get("emissions", n.emissions), 1e-9)
-    cost = actions.cost(cfg, world, n, act)
+    try:
+        cost = actions.cost(cfg, world, n, act)
+    except actions.Rejected:  # e.g. a deal plant of a technology the host lacks (M12)
+        cost = {}
     eff = Effects(capital=cost.get("capital", 0.0), political=cost.get("political_capital", 0.0))
     kind = act["type"]
 
@@ -279,6 +292,14 @@ def estimate(cfg: Config, world: World, nid: str, act: Action, ctx: Context) -> 
     elif kind == "build_grid_storage":
         used = min(act["amount"], n.curtailment)
         eff.emissions = -used * ctx.ef_market / base_em * 100
+    elif kind == "retrofit_ccs":  # M12: the captured share of the plants' current CO2
+        fuel = act["fuel"]
+        cap = n.capacity.get(fuel, 0.0)
+        share = act["amount"] / cap if cap > 0 else 0.0
+        cut = (
+            cfg.tune("research.ccs_capture") * share * n.supply.get(fuel, 0.0) * _ef(cfg, nid, fuel)
+        )
+        eff.emissions = -cut / base_em * 100
     elif kind == "retire_capacity":
         s = act["source"]
         normal = act["amount"] / cfg.src(s, "headroom")
@@ -512,9 +533,10 @@ def _deal_offer(cfg, world, nid, personality, w_em, income) -> tuple[float, Acti
         return None
     _, hid = max(hosts)
     host = world.nations[hid]
-    options = [
-        s for s in ("solar", "onshore_wind", "offshore_wind", "bioenergy", "geothermal")
-        if s in cfg.energy_source_ids and construction.has_resource(cfg, hid, s)
+    options = [  # M12: plus any researched source the financier can supply
+        s for s in construction.COST_DRIVEN
+        if s in cfg.energy_source_ids and not energy.is_fossil(cfg, s)
+        and construction.has_resource(cfg, hid, s) and research.can_build(cfg, n, s)
     ]  # fmt: skip
     source = min(options, key=lambda s: (tech.lcoe(cfg, world, host, s), s))
     kind = cfg.tuning["ai"]["personalities"][personality]["preferred_deal"]
@@ -635,6 +657,27 @@ def diplomatic(cfg, world, nid, personality, ctx, w_em, income) -> list[tuple[fl
     return out
 
 
+def research_candidate(cfg: Config, world: World, nid: str, personality: str):
+    """The tech-tree research this AI would fund this quarter (M12): the first technology in its
+    personality's priority list it can research (cautious followers only research what someone
+    already has), funded with a share of capital up to what speeds it. None if nothing fits."""
+    n = world.nations[nid]
+    spec = cfg.tuning["ai"]["personalities"][personality]
+    follower = personality == "cautious_follower"
+    for tid in spec.get("research_priority", []):
+        if research.blocked(cfg, n, tid) or (follower and tid not in world.tech_firsts):
+            continue
+        amount = min(
+            _ai(cfg, "tech_research_share") * max(0.0, n.capital),
+            research.useful_funding(cfg, world, n, tid),
+        )
+        if amount <= 0:
+            return None
+        act = {"type": "fund_research", "tech": tid, "amount": amount}
+        return _p(cfg, personality, "research_utility"), act
+    return None
+
+
 def scored(cfg: Config, world: World, nid: str) -> list[tuple[float, Action, dict[str, float]]]:
     """Every valid candidate with its utility and resource cost, best first."""
     personality = cfg.nat_spec(nid)["personality"]
@@ -652,7 +695,11 @@ def scored(cfg: Config, world: World, nid: str) -> list[tuple[float, Action, dic
         else:
             u = utility(cfg, personality, estimate(cfg, world, nid, act, ctx), w_em, income)
         out.append((u, act, cost))
-    for u, act in diplomatic(cfg, world, nid, personality, ctx, w_em, income):
+    extra = diplomatic(cfg, world, nid, personality, ctx, w_em, income)
+    found = research_candidate(cfg, world, nid, personality)
+    if found:
+        extra.append(found)
+    for u, act in extra:
         try:
             cost = actions.cost(cfg, world, ctx.n, act)
         except actions.Rejected:

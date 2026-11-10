@@ -183,6 +183,13 @@ Bonuses are flat points on top of the score, and the size of each is to be tuned
 
 **Technology credit.** If a technology you create (for example a reliable small modular reactor or carbon capture) is adopted by other nations, measured by the share of nations using it, you get a financial boost, a tech boost, and emissions credit at about 0.6 to 1 (a placeholder ratio).
 
+**Tech tree (M12 build note, decided with the user 2026-11-09).** Twelve technologies in
+data/research.yaml: cheaper or faster versions of existing sources, carbon-capture retrofits, and
+new sources (small modular reactors, enhanced geothermal, green hydrogen, long-duration storage,
+advanced fission, fusion). Research takes at least a minimum time and goes faster with more
+funding, so large economies have an edge; a finished technology works only for its owner, and
+once anyone has one it is cheaper for others to research. Licensing it to others is M13.
+
 **Permitting reform (M10 build note, decided with the user 2026-11-09).** A domestic policy,
 level 0 to 1: new plants, grid and storage build faster (the permitting part of each build
 time is cut), but local opposition costs approval and enters the vote as its own term, more

@@ -34,7 +34,9 @@ def catalogue(cfg: Config) -> dict[str, dict[str, Any]]:
             "time (quarters: "
             + ", ".join(f"{x} {int(cfg.src(x, 'build_time'))}" for x in cfg.energy_source_ids)
             + "). Fossil sources are refused while your fossil ban is on; geothermal only where "
-            "you already have the resource.",
+            "you already have the resource; "
+            + ", ".join(f"{x} needs {cfg.requires(x)}" for x in sources if cfg.requires(x))
+            + " (research it with fund_research).",
             "params": {"source": sources, "amount": "EJ/yr of capacity, > 0"},
             "cost": "capital: unit cost x amount (see the cost table in `show`)",
             "example": {"type": "build_capacity", "source": "solar", "amount": 0.3},
@@ -70,8 +72,30 @@ def catalogue(cfg: Config) -> dict[str, dict[str, Any]]:
             "cost": "none up front (the subsidy is paid as plants are built)",
             "example": {"type": "set_subsidy", "source": "wind", "share": 0.2},
         },
+        "fund_research": {
+            "summary": "Fund the tech tree (see RESEARCH in `show`): progress = funding / the "
+            "technology's cost, at most 1/min_quarters a quarter, so it can never finish faster "
+            "than its minimum time; more money gets you closer to that. Finished technologies "
+            "unlock new sources or make existing ones cheaper, for you only; once anyone has one "
+            f"it costs others {cfg.research['spillover']['value']:.0%} less to research.",
+            "params": {
+                "tech": list(cfg.tech_ids),
+                "amount": 'T$ this quarter, up to what speeds it ("max" spends exactly that)',
+            },
+            "cost": "capital: amount",
+            "example": {"type": "fund_research", "tech": "next_gen_solar", "amount": "max"},
+        },
+        "retrofit_ccs": {
+            "summary": "Fit carbon capture to existing coal or gas plants (needs the ccs "
+            f"technology): captures {_t(cfg, 'research.ccs_capture'):.0%} of their CO2. "
+            "Retrofits retire with the plants.",
+            "params": {"fuel": ["coal", "gas"], "amount": "EJ/yr of plant fuel use to retrofit"},
+            "cost": f"capital: {_t(cfg, 'research.ccs_capital_cost'):g} T$ per EJ/yr",
+            "example": {"type": "retrofit_ccs", "fuel": "coal", "amount": 0.5},
+        },
         "invest_research": {
-            "summary": "Research a technology: lowers its cost for you and adds productivity.",
+            "summary": "Research an existing source: lowers its cost for you and adds "
+            "productivity (the tech tree is fund_research).",
             "params": {"tech": list(cfg.source_ids), "amount": "T$, > 0"},
             "cost": "capital: amount",
             "example": {"type": "invest_research", "tech": "storage", "amount": 0.05},

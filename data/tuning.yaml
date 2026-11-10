@@ -340,6 +340,19 @@ research:
     value: 0.005
     status: placeholder
     note: Most research can add to annual growth.
+  h2_cap_factor:
+    value: 1.0
+    status: placeholder
+    note: M12 - share of demand added to the clean and wind-and-solar ceilings per EJ/yr of electrolysers per EJ/yr of demand (hydrogen serves demand that cannot be electrified directly). Design assumption.
+  ccs_capture:
+    value: 0.9
+    status: placeholder
+    note: M12 - share of a retrofitted plant's CO2 captured. Design figure for modern capture plants (real projects have often captured less).
+  ccs_capital_cost:
+    value: 0.03
+    status: placeholder
+    unit: T$ per EJ/yr of plant fuel use retrofitted
+    note: M12 - about $1,500/kW of plant. Order of magnitude, unsourced.
 
 actions:
   carbon_price_max:
@@ -569,6 +582,8 @@ scoring:
 ai:
   personalities:
     green_leader:
+      research_priority: [next_gen_solar, advanced_batteries, green_hydrogen, long_duration_storage, hvdc_supergrid, floating_offshore_wind, enhanced_geothermal, advanced_removal, small_modular_reactors, advanced_fission, fusion, ccs]  # M12 tech-tree order (cautious followers research only what others already have)
+      research_utility: {value: 0.8, status: placeholder, note: "M12 - utility of funding tech-tree research each quarter, against other candidate actions."}
       preferred_deal: climate_loan  # deal type this personality offers as financier
       retaliation: {value: 0.0, status: placeholder, note: "How readily this personality matches tariffs placed on it (0 = never)."}
       credit_value: {value: 80, status: placeholder, note: "What a tonne of carbon credit is worth to this personality ($/tCO2): it sells above and buys below."}
@@ -583,6 +598,8 @@ ai:
       follow_strength: {value: 0.0, status: placeholder, note: "How strongly peers' emission cuts raise the emissions weight (cautious follower)."}
       budget_appetite: {value: 1.5, status: placeholder, note: "Divides the capital-cost weight: higher spends more readily."}
     fossil_defender:
+      research_priority: [ccs, advanced_removal, small_modular_reactors, hvdc_supergrid, advanced_fission, next_gen_solar, advanced_batteries, enhanced_geothermal, green_hydrogen, floating_offshore_wind, long_duration_storage, fusion]  # M12 tech-tree order (cautious followers research only what others already have)
+      research_utility: {value: 0.3, status: placeholder, note: "M12 - utility of funding tech-tree research each quarter, against other candidate actions."}
       preferred_deal: equipment_on_credit  # deal type this personality offers as financier
       retaliation: {value: 1.0, status: placeholder, note: "How readily this personality matches tariffs placed on it (0 = never)."}
       credit_value: {value: 15, status: placeholder, note: "What a tonne of carbon credit is worth to this personality ($/tCO2): it sells above and buys below."}
@@ -597,6 +614,8 @@ ai:
       follow_strength: {value: 0.0, status: placeholder, note: "How strongly peers' emission cuts raise the emissions weight (cautious follower)."}
       budget_appetite: {value: 0.8, status: placeholder, note: "Divides the capital-cost weight: higher spends more readily."}
     opportunist:
+      research_priority: [next_gen_solar, small_modular_reactors, advanced_batteries, hvdc_supergrid, enhanced_geothermal, advanced_fission, green_hydrogen, floating_offshore_wind, long_duration_storage, advanced_removal, fusion, ccs]  # M12 tech-tree order (cautious followers research only what others already have)
+      research_utility: {value: 0.6, status: placeholder, note: "M12 - utility of funding tech-tree research each quarter, against other candidate actions."}
       preferred_deal: equity_for_energy  # deal type this personality offers as financier
       retaliation: {value: 1.0, status: placeholder, note: "How readily this personality matches tariffs placed on it (0 = never)."}
       credit_value: {value: 30, status: placeholder, note: "What a tonne of carbon credit is worth to this personality ($/tCO2): it sells above and buys below."}
@@ -611,6 +630,8 @@ ai:
       follow_strength: {value: 0.0, status: placeholder, note: "How strongly peers' emission cuts raise the emissions weight (cautious follower)."}
       budget_appetite: {value: 1.0, status: placeholder, note: "Divides the capital-cost weight: higher spends more readily."}
     cautious_follower:
+      research_priority: [next_gen_solar, advanced_batteries, hvdc_supergrid, floating_offshore_wind, green_hydrogen, enhanced_geothermal, long_duration_storage, small_modular_reactors, advanced_removal, ccs, advanced_fission, fusion]  # M12 tech-tree order (cautious followers research only what others already have)
+      research_utility: {value: 0.3, status: placeholder, note: "M12 - utility of funding tech-tree research each quarter, against other candidate actions."}
       preferred_deal: equipment_on_credit  # deal type this personality offers as financier
       retaliation: {value: 0.3, status: placeholder, note: "How readily this personality matches tariffs placed on it (0 = never)."}
       credit_value: {value: 50, status: placeholder, note: "What a tonne of carbon credit is worth to this personality ($/tCO2): it sells above and buys below."}
@@ -629,6 +650,7 @@ ai:
   retire_shares: {value: [0.02, 0.05], status: placeholder, note: "Candidate coal retirements, as shares of current coal capacity."}
   subsidy_share: {value: 0.3, status: placeholder, note: "Subsidy share the AI considers for its cheapest clean source."}
   research_share: {value: 0.05, status: placeholder, note: "Share of capital per research candidate."}
+  tech_research_share: {value: 0.08, status: placeholder, note: "M12 - share of capital an AI puts into its chosen tech-tree research each quarter (up to what speeds it)."}
   efficiency_share: {value: 0.1, status: placeholder, note: "Share of capital per efficiency candidate."}
   adaptation_share: {value: 0.05, status: placeholder, note: "Share of capital per adaptation candidate."}
   rebate_share: {value: 0.5, status: placeholder, note: "Rebate share the AI considers once it has raised the carbon price."}

@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from sim import actions as acts
-from sim import ai, credits, deals, elections, energy, events, jobs, tech, trade
+from sim import ai, credits, deals, elections, energy, events, jobs, research, tech, trade
 from sim import climate as climate_model
 from sim import construction as build
 from sim import diplomacy as diplo
@@ -103,8 +103,9 @@ def climate(world: World, cfg: Config, ctx: TurnContext) -> None:
 
 
 def technology(world: World, cfg: Config, ctx: TurnContext) -> None:
-    """Cumulative global deployment for learning curves. Research arrives in M2."""
+    """Cumulative global deployment for learning curves; research completions (M12)."""
     tech.apply(world, cfg, ctx.completed)
+    ctx.logs["research"] = [list(x) for x in research.complete(cfg, world)]
 
 
 def diplomacy(world: World, cfg: Config, ctx: TurnContext) -> None:
@@ -145,6 +146,7 @@ def scoring_snapshot(world: World, cfg: Config, ctx: TurnContext) -> None:
             "club": list(trade.club_members(world)),
             "coalition_tariffs": dict(world.coalition_tariffs),
             "election": ctx.logs.get("election"),
+            "research": ctx.logs.get("research", []),
             "player_in_power": elections.in_power(world) if world.player else None,
             "global_emissions": world.global_emissions,
             "global_cumulative_emissions": world.global_cumulative_emissions,

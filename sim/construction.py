@@ -19,7 +19,7 @@ from __future__ import annotations
 import math
 from collections import defaultdict
 
-from sim import economy, energy, tech, trade
+from sim import economy, energy, research, tech, trade
 from sim.config import Config
 from sim.energy import base_demand
 from sim.state import Construction, Nation, World
@@ -37,6 +37,7 @@ def retire_rate(cfg: Config, nid: str, source: str) -> float:
 def retire(cfg: Config, nid: str, n: Nation, dt: int) -> None:
     for s in sorted(n.capacity):
         n.capacity[s] *= (1.0 - retire_rate(cfg, nid, s)) ** (dt / 4)
+    research.retire_ccs(n)  # M12: capture retrofits go with their plants
     keep = (1.0 - 1.0 / cfg.tune("industry.factory_lifespan")) ** (dt / 4)
     for kind in sorted(n.factory_capacity):  # M9: factories age out too
         n.factory_capacity[kind] *= keep
@@ -76,8 +77,11 @@ def build_time(cfg: Config, n: Nation | None, source: str) -> int:
     """Quarters to build `source` in nation `n`: the source's build time, less the part of its
     permitting time that the nation's permitting reform cuts (M10). At least one quarter."""
     base = cfg.src(source, "build_time")
-    if n is None or n.permitting <= 0:
+    if n is None:
         return int(base)
+    base *= research.build_time_multiplier(cfg, n, source)  # M12
+    if n.permitting <= 0:
+        return max(1, round(base))
     cut = cfg.tune("permitting.max_cut") * n.permitting * cfg.src(source, "permitting_share")
     return max(1, round(base * (1 - cut)))
 
@@ -89,6 +93,7 @@ def queue(cfg: Config, n: Nation, source: str, amount: float, t: int) -> None:
 
 COST_DRIVEN = (
     "coal", "gas", "oil", "bioenergy", "geothermal", "solar", "onshore_wind", "offshore_wind",
+    "smr", "advanced_fission", "fusion", "enhanced_geothermal",  # M12: once researched
 )  # fmt: skip
 
 
@@ -103,13 +108,15 @@ def has_resource(cfg: Config, nid: str, source: str) -> bool:
     return cfg.nat(nid, f"start.energy.{source}") > 0
 
 
-def cost_candidates(cfg: Config, nid: str) -> list[str]:
+def cost_candidates(cfg: Config, nid: str, n: Nation | None = None) -> list[str]:
     """Sources the market may pick on cost. Nuclear and hydro are policy-driven and appear only
     through the trend mix; coal only where the nation already uses it; geothermal only where it
-    has the resource."""
+    has the resource; sources that need research only once nation `n` has it (M12)."""
     out = []
     for s in COST_DRIVEN:
         if s not in cfg.energy_source_ids or not has_resource(cfg, nid, s):
+            continue
+        if cfg.requires(s) and (n is None or not research.can_build(cfg, n, s)):
             continue
         if s == "coal" and cfg.nat(nid, "start.energy.coal") <= 0:
             continue
@@ -117,15 +124,15 @@ def cost_candidates(cfg: Config, nid: str) -> list[str]:
     return out
 
 
-def market_sources(cfg: Config, nid: str) -> list[str]:
-    return sorted(set(cfg.nat_spec(nid)["bau"]["mix"]) | set(cost_candidates(cfg, nid)))
+def market_sources(cfg: Config, nid: str, n: Nation | None = None) -> list[str]:
+    return sorted(set(cfg.nat_spec(nid)["bau"]["mix"]) | set(cost_candidates(cfg, nid, n)))
 
 
 def horizon_quarters(cfg: Config, nid: str, n: Nation | None = None) -> int:
     """Market orders are delivered this many quarters after they are placed: the slowest build
     time among the sources it may build (after `n`'s permitting reform, if given). Faster
     sources start later, so the mix arrives together."""
-    return max(build_time(cfg, n, s) for s in market_sources(cfg, nid))
+    return max(build_time(cfg, n, s) for s in market_sources(cfg, nid, n))
 
 
 def market_mix(cfg: Config, world: World, nid: str, n: Nation) -> dict[str, float]:
@@ -137,12 +144,12 @@ def market_mix(cfg: Config, world: World, nid: str, n: Nation) -> dict[str, floa
     w = cfg.tune("market.cost_weight")
     temp = cfg.tune("market.cost_temperature")
     trend = {s: v["value"] for s, v in cfg.nat_spec(nid)["bau"]["mix"].items()}
-    cands = cost_candidates(cfg, nid)
+    cands = cost_candidates(cfg, nid, n)
     costs = {s: tech.lcoe(cfg, world, n, s) for s in cands}
     low = min(costs.values())
     weights = {s: math.exp(-(costs[s] - low) / temp) for s in cands}
     total = sum(weights.values())
-    mix = {s: (1 - w) * trend.get(s, 0.0) for s in market_sources(cfg, nid)}
+    mix = {s: (1 - w) * trend.get(s, 0.0) for s in market_sources(cfg, nid, n)}
     for s in cands:
         mix[s] += w * weights[s] / total
     return mix
@@ -253,7 +260,7 @@ def split_gap(
     if leftover > 1e-12 and not n.fossil_ban:  # under a ban the gap stays unfilled
         fossil = {s: w for s, w in mix.items() if energy.is_fossil(cfg, s) and w > 0}
         if not fossil:
-            options = [s for s in cost_candidates(cfg, nid) if energy.is_fossil(cfg, s)]
+            options = [s for s in cost_candidates(cfg, nid, n) if energy.is_fossil(cfg, s)]
             if lead is not None:
                 options = [s for s in options if build_time(cfg, n, s) <= lead]
             if not options:

@@ -28,7 +28,7 @@ from sim import canonical
 
 DEFAULT_DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
-FILES = ("tuning", "techs", "countries", "events", "targets")
+FILES = ("tuning", "techs", "countries", "events", "targets", "research")
 TUNABLE_STATUSES = frozenset({"placeholder", "calibrated"})
 TUNABLE_KEYS = frozenset({"value", "status", "note", "source", "unit"})
 PERSONALITIES = frozenset({"green_leader", "fossil_defender", "opportunist", "cautious_follower"})
@@ -99,6 +99,10 @@ REQUIRED_TUNING = (
     "slots.domestic_bank_cap",
     "slots.diplomatic_bank_cap",
     "market.cost_weight",
+    "research.h2_cap_factor",
+    "research.ccs_capture",
+    "research.ccs_capital_cost",
+    "ai.tech_research_share",
     "permitting.max_cut",
     "permitting.pc_per_level",
     "permitting.vote_weight",
@@ -297,6 +301,7 @@ REQUIRED_TUNING = (
     "shocks.disruption_min_quarters",
     "shocks.disruption_extra_quarters",
     "shocks.disruption_cost_penalty",
+    "ai.personalities.{personality}.research_utility",
     "ai.personalities.{personality}.w_growth",
     "ai.personalities.{personality}.w_security",
     "ai.personalities.{personality}.w_emissions",
@@ -366,6 +371,7 @@ class Config:
     countries: dict[str, Any]
     events: dict[str, Any]
     targets: dict[str, Any]
+    research: dict[str, Any]
 
     def to_dict(self) -> dict[str, Any]:
         return {name: getattr(self, name) for name in FILES}
@@ -434,6 +440,30 @@ class Config:
     def vre_ids(self) -> list[str]:
         return [s for s in self.source_ids if self.category(s) == "variable_renewable"]
 
+    # --- research (M12) ---------------------------------------------------------------------
+
+    def requires(self, source: str) -> str | None:
+        """The research technology a nation needs to build `source`, if any."""
+        return self.techs["sources"][source].get("requires")
+
+    @property
+    def start_source_ids(self) -> list[str]:
+        """Energy sources that exist in 2025 (no research needed)."""
+        return [s for s in self.energy_source_ids if not self.requires(s)]
+
+    def start_energy(self, nation: str, source: str) -> float:
+        """2025 use of a source (EJ/yr); zero for sources that need research."""
+        if self.requires(source):
+            return 0.0
+        return self.nat(nation, f"start.energy.{source}")
+
+    @property
+    def tech_ids(self) -> list[str]:
+        return sorted(self.research["techs"])
+
+    def rtech(self, tech: str) -> dict[str, Any]:
+        return self.research["techs"][tech]
+
 
 def _lookup(node: Any, dotted_path: str, where: str) -> Any:
     for part in dotted_path.split("."):
@@ -466,7 +496,37 @@ def load(data_dir: Path | str = DEFAULT_DATA_DIR) -> Config:
     _validate_tuning(cfg)
     _validate_targets(cfg)
     _validate_difficulty(cfg)
+    _validate_research(cfg)
     return cfg
+
+
+def _validate_research(cfg: Config) -> None:
+    """The tech tree (M12): known prerequisites, effects on known sources, and every gated
+    source unlocked by the technology it names."""
+    techs = cfg.research.get("techs")
+    if not isinstance(techs, dict) or not techs:
+        raise ConfigError("research.yaml: 'techs' must be a non-empty mapping")
+    _require(cfg.research, ["spillover"], "research")
+    for tid, spec in techs.items():
+        _require(spec, ["cost", "min_quarters"], f"research.{tid}")
+        for pre in spec.get("requires", []):
+            if pre not in techs:
+                raise ConfigError(f"research.yaml: {tid} requires unknown technology {pre}")
+        effects = spec.get("effects", {})
+        for kind in ("cost", "build_time"):
+            for source in effects.get(kind, {}):
+                if source not in cfg.techs["sources"]:
+                    raise ConfigError(f"research.yaml: {tid} affects unknown source {source}")
+                _require(effects[kind], [source], f"research.{tid}.effects.{kind}")
+        for source in spec.get("unlocks", []):
+            if cfg.techs["sources"].get(source, {}).get("requires") != tid:
+                raise ConfigError(
+                    f"research.yaml: {tid} unlocks {source}, which must say requires: {tid}"
+                )
+    for sid, spec in cfg.techs["sources"].items():
+        need = spec.get("requires")
+        if need and sid not in techs.get(need, {}).get("unlocks", []):
+            raise ConfigError(f"techs.yaml: {sid} requires {need}, which does not unlock it")
 
 
 def _is_tunable(node: Any) -> bool:
@@ -515,7 +575,7 @@ def _expand(paths: tuple[str, ...], cfg: Config) -> list[str]:
         elif "{fuel}" in p:
             out.extend(p.replace("{fuel}", f) for f in FUELS)
         elif "{energy_source}" in p:
-            out.extend(p.replace("{energy_source}", s) for s in cfg.energy_source_ids)
+            out.extend(p.replace("{energy_source}", s) for s in cfg.start_source_ids)
         else:
             out.append(p)
     return out

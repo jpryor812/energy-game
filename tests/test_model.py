@@ -30,7 +30,7 @@ def bau_run(cfg):
 def test_t0_dispatch_reproduces_data(cfg, world):
     n = world.nations["AAA"]
     for s in cfg.energy_source_ids:
-        assert n.supply[s] == pytest.approx(cfg.nat("AAA", f"start.energy.{s}"))
+        assert n.supply[s] == pytest.approx(cfg.start_energy("AAA", s))
     assert n.demand == pytest.approx(sum(n.supply.values()))
 
 

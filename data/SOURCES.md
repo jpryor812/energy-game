@@ -51,3 +51,11 @@ Ember yearly electricity data (wind, bioenergy, other renewables by country) and
 Renewable Energy Statistics (offshore wind and geothermal capacity and generation by country).
 Offshore wind and geothermal costs in `data/techs.yaml` are IRENA order of magnitude (Renewable
 Power Generation Costs), not re-checked.
+
+## M12 tech tree (design assumptions)
+
+All research costs, minimum times and effects in `data/research.yaml`, and the future sources in
+`data/techs.yaml` (smr, advanced_fission, fusion, enhanced_geothermal, long_duration_storage,
+electrolysers), are design assumptions: order of magnitude only, unsourced. Small modular reactor
+first-of-a-kind cost (~$10,000/kW) and carbon-capture retrofit cost (~$1,500/kW) are rough
+public-estimate orders of magnitude, not re-checked.

@@ -15,7 +15,7 @@ from sim.state import Nation, World
 
 def new_nation(cfg: Config, nid: str) -> Nation:
     spec = cfg.nat_spec(nid)
-    use = {s: cfg.nat(nid, f"start.energy.{s}") for s in cfg.energy_source_ids}
+    use = {s: cfg.start_energy(nid, s) for s in cfg.energy_source_ids}
     total = sum(use.values())
     gdp = cfg.nat(nid, "start.gdp")
     capacity = {s: 0.0 for s in cfg.source_ids}

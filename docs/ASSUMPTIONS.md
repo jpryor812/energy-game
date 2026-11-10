@@ -624,6 +624,41 @@ planning)").
 157. **Not split**: marine energy and solar thermal power are too small to model yet;
      traditional biomass is not in the Energy Institute primary energy figures used here.
 
+## M12: the tech tree
+
+158. **Twelve technologies** in data/research.yaml (decided with the user, 2026-11-09): five
+     upgrades (next-gen solar x0.8 solar cost, advanced batteries x0.75 storage, floating
+     offshore wind x0.85, HVDC supergrid x0.75 grid cost and build time, advanced removal x0.5
+     removal cost), carbon capture retrofits, and six that unlock new sources: small modular
+     reactors, enhanced geothermal (anywhere), electrolysers for green hydrogen, long-duration
+     storage (after advanced batteries), advanced fission (after SMRs) and fusion (after
+     advanced fission, not before 2040). All costs, times and effects are design assumptions,
+     order of magnitude, unsourced.
+159. **Research is time-based and funding-limited.** Progress per quarter = funding / cost,
+     capped at 1 / minimum quarters; spending beyond the cap is refused ("max" spends exactly
+     the useful amount). Richer nations reach the minimum time; poorer ones take longer.
+     Progress never decays. A fully funded technology with an earliest year waits for it.
+160. **Spillover**: once any nation has a technology, it costs everyone else 40% less.
+161. **A technology works only for the nation that has it** (until licensing, M13): new
+     sources are buildable, by the player, the market or the AI, only by owners; deals in a new
+     source need the financier to have it (it supplies the plant).
+162. **Green hydrogen is modelled as electrolysers**: an enabler that absorbs wind and solar
+     like storage and also raises the nation's clean and wind-and-solar ceilings by its
+     capacity as a share of demand (`research.h2_cap_factor`), standing in for hydrogen serving
+     demand that cannot be electrified directly.
+163. **Carbon capture is a retrofit**, not a new plant type: coal or gas capacity fitted with
+     capture (`retrofit_ccs`) emits 10% of its CO2 (`research.ccs_capture` 0.9); retrofits
+     retire with the plants. Fossil bans do not affect retrofits. The dispatch merit order
+     does not yet see the lower carbon cost of captured plants.
+164. **Fusion has no "unlimited energy" effect** for now: firm clean power with a high first
+     cost and fast learning, still limited by build rates.
+165. **AI research**: each AI funds the first technology in its personality's priority list
+     it can research (`ai.personalities.*.research_priority`), with 8% of capital up to the
+     useful amount; cautious followers only research what someone already has. In the AI world
+     the first breakthrough comes in 2027 (next-gen solar, USA) and advanced fission in 2044;
+     fusion is not reached. AI nations build SMRs but rarely the other new sources, and fossil
+     defenders that research carbon capture rarely retrofit (they weigh emissions little).
+
 ## Open questions
 
 - **AI overshoot.** Cheap clean energy leads several low-ambition nations to cut far past their
@@ -651,6 +686,7 @@ planning)").
   (round 1), above coal; not yet investigated.
 - **Cheap first doses** of methane abatement, efficiency and electrification, and strong
   research; not changed.
+- **The AI uses few of the new technologies** it researches (item 165); players can.
 - **The late game and Champion** are untested since M9's extra slots; the next playtest round
   should check them.
 - **Resolved in M9:** climate-loan credit for plants never built, factory capacity scoring

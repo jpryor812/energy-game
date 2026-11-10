@@ -46,6 +46,11 @@ they build. Your own `build_capacity` orders come on top.
 local opposition costs approval and votes, more the more you build; how much depends on your
 country (shown on the screen).
 
+**Research.** The RESEARCH section lists the tech tree. `fund_research` makes progress at
+funding / cost a quarter, but never faster than the technology's minimum time; finished
+technologies make existing sources cheaper or unlock new ones (small modular reactors through to
+fusion), for you only. Once any nation has a technology it is cheaper for others to research.
+
 **Deals.** You can offer other nations clean-energy deals (loans, equipment on credit, energy as
 a service, equity) and answer offers in your inbox. Deals cut emissions abroad, earn returns and
 build trust; equity can be lost if the host becomes unreliable. A nation can host deal capacity
