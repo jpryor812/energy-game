@@ -225,6 +225,54 @@ def _fund_research_apply(cfg, world, n, act):
     research.fund(cfg, world, n, act["tech"], act["amount"])
 
 
+def _set_license_check(cfg, world, n, act):
+    tech = _choice(act, "tech", cfg.tech_ids)
+    if not research.researched(n, tech):
+        raise Rejected(f"you can only license a technology you researched yourself ({tech})")
+    price = act.get("price")
+    if price is not None and (not isinstance(price, int | float) or price < 0):
+        raise Rejected("'price' must be a number >= 0 (T$), or null for not for sale")
+    exclude = act.get("exclude", [])
+    if not isinstance(exclude, list) or any(x not in world.nations or x == n.id for x in exclude):
+        raise Rejected("'exclude' must be a list of other nations' ids")
+    return {}
+
+
+def _set_license_apply(cfg, world, n, act):
+    tech, price = act["tech"], act.get("price")
+    if price is None:
+        n.license_prices.pop(tech, None)
+    else:
+        n.license_prices[tech] = float(price)
+    old = set(n.license_excluded.get(tech, []))
+    new = sorted(set(act.get("exclude", [])))
+    for nid in sorted(set(new) - old):  # an export control costs the excluded nation's trust
+        diplomacy.adjust(world, nid, n.id, -cfg.tune("license.exclusion_trust_hit"))
+    if new:
+        n.license_excluded[tech] = new
+    else:
+        n.license_excluded.pop(tech, None)
+
+
+def _buy_license_check(cfg, world, n, act):
+    tech = _choice(act, "tech", cfg.tech_ids)
+    seller = _choice(act, "seller", [x for x in sorted(world.nations) if x != n.id])
+    if research.has(n, tech):
+        raise Rejected(f"you already have {tech}")
+    missing = research.missing_prerequisites(cfg, n, tech)
+    if missing:
+        raise Rejected(f"{tech} needs {', '.join(missing)} first")
+    price = research.license_price(cfg, world, seller, n.id, tech)
+    if price is None:
+        raise Rejected(f"{seller} will not sell you {tech}")
+    return {"capital": price}
+
+
+def _buy_license_apply(cfg, world, n, act):
+    price = research.license_price(cfg, world, act["seller"], n.id, act["tech"])
+    research.grant_license(world, n.id, act["seller"], act["tech"], price or 0.0)
+
+
 def _ccs_check(cfg, world, n, act):
     fuel = _choice(act, "fuel", list(research.CCS_FUELS))
     if not research.can(cfg, n, "ccs_retrofit"):
@@ -630,6 +678,8 @@ SPECS: dict[str, Spec] = {
     "set_permitting": Spec(DOMESTIC, _permitting_check, _permitting_apply),
     "fund_research": Spec(DOMESTIC, _fund_research_check, _fund_research_apply),
     "retrofit_ccs": Spec(DOMESTIC, _ccs_check, _ccs_apply),
+    "set_license_price": Spec(DIPLOMATIC, _set_license_check, _set_license_apply),
+    "buy_license": Spec(DIPLOMATIC, _buy_license_check, _buy_license_apply),
     "electrification_program": Spec(DOMESTIC, _spend_check, _electrification_apply),
     "build_removal": Spec(DOMESTIC, _removal_check, _removal_apply),
     "methane_abatement": Spec(DOMESTIC, _spend_check, _methane_apply),

@@ -116,3 +116,6 @@ Each run leaves `notes.md`, `report.md` and `transcript.jsonl` in its folder. `-
 - **M12 (tech tree):** done. Twelve technologies (`fund_research`): upgrades to existing
   sources, carbon-capture retrofits, and new sources from small modular reactors to fusion.
   Research is time-based and faster with more funding; AI nations race too.
+- **M13 (licensing):** done. Sell licences to technologies you researched (`set_license_price`,
+  with export controls) and buy them from others (`buy_license`); AI nations price by rule;
+  patents expire after ten years.

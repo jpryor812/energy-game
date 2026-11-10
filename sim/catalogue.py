@@ -85,6 +85,29 @@ def catalogue(cfg: Config) -> dict[str, dict[str, Any]]:
             "cost": "capital: amount",
             "example": {"type": "fund_research", "tech": "next_gen_solar", "amount": "max"},
         },
+        "set_license_price": {
+            "summary": "Offer licences to a technology you researched yourself: a one-off "
+            "price in T$ (null = not for sale), and nations you refuse to sell to (an export "
+            "control; each excluded nation's trust in you drops). Patents expire "
+            f"{_t(cfg, 'license.patent_years'):g} years after a technology's first completion: "
+            "then any owner licenses it free and exclusions lapse.",
+            "params": {
+                "tech": "a technology you researched",
+                "price": "T$ >= 0, or null",
+                "exclude": "optional list of nation ids",
+            },
+            "cost": "none",
+            "example": {"type": "set_license_price", "tech": "next_gen_solar", "price": 0.05},
+        },
+        "buy_license": {
+            "summary": "Buy a licence to a technology from a nation that sells it (see 'for sale "
+            "to you' under RESEARCH): you get the technology at once. You need its "
+            "prerequisites; you cannot resell it. AI sellers price by how much finishing the "
+            "research would cost you and how much they trust you.",
+            "params": {"tech": "technology id", "seller": others},
+            "cost": "capital: the seller's price",
+            "example": {"type": "buy_license", "tech": "next_gen_solar", "seller": "USA"},
+        },
         "retrofit_ccs": {
             "summary": "Fit carbon capture to existing coal or gas plants (needs the ccs "
             f"technology): captures {_t(cfg, 'research.ccs_capture'):.0%} of their CO2. "

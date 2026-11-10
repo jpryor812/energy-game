@@ -678,6 +678,24 @@ def research_candidate(cfg: Config, world: World, nid: str, personality: str):
     return None
 
 
+def license_candidate(cfg: Config, world: World, nid: str, personality: str):
+    """A licence this AI would buy (M13): the first technology in its priority list whose
+    cheapest offer costs less than finishing the research itself and fits its budget."""
+    n = world.nations[nid]
+    budget = cfg.tune("license.ai_license_share") * max(0.0, n.capital)
+    for tid in cfg.tuning["ai"]["personalities"][personality].get("research_priority", []):
+        if research.has(n, tid) or research.missing_prerequisites(cfg, n, tid):
+            continue
+        found = research.offers(cfg, world, nid, tid)
+        if not found:
+            continue
+        price, seller = found[0]
+        if price < research.research_cost_for(cfg, world, n, tid) and price <= budget:
+            act = {"type": "buy_license", "tech": tid, "seller": seller}
+            return _p(cfg, personality, "research_utility") + 0.1, act
+    return None
+
+
 def scored(cfg: Config, world: World, nid: str) -> list[tuple[float, Action, dict[str, float]]]:
     """Every valid candidate with its utility and resource cost, best first."""
     personality = cfg.nat_spec(nid)["personality"]
@@ -696,9 +714,10 @@ def scored(cfg: Config, world: World, nid: str) -> list[tuple[float, Action, dic
             u = utility(cfg, personality, estimate(cfg, world, nid, act, ctx), w_em, income)
         out.append((u, act, cost))
     extra = diplomatic(cfg, world, nid, personality, ctx, w_em, income)
-    found = research_candidate(cfg, world, nid, personality)
-    if found:
-        extra.append(found)
+    for pick in (research_candidate, license_candidate):
+        found = pick(cfg, world, nid, personality)
+        if found:
+            extra.append(found)
     for u, act in extra:
         try:
             cost = actions.cost(cfg, world, ctx.n, act)

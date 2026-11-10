@@ -190,6 +190,11 @@ advanced fission, fusion). Research takes at least a minimum time and goes faste
 funding, so large economies have an edge; a finished technology works only for its owner, and
 once anyone has one it is cheaper for others to research. Licensing it to others is M13.
 
+**Licensing (M13 build note, decided with the user 2026-11-09).** A nation that researched a
+technology sets its price (or refuses to sell, and can exclude nations as an export control);
+others buy a licence once and get it at once. AI sellers price by how much the research would
+cost the buyer and how much they trust it. Patents expire after ten years, making licences free.
+
 **Permitting reform (M10 build note, decided with the user 2026-11-09).** A domestic policy,
 level 0 to 1: new plants, grid and storage build faster (the permitting part of each build
 time is cut), but local opposition costs approval and enters the vote as its own term, more

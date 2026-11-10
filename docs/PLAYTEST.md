@@ -49,7 +49,9 @@ country (shown on the screen).
 **Research.** The RESEARCH section lists the tech tree. `fund_research` makes progress at
 funding / cost a quarter, but never faster than the technology's minimum time; finished
 technologies make existing sources cheaper or unlock new ones (small modular reactors through to
-fusion), for you only. Once any nation has a technology it is cheaper for others to research.
+fusion), for you only. Once any nation has a technology it is cheaper for others to research. You can also buy a
+licence (`buy_license`) from a nation that sells it, and sell licences to what you researched
+(`set_license_price`, optionally refusing some nations); patents expire after ten years.
 
 **Deals.** You can offer other nations clean-energy deals (loans, equipment on credit, energy as
 a service, equity) and answer offers in your inbox. Deals cut emissions abroad, earn returns and

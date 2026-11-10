@@ -174,6 +174,12 @@ def observe(game: Game) -> dict[str, Any]:
             "blocked": research.blocked(cfg, n, tid),
             "first": [first[0], _label(game, first[1])] if first else None,
             "owners": sorted(o for o, m in w.nations.items() if research.has(m, tid)),
+            # M13 licensing
+            "licensed": tid in n.licensed,
+            "offers": [[s, _r(pr, 4)] for pr, s in research.offers(cfg, w, me, tid)][:3],
+            "patent_expired": research.patent_expired(cfg, w, tid),
+            "my_price": n.license_prices.get(tid) if research.researched(n, tid) else None,
+            "excluded": n.license_excluded.get(tid, []),
             "gives": spec.get("unlocks", [])
             + spec.get("enables", [])
             + [
@@ -554,8 +560,31 @@ def _research(tree: list[dict[str, Any]], ccs: dict[str, float], brief: bool) ->
         "RESEARCH (fund_research; cost T$ now / minimum quarters; a technology someone already has "
         "costs less):",
     ]
-    have = [r["tech"] for r in tree if r["have"]]
+    have = [r["tech"] + (" (licensed)" if r.get("licensed") else "") for r in tree if r["have"]]
     out.append("  you have: " + (", ".join(have) if have else "nothing yet"))
+    mine = [r for r in tree if r["have"] and not r.get("licensed")]
+    if mine:
+        out.append(
+            "  your licences (set_license_price): "
+            + "; ".join(
+                f"{r['tech']} "
+                + ("free (patent expired)" if r.get("patent_expired")
+                   else f"{r['my_price']:.3g} T$" if r.get("my_price") is not None
+                   else "not for sale")
+                + (f", excluding {', '.join(r['excluded'])}" if r.get("excluded") else "")
+                for r in mine
+            )
+        )  # fmt: skip
+    sale = [r for r in tree if not r["have"] and r.get("offers")]
+    if sale:
+        out.append(
+            "  for sale to you (buy_license; cheapest first): "
+            + "; ".join(
+                f"{r['tech']} " + ", ".join(f"{s} {p:.3g}" for s, p in r["offers"])
+                + ("" if not r["blocked"] or "already" in r["blocked"] else f" ({r['blocked']})")
+                for r in sale
+            )
+        )  # fmt: skip
     for r in tree:
         if not r["have"] and r["progress"] > 0:
             out.append(

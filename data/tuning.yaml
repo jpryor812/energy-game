@@ -274,6 +274,31 @@ slots:
     status: placeholder
     note: Most diplomatic slots that can be held, this quarter's included (M8). A year's worth.
 
+license:
+  patent_years:
+    value: 10
+    status: placeholder
+    note: M13 - years after a technology's first completion when its patents expire; it is then free to license from any owner, and export controls stop applying. Decided with the user, 2026-11-09.
+  ai_markup:
+    value: 0.6
+    status: placeholder
+    note: M13 - an AI seller asks this share of what finishing the research would cost the buyer, so buying is cheaper than researching. Design assumption.
+  ai_trust_premium:
+    value: 2.0
+    status: placeholder
+    note: M13 - an AI's price rises by this x (0.5 - its trust in the buyer) when trust is below neutral.
+  ai_refuse_trust:
+    value: 0.3
+    status: placeholder
+    note: M13 - an AI will not sell to a nation it trusts less than this.
+  ai_license_share:
+    value: 0.3
+    status: placeholder
+    note: M13 - most of its capital an AI spends on one licence.
+  exclusion_trust_hit:
+    value: 0.05
+    status: placeholder
+    note: M13 - trust a nation loses in you when you exclude it from buying one of your technologies (export control).
 permitting:
   max_cut:
     value: 0.75

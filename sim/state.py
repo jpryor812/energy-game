@@ -154,6 +154,11 @@ class Nation:
     research_progress: dict[str, float] = field(default_factory=dict)
     techs: list[str] = field(default_factory=list)
     ccs: dict[str, float] = field(default_factory=dict)
+    # M13 licensing: technologies bought rather than researched, the asking price for each
+    # technology it researched (absent = not for sale), and buyers it refuses (export control).
+    licensed: list[str] = field(default_factory=list)
+    license_prices: dict[str, float] = field(default_factory=dict)
+    license_excluded: dict[str, list[str]] = field(default_factory=dict)
     disruption: dict[str, float] = field(default_factory=dict)
     disruption_until: dict[str, float] = field(default_factory=dict)
 
@@ -173,7 +178,7 @@ class Nation:
         "capacity", "subsidies", "tariffs", "supply", "fossil_production", "fossil_exports",
         "fossil_imports", "base", "research", "climate_credit", "tax_credits",
         "factory_capacity", "factory_sales", "equipment_demand", "domestic_content", "jobs",
-        "disruption", "disruption_until", "research_progress", "ccs",
+        "disruption", "disruption_until", "research_progress", "ccs", "license_prices",
     )  # fmt: skip
 
     @classmethod
@@ -187,6 +192,8 @@ class Nation:
             pipeline=[Construction.from_dict(c) for c in d["pipeline"]],
             slots_banked={k: int(v) for k, v in d["slots_banked"].items()},
             techs=[str(x) for x in d["techs"]],
+            licensed=[str(x) for x in d["licensed"]],
+            license_excluded={k: [str(x) for x in v] for k, v in d["license_excluded"].items()},
             pledge=Pledge.from_dict(d["pledge"]) if d["pledge"] is not None else None,
         )
 
@@ -224,6 +231,8 @@ class World:
     forest_fund: float = 0.0
     # M12: who finished each technology first, and when: tech -> [nation, turn].
     tech_firsts: dict[str, list[Any]] = field(default_factory=dict)
+    # M13: licences sold: [buyer, seller, tech, price (T$), turn].
+    licenses: list[list[Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
@@ -259,6 +268,9 @@ class World:
             aerosol_index=float(d["aerosol_index"]),
             forest_fund=float(d["forest_fund"]),
             tech_firsts={k: [str(v[0]), int(v[1])] for k, v in d["tech_firsts"].items()},
+            licenses=[
+                [str(b), str(s), str(t), float(p), int(q)] for b, s, t, p, q in d["licenses"]
+            ],
         )
 
     def to_json(self, *, indent: int | None = 2) -> str:

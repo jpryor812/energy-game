@@ -274,6 +274,15 @@ def notices(cfg: Config, before: World, after: World, me: str) -> list[str]:
         elif first:
             out.append(f"{nid} is the first to complete {tid}{what}; it now costs others less.")
 
+    # Licences bought and sold this quarter (M13).
+    for buyer, seller, tid, price, t in after.licenses:
+        if t != before.t:
+            continue
+        if seller == me:
+            out.append(f"Licence sold: {buyer} bought {tid} from you for {price:.4g} T$.")
+        elif buyer == me:
+            out.append(f"Licence bought: {tid} from {seller} for {price:.4g} T$.")
+
     # Orders that will not arrive before the game ends (M9).
     end = int(cfg.tune("time.turns"))
     known = {(c.source, c.complete_turn, c.amount) for c in nb.pipeline}

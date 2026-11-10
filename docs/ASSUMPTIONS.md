@@ -659,6 +659,27 @@ planning)").
      fusion is not reached. AI nations build SMRs but rarely the other new sources, and fossil
      defenders that research carbon capture rarely retrofit (they weigh emissions little).
 
+## M13: technology licensing
+
+166. **Licences** (decided with the user, 2026-11-09): a nation that researched a technology
+     may sell licences; a buyer pays once (to the seller's capital) and gets the technology at
+     once. `set_license_price` (player: one price per technology, null = not for sale, plus
+     excluded nations) and `buy_license` use diplomatic slots. The player's technologies are
+     not for sale until priced.
+167. **Buyers need the prerequisites; licensees cannot resell.**
+168. **Export controls**: excluding a nation costs its trust in you
+     (`license.exclusion_trust_hit`, 0.05 per exclusion).
+169. **Patents expire** 10 years after a technology's first completion: any owner then
+     licenses it free to anyone with the prerequisites, and exclusions lapse.
+170. **AI sellers price by rule**: 60% of what finishing the research would cost the buyer,
+     raised when they trust the buyer less than neutral, refused below trust 0.3. **AI buyers**
+     buy the first technology in their priority list whose cheapest offer is below their own
+     remaining research cost and within 30% of capital.
+171. **Effect in the AI world**: 154 licences, 4.2 T$ in all (USA, Australia and the EU sell
+     most); almost every technology reaches all 16 nations by 2049 (advanced fission 5).
+     Capital spent on licences rather than building leaves global CO2 at 9.6 Gt in 2049 (8.2
+     in M12); warming still ends at 1.66 degC.
+
 ## Open questions
 
 - **AI overshoot.** Cheap clean energy leads several low-ambition nations to cut far past their

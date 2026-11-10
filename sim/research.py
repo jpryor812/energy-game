@@ -162,3 +162,70 @@ def retire_ccs(n: Nation) -> None:
     for fuel in CCS_FUELS:
         if fuel in n.ccs:
             n.ccs[fuel] = min(n.ccs[fuel], n.capacity.get(fuel, 0.0))
+
+
+# --- licensing (M13) -----------------------------------------------------------------------------
+#
+# A nation that researched a technology may sell licences to it; a buyer pays once and gets the
+# technology (it needs the technology's prerequisites). Licensees cannot resell. The player sets
+# one asking price per technology (none = not for sale) and may exclude nations (an export
+# control); AI sellers price each buyer by rule. Ten years after a technology's first completion
+# its patents expire: any owner then licenses it free, to anyone, and exclusions lapse.
+
+
+def researched(n: Nation, tech: str) -> bool:
+    return tech in n.techs and tech not in n.licensed
+
+
+def patent_expired(cfg: Config, world: World, tech: str) -> bool:
+    first = world.tech_firsts.get(tech)
+    return bool(first) and world.t >= first[1] + cfg.tune("license.patent_years") * 4
+
+
+def research_cost_for(cfg: Config, world: World, n: Nation, tech: str) -> float:
+    """What finishing the research would still cost this nation (T$)."""
+    return cost_now(cfg, world, tech) * (1 - n.research_progress.get(tech, 0.0))
+
+
+def license_price(cfg: Config, world: World, seller: str, buyer: str, tech: str) -> float | None:
+    """The seller's price to this buyer (T$), or None if it will not sell."""
+    from sim import diplomacy
+
+    s, b = world.nations[seller], world.nations[buyer]
+    if seller == buyer or has(b, tech):
+        return None
+    if patent_expired(cfg, world, tech):
+        return 0.0 if has(s, tech) else None
+    if not researched(s, tech) or buyer in s.license_excluded.get(tech, []):
+        return None
+    if seller == world.player:
+        price = s.license_prices.get(tech)
+        return price if price is not None and price >= 0 else None
+    trust = diplomacy.trust(world, seller, buyer)
+    if trust < cfg.tune("license.ai_refuse_trust"):
+        return None
+    premium = cfg.tune("license.ai_trust_premium") * max(0.0, 0.5 - trust)
+    base = cfg.tune("license.ai_markup") * research_cost_for(cfg, world, b, tech)
+    return base * (1 + premium)
+
+
+def offers(cfg: Config, world: World, buyer: str, tech: str) -> list[tuple[float, str]]:
+    """(price, seller) for every nation that would sell `tech` to `buyer`, cheapest first."""
+    out = []
+    for sid in sorted(world.nations):
+        price = license_price(cfg, world, sid, buyer, tech)
+        if price is not None:
+            out.append((price, sid))
+    return sorted(out)
+
+
+def missing_prerequisites(cfg: Config, n: Nation, tech: str) -> list[str]:
+    return [p for p in cfg.rtech(tech).get("requires", []) if not has(n, p)]
+
+
+def grant_license(world: World, buyer: str, seller: str, tech: str, price: float) -> None:
+    b, s = world.nations[buyer], world.nations[seller]
+    s.capital += price
+    b.techs = sorted(set(b.techs) | {tech})
+    b.licensed = sorted(set(b.licensed) | {tech})
+    world.licenses.append([buyer, seller, tech, price, world.t])
