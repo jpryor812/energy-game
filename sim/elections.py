@@ -95,7 +95,7 @@ def local_opposition_now(cfg: Config, world: World) -> float:
     if p.permitting <= 0 or p.demand <= 0:
         return 0.0
     built = p.build_rate / p.demand
-    return p.permitting * economy.permitting_opposition(cfg, world.player) * built
+    return p.permitting * economy.permitting_backlash(cfg, world, p) * built
 
 
 def term_opposition(world: World) -> float:

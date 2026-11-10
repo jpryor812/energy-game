@@ -58,9 +58,14 @@ def _results(results: list[dict[str, Any]]) -> list[str]:
 def _quarter(rep: dict[str, Any]) -> list[str]:
     lines = [f"-- {rep['quarter']} played --"]
     lines += _results(rep["results"])
-    if rep["election"]:
+    if rep["election"]:  # M14: its own block, so it is not lost in the next quarter's screen
         e = rep["election"]
-        lines.append(f"  ELECTION: {e['event']} with {e['vote']:.3f} of the vote")
+        lines += [
+            "",
+            f"  ===== ELECTION {rep['quarter']}: {e['event'].upper()} with {e['vote']:.3f} of the "
+            "vote =====",
+            "",
+        ]
     lines += [f"  {x}" for x in rep.get("notices", [])]
     return lines
 

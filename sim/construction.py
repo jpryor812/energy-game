@@ -76,14 +76,7 @@ def complete(n: Nation, t: int) -> dict[str, float]:
 def build_time(cfg: Config, n: Nation | None, source: str) -> int:
     """Quarters to build `source` in nation `n`: the source's build time, less the part of its
     permitting time that the nation's permitting reform cuts (M10). At least one quarter."""
-    base = cfg.src(source, "build_time")
-    if n is None:
-        return int(base)
-    base *= research.build_time_multiplier(cfg, n, source)  # M12
-    if n.permitting <= 0:
-        return max(1, round(base))
-    cut = cfg.tune("permitting.max_cut") * n.permitting * cfg.src(source, "permitting_share")
-    return max(1, round(base * (1 - cut)))
+    return tech.build_quarters(cfg, n, source)
 
 
 def queue(cfg: Config, n: Nation, source: str, amount: float, t: int) -> None:

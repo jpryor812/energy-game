@@ -50,6 +50,16 @@ def permitting_opposition(cfg: Config, nid: str) -> float:
     return spec["value"] if spec else cfg.tune("permitting.default_opposition")
 
 
+def permitting_backlash(cfg: Config, world: World, n: Nation) -> float:
+    """Opposition to the nation's permitting reform now (M14): its permitting opposition, cut
+    by `permitting.habituation_factor` once the current level has held for
+    `permitting.habituation_quarters` (people get used to it)."""
+    opp = permitting_opposition(cfg, n.id)
+    if world.t - n.permitting_since >= cfg.tune("permitting.habituation_quarters"):
+        opp *= cfg.tune("permitting.habituation_factor")
+    return opp
+
+
 def growth_terms(cfg: Config, nid: str, n: Nation, t: int, dt: int = 1) -> dict[str, float]:
     share_short = n.shortfall / n.demand if n.demand > 0 else 0.0
     base_price = n.base.get("energy_price", 0.0)
@@ -178,7 +188,9 @@ def apply_growth(world: World, cfg: Config, dt: int) -> None:
             + cfg.tune(pol + "approval_price_hit") * terms["E"]
             + cfg.tune(pol + "approval_damage_hit") * terms["C"]
             + cfg.tune("actions.activity_approval_hit") * n.activity_cap
-            + cfg.tune("permitting.approval_hit") * n.permitting * permitting_opposition(cfg, nid)
+            + cfg.tune("permitting.approval_hit")
+            * n.permitting
+            * permitting_backlash(cfg, world, n)
         )
         pull = 1 - (1 - reversion) ** years
         n.approval = min(1.0, max(0.0, n.approval + pull * (baseline - n.approval) - hit * years))

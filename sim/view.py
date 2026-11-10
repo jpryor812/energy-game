@@ -31,7 +31,8 @@ from sim import (
 from sim.catalogue import catalogue
 from sim.session import Game
 
-FORECAST_AFTER = 4  # quarters into a term before the expected vote means anything
+FORECAST_AFTER = 1  # quarters into a term before the expected vote is shown (M14: was 4)
+SWING_Z = 1.96  # the swing stays within this many standard deviations 95% of the time
 
 
 def _r(x: float, nd: int = 3) -> float:
@@ -67,6 +68,7 @@ def observe(game: Game) -> dict[str, Any]:
             "needed": cfg.tune("elections.threshold"),
             "expected_vote": None,
             "parts": {},
+            "swing_range": _r(SWING_Z * cfg.tune("elections.swing_sd")),
         }
         if w.t - int(w.term_start["t"]) >= FORECAST_AFTER:
             parts = {k: v for k, v in elections.vote(cfg, w).items() if k != "swing"}
@@ -299,6 +301,15 @@ def observe(game: Game) -> dict[str, Any]:
                     s: construction.build_time(cfg, n, s)
                     for s in ("grid", "onshore_wind", "offshore_wind", "solar")
                 },
+                "build_times_without": {
+                    s: tech.build_quarters(cfg, n, s, reform=False)
+                    for s in ("grid", "onshore_wind", "offshore_wind", "solar")
+                },
+                "cost_saving": {
+                    s: _r(tech.permitting_saving(cfg, n, s))
+                    for s in ("grid", "onshore_wind", "offshore_wind", "solar")
+                },
+                "backlash": _r(economy.permitting_backlash(cfg, w, n)),
             },
         },
         "emissions": emissions,
@@ -390,15 +401,26 @@ def render(obs: dict[str, Any], brief: bool = False) -> str:
     if e["next"] and e["expected_vote"] is None:
         lines.append(
             f"Election {e['next']} (in {e['quarters_away']} q); need {e['needed']} of the vote. "
-            "Forecast from the second year of the term."
+            "Forecast from the second quarter of the term."
         )
     elif e["next"]:
         lines.append(
             f"Election {e['next']} (in {e['quarters_away']} q): expected vote "
-            f"{e['expected_vote']:.3f}, need {e['needed']} [{_kv(e['parts'], '{:+.3f}')}]; "
-            f"growth this term {e['growth_this_term'] * 100:.2f}%/yr vs expected "
-            f"{e['growth_expected'] * 100:.2f}%/yr; taxes and prices count as averages over the "
-            "term"
+            f"{e['expected_vote']:.3f}, need {e['needed']}; a random swing moves the result by up "
+            f"to about {e['swing_range']:.2f} (95% of the time), so keep a margin "
+            f"[{_kv(e['parts'], '{:+.3f}')}]"
+        )
+        gap = e["growth_this_term"] - e["growth_expected"]
+        lines.append(
+            f"  growth this term {e['growth_this_term'] * 100:.2f}%/yr vs expected "
+            f"{e['growth_expected'] * 100:.2f}%/yr ({'ahead' if gap >= 0 else 'behind'} by "
+            f"{abs(gap) * 100:.2f} pt); taxes, prices and jobs count as averages over the term"
+        )
+        lines.append(
+            "  levers: growth (lower taxes, lower energy prices, avoid blackouts); jobs "
+            "(retraining softens fossil losses; building and factories add jobs); prices (carbon "
+            "rebate, lower carbon price); taxes (cuts); local opposition (lower permitting reform; "
+            "it halves after a term at the same level)"
         )
         lines.append(
             f"  jobs (m), term average so far {_kv(e['jobs_term_average'], '{:.2f}')} against "
@@ -580,7 +602,9 @@ def _research(tree: list[dict[str, Any]], ccs: dict[str, float], brief: bool) ->
         out.append(
             "  for sale to you (buy_license; cheapest first): "
             + "; ".join(
-                f"{r['tech']} " + ", ".join(f"{s} {p:.3g}" for s, p in r["offers"])
+                f"{r['tech']} "
+                + ("free from any owner (patent expired)" if r.get("patent_expired")
+                   else ", ".join(f"{s} {p:.3g}" for s, p in r["offers"]))
                 + ("" if not r["blocked"] or "already" in r["blocked"] else f" ({r['blocked']})")
                 for r in sale
             )
@@ -637,10 +661,15 @@ def _race(r: dict[str, Any], me: str) -> str:
 
 def _effects(e: dict[str, Any]) -> str:
     pledge = {None: "none", True: "on track", False: "off track"}[e["pledge_on_track"]]
-    times = ", ".join(f"{s} {q}" for s, q in e["build_times"].items())
+    times = ", ".join(
+        f"{s} {q}" + (f" (was {e['build_times_without'][s]}, {e['cost_saving'][s]:.1%} cheaper)"
+                      if q < e["build_times_without"][s] else "")
+        for s, q in e["build_times"].items()
+    )  # fmt: skip
     return (
-        f"  permitting reform {e['permitting']:.2f} (build quarters now: {times}); your "
-        f"country's opposition to it x{e['permitting_opposition']:g}\n"
+        f"  permitting reform {e['permitting']:.2f} (build quarters now: {times}); backlash "
+        f"x{e['backlash']:g} (your country x{e['permitting_opposition']:g}, halved once a "
+        "level has held a full term)\n"
         f"  policy effects: retraining removes {e['retraining_relief']:.0%} of the fossil-job "
         f"penalty at elections | rebate removes {e['rebate_price_relief']:.0%} of the growth drag "
         f"from energy prices | methane cut {e['methane_cut_fossil']:.0%} (fossil), "

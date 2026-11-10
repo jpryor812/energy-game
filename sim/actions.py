@@ -203,6 +203,8 @@ def _permitting_check(cfg, world, n, act):
 def _permitting_apply(cfg, world, n, act):
     """Permitting reform (M10): faster builds for new orders, at a cost in approval and in the
     vote that grows with how much is built (sim.economy, sim.elections)."""
+    if float(act["level"]) > n.permitting:
+        n.permitting_since = float(world.t)  # M14: a new backlash starts when reform is raised
     n.permitting = float(act["level"])
 
 

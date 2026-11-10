@@ -52,6 +52,29 @@ def at_floor(cfg: Config, world: World, source: str) -> bool:
     return unit_cost(cfg, world, source) <= floor["value"] * cfg.src(source, "capital_cost") + 1e-15
 
 
+def build_quarters(cfg: Config, n: Nation | None, source: str, reform: bool = True) -> int:
+    """Quarters to build `source` in nation `n`: the source's build time, after the nation's
+    research (M12) and, if `reform`, the part of its permitting time its permitting reform cuts
+    (M10). At least one quarter."""
+    base = cfg.src(source, "build_time")
+    if n is None:
+        return int(base)
+    base *= research.build_time_multiplier(cfg, n, source)
+    if not reform or n.permitting <= 0:
+        return max(1, round(base))
+    cut = cfg.tune("permitting.max_cut") * n.permitting * cfg.src(source, "permitting_share")
+    return max(1, round(base * (1 - cut)))
+
+
+def permitting_saving(cfg: Config, n: Nation, source: str) -> float:
+    """Share of build cost saved by building faster under permitting reform (M14): less
+    interest during construction, `permitting.financing_share` x the discount rate per year
+    saved."""
+    saved = build_quarters(cfg, n, source, reform=False) - build_quarters(cfg, n, source)
+    rate = cfg.tune("market.discount_rate") * cfg.tune("permitting.financing_share")
+    return min(0.5, max(0.0, saved / 4 * rate))
+
+
 def research_multiplier(cfg: Config, nation: Nation, source: str) -> float:
     spent = nation.research.get(source, 0.0)
     half = cfg.tune("research.half_effect_spend")
@@ -66,6 +89,7 @@ def nation_unit_cost(cfg: Config, world: World, nation: Nation, source: str) -> 
         unit_cost(cfg, world, source)
         * research_multiplier(cfg, nation, source)
         * research.cost_multiplier(cfg, nation, source)  # M12 tech tree
+        * (1 - permitting_saving(cfg, nation, source))  # M14 faster builds, less interest
         * (1 + premium)
     )
 

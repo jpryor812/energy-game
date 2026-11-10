@@ -309,6 +309,24 @@ def notices(cfg: Config, before: World, after: World, me: str) -> list[str]:
             f"{cfg.tune('diplomacy.club_min_carbon_price'):g} $/t."
         )
 
+    # How the score moved this quarter, by component (M14).
+    if before.history:
+        old_s = scoring.score(cfg, before, me)
+        new_s = scoring.score(cfg, after, me)
+        moved = {
+            k: new_s["components"][k] - old_s["components"][k]
+            for k in new_s["components"]
+            if abs(new_s["components"][k] - old_s["components"][k]) >= 0.005
+        }
+        parts = ", ".join(f"{k} {v:+.2f}" for k, v in moved.items())
+        out.append(
+            f"Score {old_s['score_at_exit']:.1f} -> {new_s['score_at_exit']:.1f}"
+            + (f" (nation index parts: {parts})" if parts else "")
+            + (f"; world multiplier {new_s['world_multiplier']:.2f}"
+               if abs(new_s["world_multiplier"] - old_s["world_multiplier"]) >= 0.005 else "")
+            + "."
+        )  # fmt: skip
+
     # Bonuses gained or lost.
     if before.history:
         old_b = scoring.bonuses(cfg, before)[me]

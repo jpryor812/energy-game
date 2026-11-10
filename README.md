@@ -119,3 +119,7 @@ Each run leaves `notes.md`, `report.md` and `transcript.jsonl` in its folder. `-
 - **M13 (licensing):** done. Sell licences to technologies you researched (`set_license_price`,
   with export controls) and buy them from others (`buy_license`); AI nations price by rule;
   patents expire after ten years.
+- **M14 (fixes from playtest round 2):** permitting reform costs half the votes, its backlash
+  fades after a term and faster builds are cheaper; the election line shows the swing range,
+  the growth gap and the levers; score changes are reported each quarter; tax cuts to -2
+  points; a "Staying in office" section in the playtest guide.

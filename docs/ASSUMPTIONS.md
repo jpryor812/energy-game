@@ -680,6 +680,28 @@ planning)").
      Capital spent on licences rather than building leaves global CO2 at 9.6 Gt in 2049 (8.2
      in M12); warming still ends at 1.66 degC.
 
+## M14: fixes from playtest round 2
+
+172. **Permitting reform costs less and pays visibly.** `permitting.vote_weight` 0.4 -> 0.2;
+     the backlash (vote and approval) halves once a reform level has held for a term
+     (`permitting.habituation_quarters` 16, `habituation_factor` 0.5; raising the level
+     restarts it, lowering does not); and faster builds cut build cost by the interest saved
+     during construction (`permitting.financing_share` 0.5 x the discount rate per year saved:
+     wind 8 -> 5 quarters is about 2.6% cheaper). The screen shows build times with and without
+     reform, the saving, and the current backlash.
+173. **Election line**: the forecast shows from the second quarter of a term (was the second
+     year), with the swing's 95% range (1.96 x `elections.swing_sd`, about 0.04), the growth gap
+     against what the vote expects, and the levers that move each term. Election results print
+     as their own block.
+174. **Screen**: a notice each quarter with the score's change and the nation-index parts that
+     moved; licences under expired patents say "free from any owner (patent expired)".
+175. **Tax cuts down to -2 points** (`tax.min_change` -0.01 -> -0.02).
+176. **Playtest guide**: a "Staying in office" section with the vote levers, and a note that
+     actions resolve in list order.
+177. **Research stays out of reach for small economies by design** (the large-economy edge
+     decided with the user); licences and deals are their route. Joint research between nations
+     is a possible later feature.
+
 ## Open questions
 
 - **AI overshoot.** Cheap clean energy leads several low-ambition nations to cut far past their
@@ -707,6 +729,11 @@ planning)").
   (round 1), above coal; not yet investigated.
 - **Cheap first doses** of methane abatement, efficiency and electrification, and strong
   research; not changed.
+- **Rest-of-world regions (planned, agreed with the user 2026-11-10):** keep the aggregate rest
+  of the world, but split it into about 6-8 regions with a few numbers each (income,
+  emissions, fossil reserves, forest, trust), plus occasional event-driven minor nations (e.g.
+  an oil discovery the world can pay to keep in the ground, finance a clean alternative to, buy
+  from, or ignore). Not built yet.
 - **The AI uses few of the new technologies** it researches (item 165); players can.
 - **The late game and Champion** are untested since M9's extra slots; the next playtest round
   should check them.

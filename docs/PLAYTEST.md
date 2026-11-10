@@ -28,10 +28,31 @@ bonus races and who leads each.
   2048Q4. You need 50% of the vote. The vote is purely economic: growth over the term against
   what was expected, energy jobs this term against last term (both averaged over the term;
   fossil job losses count double unless you retrain workers), household energy prices and tax
-  rises (both averaged over the term), plus a small random swing. The
-  screen shows your expected vote from the second year of each term.
+  rises (both averaged over the term), local opposition to permitting reform, plus a random
+  swing of up to about 0.04 either way. The screen shows your expected vote from the second
+  quarter of each term.
 - **Fallen Government.** If stability falls below 0.1. Blackouts (energy shortfalls) and low
   approval erode stability.
+
+**Staying in office.** Most lost games in testing were lost at the first or second election, by
+players who spent everything on clean energy and reacted to the forecast too late. Check the
+expected vote every quarter from the start of a term and aim for at least 0.54, because the
+swing can take away 0.04. What moves it:
+
+- *Growth* (usually the biggest term): measured against the growth expected for your country.
+  Tax cuts, lower energy prices and avoiding blackouts help; heavy carbon prices and closing
+  plants hurt.
+- *Jobs*: this term's average against last term's. Retraining removes much of the penalty for
+  lost fossil jobs; building and factories add jobs.
+- *Prices*: the carbon rebate returns carbon revenue to households; a lower carbon price helps
+  at once.
+- *Taxes*: rises cost votes for every quarter they are in force, so a late cut only partly
+  undoes an early rise.
+- *Local opposition*: permitting reform costs votes in proportion to how much you build; it
+  halves once a level has held a full term.
+
+Changes take quarters to show in term averages, so act early in the term, not just before the
+vote.
 
 **Each quarter** you get 3 domestic and 2 diplomatic action slots; unused slots are banked, up
 to 6 domestic and 4 diplomatic. You
@@ -84,7 +105,8 @@ python -m sim.play turn games/ind1 '[{"type": "set_carbon_price", "level": 20}, 
 nothing; the reason is printed. Use `check` when unsure.
 
 - **`"amount": "max"`** spends all you can afford on that action, after the actions before it in
-  the same list (for builds, spending, research and plant closures).
+  the same list (for builds, spending, research and plant closures). Actions resolve in list
+  order, so a "max" early in the list leaves nothing for the actions after it.
 - **`--brief`** on `show`, `turn` or `wait` leaves out costs, capacity, relations and the list of
   active deals.
 - **THIS QUARTER** on the screen lists what changed: new offers, answers to your offers and

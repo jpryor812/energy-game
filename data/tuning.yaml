@@ -309,9 +309,21 @@ permitting:
     status: placeholder
     note: M10 - political capital to raise permitting reform by one full level (0 -> 1); lowering it is free. The same as the fossil ban; most nations start with about 11.
   vote_weight:
-    value: 0.4
+    value: 0.2
     status: placeholder
-    note: M10 - vote share lost per unit of (reform level x permitting opposition x share of energy demand completed per year), averaged over the term. Full reform with 10% of demand built a year costs about 0.04 of the vote at opposition 1.0. Design assumption.
+    note: M10 - vote share lost per unit of (reform level x permitting opposition x share of energy demand completed per year), averaged over the term. M14 (was 0.4) - round 2 players lost 0.05-0.06 of a vote to it and found it not worth using; full reform with 10% of demand built a year now costs about 0.02 at opposition 1.0. Design assumption.
+  habituation_quarters:
+    value: 16
+    status: placeholder
+    note: M14 - after the reform level has held this long (a term), people get used to it and the backlash falls by habituation_factor. Raising the level starts it again. Design assumption.
+  habituation_factor:
+    value: 0.5
+    status: placeholder
+    note: M14 - share of the backlash (vote and approval) left once reform has held for habituation_quarters. Design assumption.
+  financing_share:
+    value: 0.5
+    status: placeholder
+    note: M14 - interest during construction is about the discount rate x half the build time, so each year of build time reform saves cuts build cost by this x the discount rate (wind 8 -> 5 quarters saves about 2.6%). Simplified financing rule.
   approval_hit:
     value: 0.03
     status: placeholder
@@ -771,7 +783,7 @@ stocktake:
   pledge_trust: {value: 0.05, status: placeholder, note: "Trust gained for being on a pledge path, or lost for being off it, at a stocktake."}
 
 tax:
-  min_change: {value: -0.01, status: placeholder, note: "Lowest discretionary tax change, share of GDP (decided 2026-11-08)."}
+  min_change: {value: -0.02, status: placeholder, note: "Lowest discretionary tax change, share of GDP (decided 2026-11-08; M14 -0.01 -> -0.02, round 2 players found one point too little room)."}
   max_change: {value: 0.03, status: placeholder, note: "Highest discretionary tax change, share of GDP (decided 2026-11-08)."}
   growth_drag: {value: 0.15, status: placeholder, note: "Growth lost per unit of tax raised (1 point of GDP -> -0.15 pp/yr); a cut adds the same."}
   approval_hit: {value: 2.0, status: placeholder, note: "Approval lost per unit of tax raised, once (1 point -> -0.02)."}

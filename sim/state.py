@@ -149,6 +149,7 @@ class Nation:
     fossil_ban: float = 0.0
     # M10: permitting reform level (0..1).
     permitting: float = 0.0
+    permitting_since: float = 0.0  # M14: turn the reform level was last raised
     # M12 research: progress (0..1) per technology, technologies finished, and coal or gas
     # capacity retrofitted with carbon capture (EJ/yr).
     research_progress: dict[str, float] = field(default_factory=dict)
@@ -172,7 +173,7 @@ class Nation:
         "cleantech_exports", "tariff_revenue", "trade_drag", "credit_balance", "credits_bought",
         "period_emissions", "exported_cut_rate", "tax_change", "build_rate", "retraining",
         "electrification", "methane_abatement", "forest_paid", "removals", "extra_demand",
-        "disaster_loss", "fossil_ban", "permitting",
+        "disaster_loss", "fossil_ban", "permitting", "permitting_since",
     )  # fmt: skip
     _FLOAT_MAPS = (
         "capacity", "subsidies", "tariffs", "supply", "fossil_production", "fossil_exports",
