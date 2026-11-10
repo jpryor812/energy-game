@@ -41,7 +41,7 @@ API_URL = "https://openrouter.ai/api/v1/chat/completions"
 SUBCOMMANDS = ("show", "actions", "check", "turn", "wait", "score", "log")
 KEEP_FULL = 6  # tool results kept in full; older ones are shortened to save tokens
 SHORTENED = 400  # characters kept from an older tool result
-MAX_RESULT = 12000  # characters of one tool result sent to the model
+MAX_RESULT = 20000  # characters of one tool result sent to the model
 
 TOOLS = [
     {
@@ -194,8 +194,17 @@ def brief(country: str, seed: int, difficulty: str, hunter: bool) -> str:
         f"{role}\n\nYour game: {country}, seed {seed}, {difficulty} difficulty. It has already "
         "been started; use the play tool (for example 'show') to see it. Keep notes with the "
         "notes tool as you go. When the game is over (2049Q4 or a loss), reply with your final "
-        "report as plain text and no tool call.\n\n--- docs/PLAYTEST.md ---\n" + guide
+        "report as plain text and no tool call.\n\n--- docs/PLAYTEST.md ---\n"
+        + guide
+        + "\n\n--- every action (the same as the 'actions' command) ---\n"
+        + action_list()
     )
+
+
+def action_list() -> str:
+    """The full action catalogue, given up front so the model never has to guess names."""
+    argv = [sys.executable, "-m", "sim.play", "actions"]
+    return subprocess.run(argv, cwd=ROOT, capture_output=True, text=True, check=True).stdout
 
 
 def shorten(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:

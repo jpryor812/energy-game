@@ -37,10 +37,10 @@ def test_read_file_is_limited(save):
     player, hunter = agent.Tools(save, hunter=False), agent.Tools(save, hunter=True)
     assert "Playtest guide" in player.read_file("docs/PLAYTEST.md")
     assert player.read_file("sim/scoring.py").startswith("error")
-    first = hunter.read_file("sim/scoring.py")
+    first = hunter.read_file("sim/ai.py")  # longer than one read
     assert "continues: read again with offset" in first
     offset = int(first.rsplit("offset ", 1)[1].rstrip("]"))
-    assert "def score" in first + hunter.read_file("sim/scoring.py", offset)
+    assert "def decide" in first + hunter.read_file("sim/ai.py", offset)
     for path in (".env", "../etc/passwd", "README.md"):
         assert hunter.read_file(path).startswith("error")
 
@@ -68,3 +68,9 @@ def test_older_tool_results_are_shortened():
     out = agent.shorten(msgs)
     lengths = [len(m["content"]) for m in out if m["role"] == "tool"]
     assert all(n < 1000 for n in lengths[:4]) and all(n == 5000 for n in lengths[4:])
+
+
+def test_brief_includes_every_action():
+    text = agent.brief("IND", 1, "normal", hunter=False)
+    for name in ("respond_deal", "fund_research", "buy_license", "set_permitting", "sell_credits"):
+        assert name in text
