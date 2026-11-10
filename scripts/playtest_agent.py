@@ -26,8 +26,10 @@ Tools the model gets, and nothing else:
 from __future__ import annotations
 
 import argparse
+import http.client
 import json
 import shlex
+import ssl
 import subprocess
 import sys
 import time
@@ -78,7 +80,8 @@ TOOLS = [
             "name": "read_file",
             "description": "Read a project file you are allowed to read, by path relative to "
             "the project folder (e.g. docs/PLAYTEST.md). Long files come in parts: pass the "
-            "offset the previous part ended at.",
+            "offset the previous part ended at. The exploit hunter may pass 'sim' or 'data' to "
+            "list their files.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -150,6 +153,10 @@ class Tools:
 
     def read_file(self, path: str, offset: int = 0) -> str:
         target = (ROOT / path).resolve()
+        if self.hunter and target in (ROOT / "sim", ROOT / "data"):  # list a folder
+            names = sorted(p.name for p in target.iterdir() if p.is_file() and p.suffix in (
+                ".py", ".yaml", ".md"))  # fmt: skip
+            return f"files in {path.strip('/')}/: " + ", ".join(names)
         if not target.is_relative_to(ROOT) or not self.allowed(target):
             return "error: you may not read that file"
         if not target.is_file():
@@ -237,12 +244,33 @@ def request(key: str, model: str, messages: list[dict[str, Any]]) -> dict[str, A
                 time.sleep(min(60, 5 * 2**attempt))
                 continue
             raise RuntimeError(f"OpenRouter error {exc.code}: {detail}") from exc
-        except urllib.error.URLError as exc:
+        except (
+            urllib.error.URLError,
+            ssl.SSLError,
+            http.client.HTTPException,
+            ConnectionError,
+            TimeoutError,
+            json.JSONDecodeError,
+        ) as exc:  # dropped or garbled connections: retry
             if attempt < 5:
                 time.sleep(min(60, 5 * 2**attempt))
                 continue
             raise RuntimeError(f"network error: {exc}") from exc
     raise RuntimeError("OpenRouter kept failing")
+
+
+def game_over(save: Path) -> tuple[bool, str]:
+    """Whether the saved game has ended, and its current quarter."""
+    argv = [sys.executable, "-m", "sim.play", "show", str(save), "--json"]
+    done = subprocess.run(argv, cwd=ROOT, capture_output=True, text=True)
+    try:
+        obs = json.loads(done.stdout)
+    except json.JSONDecodeError:
+        return False, "?"
+    return bool(obs.get("over")), str(obs.get("quarter"))
+
+
+MAX_NUDGES = 3  # times a model is told to keep playing when it stops before the game ends
 
 
 def run(args: argparse.Namespace) -> int:
@@ -263,10 +291,16 @@ def run(args: argparse.Namespace) -> int:
             print(done.stderr, file=sys.stderr)
             return 1
     tools = Tools(save, args.hunter)
-    messages: list[dict[str, Any]] = [
-        {"role": "user", "content": brief(args.country, args.seed, args.difficulty, args.hunter)}
-    ]
+    text = brief(args.country, args.seed, args.difficulty, args.hunter)
+    notes = save / "notes.md"
+    if notes.exists():  # resuming an interrupted run: the game continues from its save
+        text += (
+            "\n\n--- RESUMING: this game was interrupted and continues from its saved state. "
+            "Your notes so far (keep adding to them) ---\n" + notes.read_text()
+        )
+    messages: list[dict[str, Any]] = [{"role": "user", "content": text}]
     log = (save / "transcript.jsonl").open("a")
+    nudges = 0
     for step in range(args.max_steps):
         reply = request(key, model, messages)
         msg = reply["choices"][0]["message"]
@@ -278,6 +312,14 @@ def run(args: argparse.Namespace) -> int:
             | ({"tool_calls": calls} if calls else {})
         )
         if not calls:
+            over, quarter = game_over(save)
+            if not over and nudges < MAX_NUDGES:
+                nudges += 1
+                messages.append({"role": "user", "content": (
+                    f"The game is not over yet (it is {quarter}). Keep playing with the play "
+                    "tool; write the final report only when the game has ended."
+                )})  # fmt: skip
+                continue
             (save / "report.md").write_text(msg.get("content") or "")
             print(f"{args.name}: finished after {step + 1} requests; report in {save}/report.md")
             return 0

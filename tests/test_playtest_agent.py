@@ -74,3 +74,11 @@ def test_brief_includes_every_action():
     text = agent.brief("IND", 1, "normal", hunter=False)
     for name in ("respond_deal", "fund_research", "buy_license", "set_permitting", "sell_credits"):
         assert name in text
+
+
+def test_hunter_can_list_code_folders(save):
+    hunter, player = agent.Tools(save, hunter=True), agent.Tools(save, hunter=False)
+    listing = hunter.read_file("sim")
+    assert "scoring.py" in listing and "elections.py" in listing
+    assert "tuning.yaml" in hunter.read_file("data/")
+    assert player.read_file("sim").startswith("error")

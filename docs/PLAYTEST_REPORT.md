@@ -189,3 +189,64 @@ Not changed yet: wind and solar priced out once curtailed, cheap first doses, th
 log-versus-screen approval gap, supply that swings every other quarter, and FX reserves draining
 unexplained. Round 2 (the same seven agents, each with its own helper folder, plus a Vietnam
 replay) is planned but not run.
+
+## Round 2 (M13): six countries and an exploit hunter, Claude Haiku 5.5 via OpenRouter
+
+Seven agents played through `scripts/playtest_agent.py` (model `anthropic/claude-haiku-5.5`,
+normal difficulty, new seeds 31-37) after M10-M13 (permitting reform, more energy sources, the
+tech tree, licensing). Reports are in `games/r2_*/report.md` (not in git). Total cost $1.42,
+including two 20-step smoke tests (Haiku $0.031, Ling 3.1 Flash $0.006 per 20 requests).
+
+| Country | Seed | Result | Elections | Score (exit) | Rank | Cost |
+|---|---|---|---|---|---|---|
+| USA | 35 | Full game, Shared Failure | 6 of 6 won | 56.9 | 11 | $0.38 |
+| Hunter (EU) | 37 | Full game, Shared Failure | 6 of 6 won | 61.5 | 8 | $0.30 |
+| Vietnam | 36 | Full game, Shared Failure | 6 of 6 won | 52.6 | 15 | $0.25 |
+| EU | 32 | Voted out 2040Q4 (0.499) | 3 won, 1 lost | 0 | - | $0.24 |
+| China | 31 | Voted out 2032Q4 (0.498) | 1 won, 1 lost | 0 (53) | 16 | $0.11 |
+| India | 33 | Voted out 2028Q4 (0.470) | 0 won, 1 lost | 0 (60.3) | 16 | $0.07 |
+| Russia | 34 | Voted out 2028Q4 (0.470) | 0 won, 1 lost | 0 (72.3) | 3 | $0.04 |
+
+**Caveats.** Haiku plays less carefully than the Round 1 agents: it pushed hard on climate
+early and reacted late to the vote forecast, so four of seven lost an election (none in Round
+1's honest play lost before 2036). Five runs were interrupted by dropped connections and
+resumed from their saves; a resumed agent keeps its notes but not its earlier reasoning.
+
+### Findings (checked against the saves and code)
+
+1. **Permitting reform costs more than players can see it gives back.** Local opposition cost
+   the EU 0.059 of its 2040 vote, which it lost by 0.001, and the USA 0.050 in 2032; the USA
+   then switched reform off, judging the benefit invisible. No player found reform worth it.
+2. **The random swing can decide a game the forecast says is won.** Russia's forecast was
+   exact on every term but the swing, which drew -0.065 (3.3 standard deviations; the RNG is
+   unbiased over 9,576 draws). The screen does not say how large the swing can be.
+3. **Growth decides first elections.** India lost at 4.6%/yr growth against an expected 6.9%;
+   China lost 2032 by 0.002 with growth and fossil-job losses each costing 0.023. Agents asked
+   for the growth gap and the levers that close it to be shown from the start of each term.
+4. **Licences work and are popular**: the USA, EU and Russia bought SMRs, next-gen solar, HVDC
+   and enhanced geothermal for 0.03-0.11 T$, far below research cost. Vietnam took expired
+   patents (free licences) for an exploit; the screen should say "patent expired".
+5. **New technologies spread through deals**: China supplied Vietnam with advanced fission,
+   enhanced geothermal and bioenergy by equity deals; the hosted-deal cap was binding.
+6. **Research is out of reach for small economies**: Vietnam could fund 0.002-0.007 T$ a
+   quarter, too little to finish anything; licences were its only route.
+7. **Cheap levers**: methane abatement (the best late-game warming lever), carbon removal,
+   forest funding (fills the climate component, then nothing), and an efficiency "dump" that
+   lifts the score for a quarter or two. Retraining decided two of the USA's elections.
+8. **Generation tax credits are not free money** (the hunter's claim): over three years they
+   cost the EU about 0.27 T$ of capital and cut energy prices 19%, with no effect on GDP or
+   approval, because the price drag counts only rises above 2025 prices.
+9. **Interface**: the election result is printed inside the next quarter's screen; score
+   components are hard to trace; tax cuts stop at -1 point; actions resolve in list order, so
+   an efficiency "max" first leaves nothing for builds later in the list.
+10. **Champion**: no game reached it. Warming ended 1.63-1.66 degC, still rising in most.
+
+### Runner fixes made during the round
+
+- Retries on dropped or garbled connections (SSL errors stopped five runs).
+- A resumed run gets its notes back; an agent that stops talking before the game ends is told
+  to keep playing (up to three times).
+- The full action list is in each agent's brief (it was cut at 12,000 characters, hiding
+  `respond_deal`); tool output is cut at 20,000.
+- The exploit hunter can list `sim/` and `data/` (it guessed file names and took "no such
+  file" for refusals).
