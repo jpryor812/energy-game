@@ -250,3 +250,60 @@ resumed from their saves; a resumed agent keeps its notes but not its earlier re
   `respond_deal`); tool output is cut at 20,000.
 - The exploit hunter can list `sim/` and `data/` (it guessed file names and took "no such
   file" for refusals).
+
+## Round 3 (M15): six countries and an exploit hunter, Claude Haiku 5.5 via OpenRouter
+
+Seven agents, same setup as Round 2 (model `anthropic/claude-haiku-5.5`, normal difficulty, new
+seeds 41-47), after M14-M15 (permitting and election-screen fixes, rest-of-world regions,
+regional finance, minor-nation events). Total cost $1.57. Running all seven at once exhausted
+OpenRouter's in-flight credit allowance (HTTP 402 "in_flight_budget_exhausted", not an empty
+balance; $2.03 was left), so only China finished; the other six stopped part-way, all still in
+office. Their notes are in `games/r3_*/notes.md`; China's report in `games/r3_chn/report.md`
+(not in git).
+
+| Country | Seed | Stopped at | Result so far | Elections | Score (now) | Rank |
+|---|---|---|---|---|---|---|
+| China | 41 | 2040Q4 | Voted out 2040Q4 (0.485) | 3 won, 1 lost | 0 (49.3) | 16 |
+| EU | 42 | 2039Q3 | In office | 3 of 3 won | 71.6 | 2 |
+| India | 43 | 2047Q1 | In office | 5 of 5 won | 57.0 | 12 |
+| Russia | 44 | 2041Q3 | In office | 4 of 4 won | 61.7 | 9 |
+| USA | 45 | 2047Q3 | In office | 5 of 5 won | 58.6 | 9 |
+| Vietnam | 46 | 2040Q1 | In office | 3 of 3 won | 57.1 | 15 |
+| Hunter (EU) | 47 | 2030Q4 | In office | 1 of 1 won | 68.8 | 11 |
+
+Elections went better than in Round 2: 24 of 25 won, against 22 of 26 in Round 2, which
+suggests the M14 election-screen changes helped (agents also leaned on the tax cut, finding 1). No game was on course for Champion: warming was 1.58-1.68
+degC and rising wherever the agents stopped.
+
+### Findings (checked against the code)
+
+1. **The 2-point tax cut wipes out the energy budget (confirmed, the main finding).** Every
+   agent cut taxes by the maximum 2 points of GDP for votes (allowed since M14). Discretionary
+   capital is 2% of GDP a year (`economy.capital_share_of_gdp`), and a tax cut is paid from it,
+   so income fell to almost nothing: the USA had 0.006-0.02 T$ a quarter on a 40-50 T$
+   economy. All seven called capital "the binding limit" and none linked it to the tax cut,
+   because the screen never shows how income is made up. Political capital piled up unused
+   (25-55) in every game.
+2. **Event funds fail at 99.98% (confirmed bug).** The screen rounds "needs X more" to four
+   significant figures; agents pledged exactly that and left a sliver, and the notice then said
+   "pledges reached 100% ... the outcome happens". Russia's E1, the USA's E2 and China's E1
+   failed this way. The same rounding makes `fund_research` refuse the maximum the message
+   itself quotes, and builds refuse amounts a hair over capital.
+3. **The forest fund is a cheap, permanent climate score (confirmed, the hunter).** One
+   quarter of the EU's capital (0.106 T$) lifts the climate part of its score from 0.66 to 0.92
+   within two years, and it stays there: the first funder gets credit for all the land-use CO2
+   the fund avoids (about 1 Gt a year), at a few dollars a tonne.
+4. **Events were mostly ignored for lack of capital.** With income near zero (finding 1),
+   agents rarely pledged; most funds failed at 64-85%. Those that did pledge said the score
+   effect was invisible. Regional finance was barely used (0-0.012 T$ per game), so whether it
+   is too strong is still untested.
+5. **Dull middle game.** China, the USA and Russia describe 2029-2036 as routine "build max
+   solar and wait" quarters; the real decisions came late.
+6. **Not yet checked:** China's report of quarterly growth printed as -7.4% while the annual
+   figure was +3.5% (likely a disaster quarter shown annualised); India's growth collapse in
+   2041-2047 as its build-out ended.
+
+### Runner note
+
+Run agents two or three at a time: OpenRouter holds back credit for every request in flight,
+so seven at once can be refused while the balance is still positive.
