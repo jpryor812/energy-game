@@ -22,16 +22,22 @@ let uid = 0;
 
 // The sky colour at the top of a portrait, to fill any space above it.
 export const skyColor = (id) => tint(PLAYABLE_COLOR[id] || "#16a34a", 0.5);
+export const skyOf = (col) => tint(col, 0.5);
 
 export function leaderPortrait(id, { label = "" } = {}) {
   const L = LEADERS[id];
-  const col = PLAYABLE_COLOR[id] || "#16a34a";
   if (!L) return "";
+  return portrait(L, PLAYABLE_COLOR[id] || "#16a34a", label || `Leader of ${id}`);
+}
+
+// Any figure: a look ({skin, hair, style, suit, neck, glasses, scene}) in front of a scene
+// tinted with `col`. Leaders and advisors both use it.
+export function portrait(L, col, label) {
   const k = `lp${++uid}`;
-  return `<svg class="leader" viewBox="0 -110 240 410" role="img" aria-label="${label || `Leader of ${id}`}" preserveAspectRatio="xMidYMax slice">
+  return `<svg class="leader" viewBox="0 -110 240 410" role="img" aria-label="${label}" preserveAspectRatio="xMidYMax slice">
     <defs>
       <linearGradient id="${k}-sky" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="${skyColor(id)}"/><stop offset="0.8" stop-color="${tint(col, 0.88)}"/>
+        <stop offset="0" stop-color="${tint(col, 0.5)}"/><stop offset="0.8" stop-color="${tint(col, 0.88)}"/>
       </linearGradient>
       <linearGradient id="${k}-suit" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stop-color="${L.suit}"/><stop offset="1" stop-color="${shade(L.suit, 0.6)}"/>
@@ -61,6 +67,10 @@ function scene(kind, col) {
     oilcity: `<g fill="${far}">${[[160, 104, 16], [178, 70, 18], [198, 120, 14], [214, 40, 18], [232, 96, 16]].map(([x, y, w]) => `<rect x="${x}" y="${y}" width="${w}" height="${206 - y}"/>`).join("")}</g>
       <g fill="#ffffff" opacity="0.35">${[0, 1, 2, 3, 4, 5, 6, 7].map((i) => `<rect x="218" y="${52 + i * 18}" width="10" height="5"/>`).join("")}</g>
       ${pumpjack(36, 206, near)}`,
+    city: `<g fill="${far}">${[[0, 120, 16], [18, 84, 18], [38, 136, 14], [168, 100, 16], [186, 60, 18], [206, 118, 14], [222, 86, 18]].map(([x, y, w]) => `<rect x="${x}" y="${y}" width="${w}" height="${206 - y}"/>`).join("")}</g>
+      <g fill="#ffffff" opacity="0.35">${[0, 1, 2, 3, 4, 5].map((i) => `<rect x="190" y="${72 + i * 20}" width="10" height="5"/><rect x="22" y="${96 + i * 18}" width="10" height="5"/>`).join("")}</g>`,
+    forest: `<g fill="${far}">${[[10, 206, 80], [40, 200, 110], [70, 206, 70], [176, 204, 84], [204, 200, 120], [232, 206, 90]].map(([x, y, h]) => pine(x, y, h)).join("")}</g>
+      ${turbine(120, 150, 70, near)}`,
     pipeline: `<g fill="${far}">${[[14, 206, 64], [46, 200, 92], [196, 202, 84], [228, 206, 110]].map(([x, y, h]) => pine(x, y, h)).join("")}</g>
       <g fill="${near}"><path d="M150 206 L150 176 A26 10 0 0 1 202 176 L202 206 Z"/><rect x="-10" y="196" width="260" height="8" rx="4"/>${[10, 60, 180, 230].map((x) => `<rect x="${x}" y="203" width="4" height="10"/>`).join("")}</g>
       <path d="M78 206 L78 120" stroke="${far}" stroke-width="4"/><path d="M78 120 C70 108 82 100 78 88 C90 98 88 110 78 120 Z" fill="#f2a33a" opacity="0.85"/>`,

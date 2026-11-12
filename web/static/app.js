@@ -4,7 +4,8 @@ import { WorldMap, MODES } from "./map.js";
 import { VIGNETTE } from "./vignettes.js";
 import { chronicle } from "./charts.js";
 import { PLAYABLE_COLOR, PERSONALITY, SOURCE_COLOR, nationTint, NATION_TINT_FAMILY, REGION_TINT } from "./owners.js";
-import { LEADERS, leaderPortrait, skyColor } from "./leaders.js";
+import { LEADERS, leaderPortrait, skyColor, portrait, skyOf } from "./leaders.js";
+import { ADVISORS, TIPS } from "./tutorial.js";
 import { ORDERS, FX, SOURCE_ICON, DEAL_ICON, DEAL_LINE } from "./orders.js";
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -112,6 +113,7 @@ function setData(data) {
   S.map.update(data.world);
   renderAll();
   if (fresh && S.drawer) drawDrawer(); // a new quarter: refresh the open orders with new costs
+  if (fresh) runTips();
   checkPlan();
 }
 
@@ -122,8 +124,115 @@ function placeAlerts() {
   const left = Math.max(...["#rail", "#drawer", "#panel"].map((id) => vis(id)?.right || 0));
   const right = vis("#outliner")?.left || window.innerWidth;
   $("#alerts").style.left = `${(left + right) / 2}px`;
+  placeTip();
 }
 window.addEventListener("resize", () => S.data && placeAlerts());
+
+// ---------- advisors: tips that teach the game as it unfolds ----------
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private window: tips just repeat */ } },
+};
+const tipsKey = () => `tips:seen:${S.data.name}`;
+const tipsOff = () => store.get("tips:off", false);
+function tipHelpers() {
+  const sc = S.data.screen, inc = sc.resources.income_per_year || {};
+  const income = ["budget", "fossil_exports", "carbon", "tariffs", "tax", "tax_credits", "interest"].reduce((a, k) => a + (inc[k] || 0), 0);
+  const solar = (sc.energy.costs || {}).solar;
+  return { sc, world: S.data.world, money, whole, pct, nation: nationName(sc.country), income, solar1: solar ? solar.unit_cost * (sc.energy.demand || 0) * 0.01 : 0 };
+}
+function dueTips() {
+  if (!S.data || S.data.screen.over) return [];
+  const seen = new Set(store.get(tipsKey(), [])), h = tipHelpers();
+  return TIPS.filter((t) => { if (seen.has(t.id)) return false; try { return t.when(h); } catch { return false; } });
+}
+function runTips() {
+  if (tipsOff()) return closeTipCard();
+  const due = dueTips();
+  if (due.length) showTip(due[0], due.length); else closeTipCard();
+}
+function markSeen(id) { store.set(tipsKey(), [...new Set([...store.get(tipsKey(), []), id])]); }
+function closeTipCard() { $("#tip").classList.add("hidden"); $("#tip").innerHTML = ""; clearGlow(); }
+function glow(sel) { clearGlow(); const e = $(sel); if (e) e.classList.add("tut-glow"); }
+function clearGlow() { document.querySelectorAll(".tut-glow").forEach((e) => e.classList.remove("tut-glow")); }
+
+// "Show me": open or light up the part of the screen a tip is about
+const SHOW = {
+  realm: () => openRealm(),
+  resources: () => glow("#resources"),
+  build: () => actionWindow(MENU.build.title, MENU.build.actions, "build_capacity", {}, "build"),
+  carbon: () => actionWindow(MENU.policy.title, MENU.policy.actions, "set_carbon_price", {}, "policy"),
+  endturn: () => glow("#endturn"),
+  modes: () => glow("#mapmodes"),
+  outliner: () => glow("#outliner"),
+  research: () => researchWindow(),
+  diplomacy: () => actionWindow(MENU.diplomacy.title, MENU.diplomacy.actions, "open_talks", {}, "diplomacy"),
+  world: () => actionWindow(MENU.world.title, MENU.world.actions, "finance_region", {}, "world"),
+  event: () => actionWindow(MENU.world.title, MENU.world.actions, "pledge_to_event", {}, "world"),
+  vote: () => { openRealm("vote"); glow("#world-stats"); },
+};
+
+function showTip(t, count = 1, manual = false) {
+  const a = ADVISORS[t.who];
+  const el = $("#tip");
+  clearGlow();
+  el.classList.remove("hidden");
+  el.style.setProperty("--ac", a.color);
+  el.innerHTML = `<div class="tip-portrait" style="background:${skyOf(a.color)}">${portrait(a.look, a.color, a.name)}</div>
+    <div class="tip-main">
+      <div class="tip-who"><span>${esc(a.name)}</span>${count > 1 ? `<span class="muted">1 of ${count}</span>` : ""}</div>
+      <div class="tip-title">${esc(t.title)}</div>
+      <div class="tip-body">${t.body(tipHelpers())}</div>
+      ${t.ask ? `<div class="tip-asks">${t.ask.map(([q, ans], i) => `<button class="tip-q" data-i="${i}">${esc(q)}</button><div class="tip-a hidden" data-a="${i}">${esc(ans)}</div>`).join("")}</div>` : ""}
+      <div class="tip-foot">${manual ? "" : `<button class="linkish" id="tip-off">Turn tips off</button>`}<span class="spacer"></span>
+        ${t.show ? `<button class="btn small" id="tip-show">Show me</button>` : ""}<button class="btn primary small" id="tip-ok">${count > 1 ? "Next ▸" : "Got it"}</button></div>
+    </div>`;
+  el.querySelectorAll(".tip-q").forEach((b) => (b.onclick = () => {
+    const ans = el.querySelector(`[data-a="${b.dataset.i}"]`);
+    ans.classList.toggle("hidden");
+    b.classList.toggle("open", !ans.classList.contains("hidden"));
+  }));
+  if (t.show) $("#tip-show").onclick = () => { SHOW[t.show](); };
+  $("#tip-ok").onclick = () => { markSeen(t.id); if (manual) closeTipCard(); else runTips(); };
+  if (!manual) $("#tip-off").onclick = () => { store.set("tips:off", true); closeTipCard(); toast("Tips are off. Turn them back on under Advice."); };
+  placeTip();
+}
+
+// The card sits at the bottom, centred over the open map between the left-hand panels and
+// the end-turn box.
+function placeTip() {
+  const el = $("#tip");
+  if (!el || el.classList.contains("hidden")) return;
+  const vis = (id) => { const e = $(id); return e && !e.classList.contains("hidden") ? e.getBoundingClientRect() : null; };
+  const left = Math.max(...["#rail", "#drawer", "#panel", "#legend"].map((id) => vis(id)?.right || 0)) + 12;
+  const right = (vis("#endturn")?.left || window.innerWidth) - 12;
+  const w = Math.max(300, Math.min(620, right - left));
+  el.style.width = `${w}px`;
+  el.style.left = `${Math.max(left, (left + right) / 2 - w / 2)}px`;
+}
+
+function adviceWindow() {
+  S.menu = "advice"; renderMenubar();
+  const seen = new Set(store.get(tipsKey(), [])), due = new Set(dueTips().map((t) => t.id));
+  const groups = Object.entries(ADVISORS).map(([k, a]) => [k, a, TIPS.filter((t) => t.who === k)]);
+  const win = openWindow({
+    title: "Your advisors", wide: true, onClose: () => { S.menu = null; renderMenubar(); },
+    body: `<p class="summary-text">Your advisors speak up when something needs your attention. Read any tip again here.</p>
+      <div class="advice-grid">${groups.map(([k, a, ts]) => `<div class="advice-col">
+        <div class="advice-head"><div class="advice-face" style="background:${skyOf(a.color)}">${portrait(a.look, a.color, a.name)}</div><b>${esc(a.name)}</b></div>
+        ${ts.map((t) => `<button class="advice-tip" data-tip-id="${t.id}"><span>${esc(t.title)}</span><span class="muted">${seen.has(t.id) ? "read" : due.has(t.id) ? "new" : "later"}</span></button>`).join("")}
+      </div>`).join("")}</div>
+      <div class="row" style="margin-top:12px;gap:14px"><label class="row" style="gap:6px"><input type="checkbox" id="tips-on" ${tipsOff() ? "" : "checked"}> Show tips as they come up</label>
+        <button class="btn small" id="tips-reset">Start the tips again</button></div>`,
+  });
+  win.querySelectorAll("[data-tip-id]").forEach((b) => (b.onclick = () => {
+    closeWindows();
+    showTip(TIPS.find((t) => t.id === b.dataset.tipId), 1, true);
+  }));
+  $("#tips-on", win).onchange = (ev) => { store.set("tips:off", !ev.target.checked); if (ev.target.checked) { closeWindows(); runTips(); } else closeTipCard(); };
+  $("#tips-reset", win).onclick = () => { store.set(tipsKey(), []); store.set("tips:off", false); closeWindows(); runTips(); };
+}
 
 function renderAll() {
   renderTopbar();
@@ -227,9 +336,29 @@ function slotsUsed() {
 }
 
 function describe(a) {
-  const p = Object.entries(a).filter(([k]) => k !== "type")
-    .map(([k, v]) => `${nice(k).toLowerCase()} ${typeof v === "number" ? +v.toPrecision(4) : v}`).join(", ");
-  return `<b>${esc(nice(a.type))}</b>${p ? ` <span class="muted">${esc(p)}</span>` : ""}`;
+  const spec = (S.meta.catalogue[a.type] || {}).params || {};
+  const part = ([k, v]) => {
+    if (v === "max") return "all you can afford";
+    if (typeof v === "boolean") return v ? "on" : "off";
+    if (typeof v === "string") {
+      if (S.meta.nations[v]) return nationName(v);
+      if (S.meta.regions[v]) return regionName(v);
+      return `${SOURCE_ICON[v] ? SOURCE_ICON[v] + " " : ""}${nice(v)}`;
+    }
+    if (typeof v !== "number") return "";
+    if (a.type === "propose_deal" && k === "amount") {
+      return a.deal_type === "climate_loan" ? money(v) : `${shareOf(v, (S.data.world.nations[a.target] || {}).demand || myDemand())} of their energy`;
+    }
+    if (k === "rate" && a.type === "propose_deal") return `${whole(v * 100)}% a year`;
+    if (k === "duration") return `${whole(v / 4)} years`;
+    const u = unitOf(a.type, k, spec[k] || "", null);
+    if (u.unit === "$ bn") return money(v);
+    if (u.unit.startsWith("% of your energy")) return `${shareOf(v, myDemand())} of your energy`;
+    if (u.unit.startsWith("%")) return `${whole(v / u.scale)}${u.unit}`;
+    return `${whole(v / u.scale)}${u.unit ? " " + u.unit : ""}`;
+  };
+  const p = Object.entries(a).filter(([k]) => k !== "type").map(part).filter(Boolean).join(" · ");
+  return `<span class="plan-ico">${(ORDERS[a.type] || {}).icon || "◆"}</span><b>${esc(nice(a.type))}</b>${p ? ` <span class="muted">${esc(p)}</span>` : ""}`;
 }
 
 function renderOutliner() {
@@ -237,10 +366,10 @@ function renderOutliner() {
   const planRows = S.plan.length ? S.plan.map((a, i) => {
     const c = S.checks[i];
     const status = !c ? `<span class="muted">checking…</span>` : c.ok
-      ? `<span class="good">✓</span> <span class="muted">${Object.entries(c.cost || {}).filter(([, v]) => v).map(([k, v]) => k === "capital" ? money(v) : `${num(v, 1)} ${k.replace("_", " ")}`).join(", ") || "free"}${c.note ? `; ${esc(c.note)}` : ""}</span>`
-      : `<span class="bad">✗ ${esc(c.reason)}</span>`;
+      ? `<span class="good">✓</span> <span class="muted">${Object.entries(c.cost || {}).filter(([, v]) => v).map(([k, v]) => k === "capital" ? money(v) : `${whole(v)} ${k.replace("_", " ")}`).join(", ") || "free"}${c.note ? `; ${esc(humane(c.note))}` : ""}</span>`
+      : `<span class="bad">✗ ${esc(humane(c.reason))}</span>`;
     return `<div class="plan-item"><div class="what">${describe(a)}<div class="why">${status}</div></div><button class="icon-btn" data-rm="${i}" title="Remove">✕</button></div>`;
-  }).join("") : `<div class="muted" style="padding:6px 2px">Nothing planned. Choose actions from the menu below, or click a nation.</div>`;
+  }).join("") : `<div class="muted" style="padding:6px 2px">Nothing planned. Choose orders from the menus on the left, or click a nation.</div>`;
   const inbox = sc.deals.inbox.map((d) => `<div class="plan-item"><div class="what"><b>${d.id}</b> ${nice(d.type)} <span class="muted">${esc(nationName(d.financier))} → ${esc(nationName(d.host))}, ${esc(d.terms.source || "")}</span>${d.can_answer ? "" : `<div class="why muted">answer from next quarter</div>`}</div>${d.can_answer ? `<button class="btn small" data-deal="${d.id}">Answer</button>` : ""}</div>`).join("");
   const evs = sc.events.open.map((e) => `<div class="plan-item"><div class="what"><b>${e.id}</b> ${nice(e.type)} in ${esc(regionName(e.region))}<div class="why muted">${pct(e.pledged / e.target)} of ${money(e.target)} · until ${e.deadline}${e.you_pledged ? ` · you ${money(e.you_pledged)}` : ""}</div></div><button class="btn small" data-ev="${e.id}">Open</button></div>`).join("");
   const notes = (sc.notices || []).filter((n) => !n.startsWith("Score ")).slice(0, 8).map((n) => `<div class="plan-item"><div class="what" style="font-size:12.5px">${esc(n)}</div></div>`).join("");
@@ -302,6 +431,7 @@ const MENU = {
   diplomacy: { ico: "⚜", lbl: "Diplomacy", title: "Diplomacy and markets", actions: ["propose_deal", "open_talks", "set_tariff", "lift_tariff", "join_bloc", "leave_bloc", "make_pledge", "buy_credits", "sell_credits", "respond_deal", "exit_deal"] },
   world: { ico: "◍", lbl: "The World", title: "The rest of the world", actions: ["finance_region", "pledge_to_event", "fund_forests"] },
   ledger: { ico: "♛", lbl: "Ledger", title: "The ledger" },
+  advice: { ico: "🎓", lbl: "Advice", title: "Your advisors" },
 };
 
 function renderMenubar() {
@@ -544,6 +674,7 @@ function newGameWindow() {
 
 function openMenu(key) {
   if (key === "ledger") return ledgerWindow();
+  if (key === "advice") return adviceWindow();
   if (key === "research") return researchWindow();
   if (S.drawer && S.drawer.menu === key) return closeDrawer(); // a second click folds it away
   actionWindow(MENU[key].title, MENU[key].actions, null, {}, key);
@@ -611,12 +742,19 @@ function rangeOf(desc) {
 
 const whole = (x) => (x == null || Number.isNaN(+x) ? "-" : Math.round(+x).toLocaleString());
 const years = (q) => (q % 4 === 0 ? `${q / 4} yr${q === 4 ? "" : "s"}` : q < 4 ? `${q} qtr${q > 1 ? "s" : ""}` : `${Math.round(q / 4)} yrs`);
-const shareOf = (ej, demand) => { const p = (ej / demand) * 100; return p > 0 && p < 1 ? "under 1%" : `${whole(p)}%`; };
+const halfPct = (p) => {
+  if (p >= 10) return `${whole(p)}%`;
+  const r = Math.round(p * 2) / 2;
+  if (r === 0) return p > 0 ? "under ½%" : "0%";
+  return `${Math.floor(r) || ""}${r % 1 ? "½" : ""}%`;
+};
+const shareOf = (ej, demand) => halfPct((ej / demand) * 100);
 const chip = (ico, text, cls = "") => `<span class="fx ${cls}"><i>${ico}</i>${esc(text)}</span>`;
 const fxChips = (keys = [], cls = "") => keys.map((k) => chip(FX[k][0], FX[k][1], cls)).join("");
 const humane = (text) => String(text)
   .replace(/(-?\d+(?:\.\d+)?)\s*T\$/g, (_, x) => money(+x))
   .replace(/(-?\d+(?:\.\d+)?) capital\b/g, (_, x) => `${money(+x)} of capital`) // capital is in T$
+  .replace(/(of capital, has )(-?\d+(?:\.\d+)?)/g, (_, a, x) => `${a}${money(+x)}`)
   .replace(/\d+\.\d+/g, (x) => (Math.abs(+x) >= 1 ? whole(+x) : String(+(+x).toPrecision(1))));
 const SIZE_TYPES = ["build_capacity", "retire_capacity", "build_grid_storage", "retrofit_ccs"];
 const myDemand = () => S.data.screen.energy.demand || 1;
@@ -640,7 +778,7 @@ function unitOf(type, name, desc, form) {
   const cap = S.data.screen.resources.capital || 0;
   const bnChips = () => [...new Set([0.1, 0.25, 0.5].map((f) => Math.round(cap * f * 1000)).filter((v) => v >= 1))];
   const d = String(desc);
-  if (name === "amount" && SIZE_TYPES.includes(type)) return { unit: "% of your energy", scale: myDemand() / 100, chips: [1, 2, 5, 10] };
+  if (name === "amount" && SIZE_TYPES.includes(type)) return { unit: "% of your energy", scale: myDemand() / 100, chips: [0.5, 1, 2, 5], half: true };
   if (type === "propose_deal" && name === "amount") {
     if (val("deal_type") === "climate_loan") return { unit: "$ bn", scale: 0.001, chips: bnChips(), dyn: true };
     const host = S.data.world.nations[(form && form.querySelector('[name="target"]') || {}).value];
@@ -751,13 +889,14 @@ function numControl(type, name, c, form) {
   const u = unitOf(type, name, c.desc, form);
   const isMax = c.value === "max";
   let v = "";
-  if (!isMax && c.value != null && c.value !== "") v = Math.round(+c.value / u.scale);
+  const round = (x) => (u.half ? Math.round(x * 2) / 2 : Math.round(x));
+  if (!isMax && c.value != null && c.value !== "") v = round(+c.value / u.scale);
   if (v === 0 && +c.value > 0) v = ""; // an example too small to show as a whole number
   if (v === "" && !isMax) v = u.chips ? u.chips[0] : 1;
   if (type === "set_tax_credit" && name === "rate" && !v) v = 1;
-  return `<div class="amt"><input name="${name}" data-kind="num" data-scale="${u.scale}" type="number" step="1" value="${esc(v)}" ${isMax ? "disabled" : ""}>
+  return `<div class="amt"><input name="${name}" data-kind="num" data-scale="${u.scale}" type="number" step="${u.half ? 0.5 : 1}" value="${esc(v)}" ${isMax ? "disabled" : ""}>
       <span class="unit" data-unit="${name}">${esc(u.unit)}</span></div>
-    <div class="chips" data-chips="${name}">${(u.chips || []).map((x) => `<button type="button" data-set="${x}">${x}${u.unit.startsWith("%") ? "%" : ""}</button>`).join("")}${c.canMax ? `<label class="maxchip"><input type="checkbox" data-max="${name}" ${isMax ? "checked" : ""}> Max</label>` : ""}</div>`;
+    <div class="chips" data-chips="${name}">${(u.chips || []).map((x) => `<button type="button" data-set="${x}">${u.unit.startsWith("%") ? halfPct(x) : x}</button>`).join("")}${c.canMax ? `<label class="maxchip"><input type="checkbox" data-max="${name}" ${isMax ? "checked" : ""}> Max</label>` : ""}</div>`;
 }
 
 function renderForm(el, type, preset, { compact = false } = {}) {

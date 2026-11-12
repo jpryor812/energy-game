@@ -159,6 +159,10 @@ Each run leaves `notes.md`, `report.md` and `transcript.jsonl` in its folder. `-
   power sources are picture tiles with cost, build time and power price; sizes are whole
   numbers (% of your energy, $ bn); a result card shows cost and payoff, with the full
   rules behind "Details".
+- **Advisors:** five abstract advisors teach the game as it unfolds, Civilization-style: the
+  first quarter walks through the score, resources, the market, the carbon price and ending
+  the turn; later tips cover offers, research, diplomacy, regions, events and elections, each
+  with "Show me" and questions. Read any tip again under Advice on the left rail.
 - **M16 (fixes from playtest round 3):** tax cuts are mostly borrowed instead of emptying the
   energy budget, the screen shows where capital comes from, amounts a hair over a limit are
   trimmed rather than refused, forest payments wear off and earn less credit, and the playtest

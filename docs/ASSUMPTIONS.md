@@ -810,6 +810,16 @@ planning)").
      (% of your energy, $ bn, %, years) and converted back to the game's units when sent, so
      an order can be up to half a unit off what a decimal entry would give. Costs, payoffs
      and refusals are rounded for display only; the simulation is unchanged.
+198. **Build sizes allow halves below 10%** (½%, 1½%), because the smallest whole percent of a
+     big source is more than a small nation's capital in a quarter (India: 1% of its energy in
+     solar is about $24 bn against about $20 bn in hand at the start).
+199. **Advisor tips teach; they never decide** (web/static/tutorial.js). Five abstract advisors
+     give short tips when they first matter: the score, resources, the market, the carbon price
+     and ending the quarter in the first quarter; then offers, research, diplomacy, the regions,
+     events and elections as they come up; and warnings for blackouts, banked orders going to
+     waste and a weak vote within 18 months of an election. Their wording comes from
+     docs/PLAYTEST.md and the order catalogue, with live numbers from the screen. Which tips a
+     player has read is kept in the browser per save.
 
 ## Open questions
 
