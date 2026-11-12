@@ -301,11 +301,13 @@ function renderEndturn() {
     ? `<button class="btn primary big" id="end-btn">The game is over</button>`
     : `<div class="meta"><span>${sc.quarter}</span><span>${S.plan.length} orders${bad ? ` · <span class="bad">${bad} refused</span>` : ""}</span></div>
        <button class="btn primary big" id="end-btn" ${tip(ttTable("End the quarter", [], "Your orders resolve in the listed order, then the world moves: the market builds, the economy grows, warming updates, and the other nations act."))}>End quarter ▸</button>
-       <div class="row" style="gap:6px"><button class="btn small" id="wait-1" style="flex:1">Skip a year</button><button class="btn small" id="text-view" style="flex:1">Text screen</button></div>`;
+       <div class="row" style="gap:6px"><button class="btn small" id="wait-1" style="flex:1">Skip a year</button><button class="btn small" id="text-view" style="flex:1">Text screen</button></div>
+       <button class="btn small" id="games">Saves &amp; new game</button>`;
   $("#end-btn").onclick = () => (sc.over ? gameOverWindow() : endQuarter());
   if (!sc.over) {
     $("#wait-1").onclick = () => skipYear();
     $("#text-view").onclick = () => textWindow();
+    $("#games").onclick = async () => { S.meta = await api("/api/meta"); newGameWindow(); };
   }
 }
 
