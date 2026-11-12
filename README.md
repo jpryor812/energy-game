@@ -153,6 +153,8 @@ Each run leaves `notes.md`, `report.md` and `transcript.jsonl` in its folder. `-
 - **Nation selection screen:** a Civ-style chooser with an abstract leader portrait, the six
   nations listed easiest first, and each nation's strengths, weaknesses and 2025 figures,
   derived from the starting data.
+- **Left-hand order rail:** the order menus and map modes stack down the left edge; a menu
+  opens a tall drawer of its orders, each unfolding in place into its form.
 - **M16 (fixes from playtest round 3):** tax cuts are mostly borrowed instead of emptying the
   energy budget, the screen shows where capital comes from, amounts a hair over a limit are
   trimmed rather than refused, forest payments wear off and earn less credit, and the playtest

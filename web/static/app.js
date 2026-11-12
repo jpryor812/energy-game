@@ -9,7 +9,7 @@ import { LEADERS, leaderPortrait, skyColor } from "./leaders.js";
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-const S = { meta: null, data: null, plan: [], checks: [], map: null, menu: null, panel: null, lastRegions: null };
+const S = { meta: null, data: null, plan: [], checks: [], map: null, menu: null, panel: null, drawer: null, lastRegions: null };
 
 // ---------- formatting ----------
 
@@ -65,6 +65,7 @@ document.addEventListener("click", hideTip, true);
 document.addEventListener("keydown", (ev) => {
   if (ev.key !== "Escape") return;
   if ($("#windows").innerHTML) { const x = $("#win-x"); if (x) x.click(); }
+  else if (S.drawer) closeDrawer();
   else if (S.panel) closePanel();
 });
 document.addEventListener("mouseover", (ev) => {
@@ -105,11 +106,22 @@ function setData(data) {
   const fresh = !S.data || S.data.name !== data.name || S.data.screen.turn !== data.screen.turn;
   S.data = data;
   if (fresh) restorePlan();
-  for (const id of ["topbar", "outliner", "mapmodes", "menubar", "endturn", "legend"]) $(`#${id}`).classList.remove("hidden");
+  for (const id of ["topbar", "outliner", "rail", "endturn", "legend"]) $(`#${id}`).classList.remove("hidden");
   S.map.update(data.world);
   renderAll();
+  if (fresh && S.drawer) drawDrawer(); // a new quarter: refresh the open orders with new costs
   checkPlan();
 }
+
+// Alerts sit centred over the open stretch of map between the left side (rail, drawer or
+// panel) and the outliner on the right.
+function placeAlerts() {
+  const vis = (id) => { const e = $(id); return e && !e.classList.contains("hidden") ? e.getBoundingClientRect() : null; };
+  const left = Math.max(...["#rail", "#drawer", "#panel"].map((id) => vis(id)?.right || 0));
+  const right = vis("#outliner")?.left || window.innerWidth;
+  $("#alerts").style.left = `${(left + right) / 2}px`;
+}
+window.addEventListener("resize", () => S.data && placeAlerts());
 
 function renderAll() {
   renderTopbar();
@@ -119,6 +131,7 @@ function renderAll() {
   renderMenubar();
   renderEndturn();
   if (S.panel) S.panel();
+  placeAlerts();
 }
 
 // ---------- top bar ----------
@@ -347,7 +360,7 @@ function afterQuarters(reports, before) {
 function closeWindows() {
   $("#windows").innerHTML = "";
   $("#veil").classList.add("hidden");
-  S.menu = null;
+  S.menu = S.drawer ? S.drawer.menu : null;
   renderMenubar();
 }
 
@@ -530,23 +543,55 @@ function newGameWindow() {
 function openMenu(key) {
   if (key === "ledger") return ledgerWindow();
   if (key === "research") return researchWindow();
-  S.menu = key; renderMenubar();
-  actionWindow(MENU[key].title, MENU[key].actions, MENU[key].actions[0], {});
+  if (S.drawer && S.drawer.menu === key) return closeDrawer(); // a second click folds it away
+  actionWindow(MENU[key].title, MENU[key].actions, null, {}, key);
 }
 
-function actionWindow(title, types, first, preset) {
-  const cat = S.meta.catalogue;
-  const win = openWindow({
-    title, wide: true,
-    body: `<div class="action-layout"><div class="action-list">${types.map((t) => `<button class="action-item" data-t="${t}"><div class="t">${esc(nice(t))}</div><div class="slot">${cat[t].slot} · ${esc(shortCost(cat[t].cost))}</div></button>`).join("")}</div><div id="action-form"></div></div>`,
-    onClose: () => { S.menu = null; renderMenubar(); },
-  });
-  const show = (t) => {
-    win.querySelectorAll(".action-item").forEach((b) => b.classList.toggle("active", b.dataset.t === t));
-    renderForm($("#action-form", win), t, preset);
+// The orders drawer: a tall panel beside the left rail listing one category's orders. Each
+// order unfolds in place into its form; only one is open at a time.
+function actionWindow(title, types, first, preset, menu = null) {
+  closeWindows();
+  if (S.panel) closePanel();
+  S.drawer = { title, types, open: first, preset, menu };
+  S.menu = menu;
+  renderMenubar();
+  drawDrawer();
+}
+
+function closeDrawer() {
+  $("#drawer").classList.add("hidden");
+  $("#drawer").innerHTML = "";
+  S.drawer = null;
+  S.menu = null;
+  renderMenubar();
+  placeAlerts();
+}
+
+function drawDrawer() {
+  const d = S.drawer, cat = S.meta.catalogue, el = $("#drawer");
+  const ico = d.menu ? MENU[d.menu].ico : "✎";
+  el.classList.remove("hidden");
+  el.innerHTML = `<div class="panel-head"><span class="drawer-ico">${ico}</span><div class="titles"><h2>${esc(d.title)}</h2><div class="sub">${d.types.length} order${d.types.length > 1 ? "s" : ""} · choose one to open it</div></div><button class="icon-btn" id="d-x" title="Close">✕</button></div>
+    <div class="panel-body drawer-body">${d.types.map((t) => `<div class="acc" data-t="${t}">
+      <button class="acc-head"><span class="acc-text"><span class="t">${esc(nice(t))}</span><span class="slot">${esc(cat[t].slot)} slot · ${esc(shortCost(cat[t].cost))}</span></span><span class="chev">▸</span></button>
+      <div class="acc-body"></div></div>`).join("")}</div>`;
+  $("#d-x").onclick = closeDrawer;
+  placeAlerts();
+  el.querySelectorAll(".acc-head").forEach((b) => (b.onclick = () => {
+    const t = b.parentElement.dataset.t;
+    unfold(d.open === t ? null : t);
+  }));
+  const unfold = (t) => {
+    d.open = t;
+    el.querySelectorAll(".acc").forEach((a) => {
+      const on = a.dataset.t === t;
+      a.classList.toggle("open", on);
+      const body = $(".acc-body", a);
+      if (on) { renderForm(body, t, d.preset, { compact: true }); a.scrollIntoView({ block: "nearest" }); }
+      else body.innerHTML = "";
+    });
   };
-  win.querySelectorAll(".action-item").forEach((b) => (b.onclick = () => show(b.dataset.t)));
-  show(first);
+  unfold(d.open || (d.types.length === 1 ? d.types[0] : null));
 }
 
 const shortCost = (c) => String(c).replace(/\s*\(see the cost table in `show`\)/, "").replace(/`show`/g, "the screen");
@@ -599,7 +644,7 @@ function control(type, name, spec, value) {
     ${canMax ? `<label class="muted row" style="gap:4px;white-space:nowrap"><input type="checkbox" data-max="${name}" ${isMax ? "checked" : ""}> max</label>` : ""}</div>`;
 }
 
-function renderForm(el, type, preset) {
+function renderForm(el, type, preset, { compact = false } = {}) {
   const spec = S.meta.catalogue[type];
   const ex = spec.example || {};
   const FIELD_ORDER = {
@@ -619,7 +664,7 @@ function renderForm(el, type, preset) {
     if (c === null) continue;
     rows += `<div class="form-row"><label>${esc(nice(name))}</label><div>${c}</div>${Array.isArray(desc) ? "" : `<div class="hint">${esc(desc)}</div>`}</div>`;
   }
-  el.innerHTML = `<h2 style="font-size:20px">${esc(nice(type))}</h2><p class="summary-text">${esc(shortCost(spec.summary))}</p>${dealPreface(type, preset)}
+  el.innerHTML = `${compact ? "" : `<h2 style="font-size:20px">${esc(nice(type))}</h2>`}<p class="summary-text">${esc(shortCost(spec.summary))}</p>${dealPreface(type, preset)}
     <div class="muted" style="font-size:13px">Cost: ${esc(shortCost(spec.cost))} · ${spec.slot} slot</div><div class="brass-rule"></div>
     <form id="af">${rows}</form><div class="check-box" id="af-check"><span class="muted">Checking…</span></div>
     <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn primary" id="af-add">Add to this quarter's orders</button></div>`;
@@ -814,14 +859,16 @@ const crestMini = (id) => `<i class="swatch" style="background:${colorOf(id)}"><
 
 // ---------- side panel: nations, regions, your realm ----------
 
-function closePanel() { $("#panel").classList.add("hidden"); S.panel = null; S.map.select(null); }
+function closePanel() { $("#panel").classList.add("hidden"); S.panel = null; S.map.select(null); placeAlerts(); }
 
 function panelShell(head, tabs, active, body) {
+  if (S.drawer) closeDrawer();
   $("#panel").classList.remove("hidden");
   $("#panel").innerHTML = `<div class="panel-head">${head}<button class="icon-btn" id="p-x">✕</button></div>
     ${tabs.length ? `<div class="tabs">${tabs.map(([k, l]) => `<button class="tab ${k === active ? "active" : ""}" data-tab="${k}">${l}</button>`).join("")}</div>` : ""}
     <div class="panel-body">${body}</div>`;
   $("#p-x").onclick = closePanel;
+  placeAlerts();
 }
 
 function mapHover(ev, owner) {
