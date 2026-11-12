@@ -47,7 +47,9 @@ swing can take away 0.04. What moves it:
 - *Prices*: the carbon rebate returns carbon revenue to households; a lower carbon price helps
   at once.
 - *Taxes*: rises cost votes for every quarter they are in force, so a late cut only partly
-  undoes an early rise.
+  undoes an early rise. A cut is mostly borrowed: a quarter of it comes out of your capital and
+  the rest becomes debt whose interest comes out of capital every quarter after, so a long cut
+  grows expensive. The RESOURCES line shows where your capital comes from.
 - *Local opposition*: permitting reform costs votes in proportion to how much you build; it
   halves once a level has held a full term.
 
@@ -56,7 +58,8 @@ vote.
 
 **Each quarter** you get 3 domestic and 2 diplomatic action slots; unused slots are banked, up
 to 6 domestic and 4 diplomatic. You
-also earn capital (T$, trillions of dollars), political capital (spent on unpopular moves such as
+also earn capital (T$, trillions of dollars: 2% of GDP a year for energy policy, plus fossil
+export and carbon revenue, less tax cuts, tax credits and interest), political capital (spent on unpopular moves such as
 carbon prices, closing plants and tax rises) and can buy influence (spent on talks).
 
 **The market builds for you.** Private investors build new capacity every quarter to meet

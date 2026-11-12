@@ -51,8 +51,15 @@ def pledged(event: dict[str, Any]) -> float:
     return sum(event["pledges"].values())
 
 
+CLOSE = 0.001  # M16: a fund this close to its target (rounding) counts as full
+
+
 def remaining(event: dict[str, Any]) -> float:
     return max(0.0, event["target"] - pledged(event))
+
+
+def full(event: dict[str, Any]) -> bool:
+    return remaining(event) <= CLOSE * event["target"]
 
 
 def text(cfg: Config, event: dict[str, Any]) -> str:
@@ -173,7 +180,7 @@ def apply_minor(world: World, cfg: Config, dt: int) -> list[dict[str, Any]]:
     """Resolve open events (funded or past the deadline), credit funded ones, maybe open one."""
     log = []
     for event in open_events(world):
-        if remaining(event) <= 1e-12:
+        if full(event):
             _fund(cfg, world, event)
             log.append({"type": "minor_event", "id": event["id"], "status": FUNDED})
         elif world.t >= event["deadline"]:

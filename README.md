@@ -128,3 +128,7 @@ Each run leaves `notes.md`, `report.md` and `transcript.jsonl` in its folder. `-
   economies cut; nations lend for clean energy there (`finance_region`, limited by what each
   region can absorb), and seeded events (an oil discovery, a rainforest, a coal plan, an
   adaptation appeal) ask the world to fill a shared fund (`pledge_to_event`).
+- **M16 (fixes from playtest round 3):** tax cuts are mostly borrowed instead of emptying the
+  energy budget, the screen shows where capital comes from, amounts a hair over a limit are
+  trimmed rather than refused, forest payments wear off and earn less credit, and the playtest
+  runner waits out OpenRouter's in-flight limit.

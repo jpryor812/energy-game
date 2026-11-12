@@ -763,6 +763,37 @@ planning)").
      about 85% of the target and fail, so a player's pledge usually decides. Calibration
      worlds (docs/CALIBRATION.md) run with events off, like the other seeded shocks.
 
+## M16: fixes from playtest round 3
+
+188. **Tax cuts are mostly borrowed** (decided with the user 2026-11-11). A cut is paid 25%
+     from discretionary capital (`tax.cut_capital_share`) and 75% borrowed locally at 5%; the
+     interest then falls on capital. Before, the whole cut came out of capital, so the maximum
+     2-point cut equalled the entire 2%-of-GDP energy budget and every round 3 player who took
+     it had almost nothing to spend. A permanent 2-point cut now costs the USA about 0.16 T$ a
+     year at first and about 0.45 T$ a year after ten years, as interest builds. Tax rises
+     still add their revenue in full; local debt still has no growth drag (only hard-currency
+     debt does).
+189. **The screen shows where capital comes from**: the energy budget, fossil exports, carbon
+     revenue, tariffs, the tax change, tax credits and interest, plus what a tax cut borrows;
+     and a hint of what unused political capital buys once 20 or more pile up.
+190. **Rounding no longer costs players.** An amount up to 1% over the most possible (a figure
+     copied from the screen) is trimmed to that most, for every action that accepts "max"; a
+     fund within 0.1% of its target counts as full; failure notices show the share to 0.01%.
+191. **Forest payments wear off over five years** (`climate.forest_lifespan`), and so does each
+     payer's share, so credit follows recent payments; forest credit counts 0.4 of a real cut
+     (`credits.weight_forest`, was 0.75 as financed), for permanence and leakage risk. One
+     quarter of EU capital now lifts its climate component from 0.66 to 0.82 after two years,
+     fading, against 0.92 for good before. Raising the cost as well (half the cut at 1.5 T$
+     instead of 0.5) was tried and dropped: it warmed the AI world by 0.03 degC, since AI
+     nations rely on the fund.
+192. **Effect on the worlds**: the AI world ends at 1.69 degC (1.67 in M15, seed 1, no events)
+     because the forest sink fades between payments; the all-out world at about 1.39 degC.
+     Balance is unchanged: 6 of 7 pass, balanced and deal-maker bots complete 89%.
+193. **Growth on the screen** is this quarter's rate, annualised: a disaster quarter shows its
+     one-off loss (China saw -7.4% beside a +3.5% trend in round 3). Now labelled so.
+194. **The playtest runner waits and retries** when OpenRouter refuses a request for in-flight
+     credit (HTTP 402), so several agents can run at once.
+
 ## Open questions
 
 - **AI overshoot.** Cheap clean energy leads several low-ambition nations to cut far past their
@@ -790,10 +821,12 @@ planning)").
   (round 1), above coal; not yet investigated.
 - **Cheap first doses** of methane abatement, efficiency and electrification, and strong
   research; not changed.
-- **"Colder than 2025" now just out of reach (M15).** With regions that replace fossil plants
-  only as they retire (or are stranded), the all-out world ends 2049 at about 1.37 degC, 0.01
-  above 2025, instead of just below (item 90, decided 2026-11-08). The test now checks it ends
-  within 0.02 degC of 2025. Faster regional turnover would restore it; to decide with the user.
+- **"Colder than 2025" is now just out of reach** (accepted with the user 2026-11-10): with
+  regions that replace fossil plants only as they retire, the all-out world ends at about
+  1.39 degC since M16, just above 2025 (item 90). The test checks it ends within 0.035 degC.
+- **Political capital piles up** (25-55 unused in round 3). M16 only shows what it buys; a way
+  to spend it more usefully is still open.
+- **Dull middle game** (2029-2036 in round 3); not yet addressed.
 - **Regional finance may be strong for a player**: per T$ it cuts about as much as building
   solar at home, outside the home clean ceiling, capped only by the regions' absorption.
   To watch in the next playtest.

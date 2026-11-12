@@ -23,7 +23,7 @@ from sim.config import Config
 from sim.scenario import new_world
 from sim.state import World
 
-MILESTONE = "M15"
+MILESTONE = "M16"
 
 
 def play(

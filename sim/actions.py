@@ -787,6 +787,26 @@ def max_amount(cfg: Config, world: World, n: Nation, act: dict[str, Any]) -> flo
     return amount
 
 
+TRIM = 0.01  # M16: an amount this far over what is possible is rounding, so it is trimmed
+
+
+def _trim(cfg: Config, world: World, n: Nation, act: dict[str, Any]) -> dict[str, Any]:
+    """An amount a hair over the most possible (a figure copied from the screen's rounded
+    numbers) is cut to that most instead of being refused (M16)."""
+    amount = act.get("amount")
+    if act.get("type") not in LINEAR or isinstance(amount, bool):
+        return act
+    if not isinstance(amount, int | float) or not math.isfinite(amount) or amount <= 0:
+        return act
+    try:
+        most = max_amount(cfg, world, n, act)
+    except (Rejected, KeyError, TypeError, ValueError):
+        return act
+    if most < amount <= most * (1 + TRIM):
+        return dict(act) | {"amount": most}
+    return act
+
+
 def resolve(cfg: Config, world: World, nid: str, acts: list[dict[str, Any]]) -> list[dict]:
     """Validate and apply a nation's actions in order; return one result per action."""
     n = world.nations[nid]
@@ -795,6 +815,7 @@ def resolve(cfg: Config, world: World, nid: str, acts: list[dict[str, Any]]) -> 
         try:
             if act.get("amount") == "max" and act.get("type") in LINEAR:
                 act = dict(act) | {"amount": max_amount(cfg, world, n, act)}
+            act = _trim(cfg, world, n, act)
             costs = cost(cfg, world, n, act)
             spec = SPECS[act["type"]]
             if n.slots_banked.get(spec.slot, 0) < 1:

@@ -371,7 +371,7 @@ def estimate(cfg: Config, world: World, nid: str, act: Action, ctx: Context) -> 
         finally:
             world.forest_fund -= act["amount"]
         land = climate.exogenous_co2(cfg, world)["land_use"] / max(1e-9, 1 - before)
-        credit = cfg.tune("credits.weight_financed") * (after - before) * land
+        credit = cfg.tune("credits.weight_forest") * (after - before) * land
         eff.emissions = -credit / base_em * 100
     elif kind == "electrification_program":
         before = energy.electrification_bonus(cfg, n)

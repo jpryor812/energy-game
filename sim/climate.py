@@ -9,7 +9,8 @@ flaring).
   `rest_of_world_growth`, scaled by the 16 nations' carbon intensity of energy relative to 2025.
 - Land-use CO2 follows its trend, cut by the global forest fund (`fund_forests` actions): up to
   `forest_max_cut` of it (above 1, land turns into a net sink), half at `forest_half_fund` T$.
-  Forests logged after unfunded rainforest events (M15b, sim.events) add on top.
+  Payments wear off over `forest_lifespan` years (M16), so protection must be paid for
+  continually. Forests logged after unfunded rainforest events (M15b, sim.events) add on top.
 - Other fossil CO2 is held constant.
 
 Warming (M4b) has two parts:
@@ -166,11 +167,17 @@ def apply(world: World, cfg: Config, dt: int) -> None:
         avoided = (
             _c(cfg, "land_use_co2") * (1 + _c(cfg, "land_use_trend")) ** (world.t / 4)
         ) - exo["land_use"]
-        weight = cfg.tune("credits.weight_financed")
+        weight = cfg.tune("credits.weight_forest")
         for n in world.nations.values():
             if n.forest_paid > 0:
                 credit = weight * avoided * n.forest_paid / world.forest_fund * dt / 4
                 n.climate_credit["financed"] = n.climate_credit.get("financed", 0.0) + credit
+    # M16: protection has to be paid for year after year: the fund, and each nation's share of
+    # it, wears off over `forest_lifespan` years, so credit follows recent payments.
+    keep = (1 - 1 / _c(cfg, "forest_lifespan")) ** (dt / 4)
+    world.forest_fund *= keep
+    for nid in sorted(world.nations):
+        world.nations[nid].forest_paid *= keep
 
     for nid in sorted(world.nations):
         n = world.nations[nid]

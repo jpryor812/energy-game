@@ -28,6 +28,7 @@ from __future__ import annotations
 import argparse
 import http.client
 import json
+import re
 import shlex
 import ssl
 import subprocess
@@ -226,6 +227,17 @@ def shorten(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
+def retry_after(header: str | None, detail: str) -> float:
+    """Seconds to wait before retrying an in-flight refusal: the Retry-After header, else the
+    figure in the error body, else two minutes; never more than five minutes."""
+    for text in (header or "", detail):
+        found = re.search(r'Retry-After"?\s*[:=]?\s*"?(\d+)', text)
+        found = found or re.fullmatch(r"\s*(\d+)\s*", text)
+        if found:
+            return min(300.0, float(found.group(1)))
+    return 120.0
+
+
 def request(key: str, model: str, messages: list[dict[str, Any]]) -> dict[str, Any]:
     body = json.dumps({"model": model, "messages": shorten(messages), "tools": TOOLS}).encode()
     headers = {
@@ -242,6 +254,11 @@ def request(key: str, model: str, messages: list[dict[str, Any]]) -> dict[str, A
             detail = exc.read().decode(errors="replace")[:500]
             if exc.code in (429, 500, 502, 503, 504) and attempt < 5:
                 time.sleep(min(60, 5 * 2**attempt))
+                continue
+            if exc.code == 402 and "in_flight" in detail and attempt < 5:
+                # M16: OpenRouter holds back credit for requests in flight; with several agents
+                # at once it refuses until they settle. Wait as long as it asks, then retry.
+                time.sleep(retry_after(exc.headers.get("Retry-After"), detail))
                 continue
             raise RuntimeError(f"OpenRouter error {exc.code}: {detail}") from exc
         except (

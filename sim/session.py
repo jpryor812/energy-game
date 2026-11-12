@@ -329,7 +329,7 @@ def notices(cfg: Config, before: World, after: World, me: str) -> list[str]:
             else:
                 back = f"; your {mine:.3g} T$ is refunded" if mine else ""
                 out.append(
-                    f"Event {e['id']} failed: pledges reached {share:.0%} of the target, so "
+                    f"Event {e['id']} failed: pledges reached {share:.2%} of the target, so "
                     f"the outcome happens ({e['type']} in {e['region']}){back}."
                 )
 

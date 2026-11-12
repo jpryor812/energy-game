@@ -128,10 +128,10 @@ def all_out(cfg, w, nid):
 
 def test_all_out_world_ends_near_2025_warming():
     """M15: with the rest of the world as regions that replace fossil plants only as they retire
-    (or are stranded), the all-out world ends ~0.01 degC above 2025 rather than just below it
-    (open question in docs/ASSUMPTIONS.md)."""
+    (or are stranded), the all-out world ends just above 2025 rather than just below it (accepted
+    with the user 2026-11-10); M16's wearing-off forest payments take it to ~1.39 degC."""
     real = config.load()
     w = new_world(real, seed=1)
     while w.t < real.tune("time.turns"):
         w = turn.step(w, real, actions={nid: all_out(real, w, nid) for nid in w.nations}, ai=False)
-    assert w.warming < real.tune("climate.warming_start") + 0.02
+    assert w.warming < real.tune("climate.warming_start") + 0.035

@@ -260,6 +260,9 @@ def observe(game: Game) -> dict[str, Any]:
             "influence": _r(p.influence, 2),
             "slots": dict(p.slots_banked),
             "note": "available to spend this quarter (income included)",
+            # M16: where capital comes from (T$ a year), and what a tax cut borrows
+            "income_per_year": {k: _r(v, 4) for k, v in economy.income_parts(cfg, p).items()},
+            "local_debt_new": _r(max(0.0, p.debt_local - p.base.get("debt_local", 0.0)), 3),
         },
         "economy": {
             "gdp": _r(n.gdp, 3),
@@ -444,6 +447,36 @@ def _regions(cfg, w, me: str) -> list[dict[str, Any]]:
 # --- text --------------------------------------------------------------------------------------
 
 
+def _income_line(r: dict[str, Any]) -> str:
+    """Where this year's capital comes from (M16)."""
+    inc = dict(r.get("income_per_year", {}))
+    borrowed = inc.pop("borrowed", 0.0)
+    names = {
+        "budget": "energy budget (2% of GDP)", "fossil_exports": "fossil exports",
+        "carbon": "carbon revenue", "tariffs": "tariffs", "tax": "tax change",
+        "tax_credits": "tax credits", "interest": "interest on new debt",
+    }  # fmt: skip
+    parts = ", ".join(f"{names[k]} {v:+.3g}" for k, v in inc.items() if abs(v) >= 5e-5)
+    line = f"  capital income {sum(inc.values()):.3g} T$/yr = {parts}"
+    if borrowed > 0:
+        line += (
+            f"; your tax cut also borrows {borrowed:.3g} T$/yr (new local debt so far "
+            f"{r.get('local_debt_new', 0.0):.3g} T$, its interest comes out of capital)"
+        )
+    return line
+
+
+def _pc_hint(r: dict[str, Any]) -> str:
+    """Political capital buys unpopular moves; say so when it piles up (M16)."""
+    if r["political_capital"] < 20:
+        return ""
+    return (
+        f"  political capital {r['political_capital']:.0f} unused: it pays for raising the carbon "
+        "price, closing plants early, raising taxes, permitting reform, a fossil ban or an "
+        "activity cap"
+    )
+
+
 def _pct(x: float) -> str:
     return f"{x * 100:+.1f}%"
 
@@ -516,9 +549,12 @@ def render(obs: dict[str, Any], brief: bool = False) -> str:
         f"| political capital {r['political_capital']:.2f} | influence {r['influence']:.2f} | "
         f"slots domestic {r['slots'].get('domestic', 0)}, diplomatic "
         f"{r['slots'].get('diplomatic', 0)}",
+        _income_line(r),
+        *([_pc_hint(r)] if _pc_hint(r) else []),
         "",
         f"ECONOMY: GDP {ec['gdp']:.3f} T$ ({_pct(ec['gdp_vs_2025'])} vs 2025), growth "
-        f"{ec['growth_annual'] * 100:.2f}%/yr | approval {ec['approval']:.2f} | stability "
+        f"{ec['growth_annual'] * 100:.2f}%/yr (this quarter at an annual rate; a disaster "
+        "quarter shows its one-off loss) | approval {ec['approval']:.2f} | stability "
         f"{ec['stability']:.2f} (falls below {ec['fallen_below']}) | tax "
         f"{ec['tax_change'] * 100:+.1f} pt",
         f"  jobs (m): {_kv(ec['jobs'], '{:.2f}')} | FX reserves {ec['fx_reserves']:.3f} | "

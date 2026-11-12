@@ -120,28 +120,47 @@ def tax_credit_cost(n: Nation) -> float:
     return cost
 
 
-def apply_income(world: World, cfg: Config, dt: int) -> None:
-    """Capital += discretionary share of GDP + government take on fossil exports + carbon
-    revenue - interest on debt taken on during the game. Political capital and action slots
-    accrue too.
+def income_parts(cfg: Config, n: Nation) -> dict[str, float]:
+    """This year's discretionary capital income by source (T$/yr), and the new local borrowing
+    a tax cut takes on (`borrowed`, not part of income).
 
-    Debt service counts only debt above the 2025 level: servicing pre-existing public debt is
-    part of the ordinary budget, not the discretionary capital the player spends.
-    """
-    share = cfg.tune("economy.capital_share_of_gdp")
-    take = cfg.tune("economy.fossil_revenue_take")
-    r_hard = cfg.tune("economy.interest_rate_hard")
-    r_local = cfg.tune("economy.interest_rate_local")
+    A tax rise adds its revenue in full. A tax cut (M16) is paid `tax.cut_capital_share` from
+    capital and the rest borrowed locally, whose interest then falls on capital like any new
+    debt. Debt service counts only debt above the 2025 level: servicing pre-existing public debt
+    is part of the ordinary budget, not the discretionary capital the player spends."""
+    new_hard = max(0.0, n.debt_hard - n.base.get("debt_hard", 0.0))
+    new_local = max(0.0, n.debt_local - n.base.get("debt_local", 0.0))
+    tax = n.tax_change * n.gdp
+    borrowed = 0.0
+    if tax < 0:
+        borrowed = -tax * (1 - cfg.tune("tax.cut_capital_share"))
+        tax += borrowed
+    return {
+        "budget": cfg.tune("economy.capital_share_of_gdp") * n.gdp,
+        "fossil_exports": cfg.tune("economy.fossil_revenue_take") * n.export_revenue,
+        "carbon": n.carbon_revenue,
+        "tariffs": n.tariff_revenue,
+        "tax": tax,
+        "tax_credits": -tax_credit_cost(n),
+        "interest": -(
+            cfg.tune("economy.interest_rate_hard") * new_hard
+            + cfg.tune("economy.interest_rate_local") * new_local
+        ),
+        "borrowed": borrowed,
+    }
+
+
+def apply_income(world: World, cfg: Config, dt: int) -> None:
+    """Capital += the income parts (`income_parts`); a tax cut's borrowed share adds to local
+    debt. Political capital and action slots accrue too."""
     years = dt / 4
     for nid in sorted(world.nations):
         n = world.nations[nid]
-        new_hard = max(0.0, n.debt_hard - n.base.get("debt_hard", 0.0))
-        new_local = max(0.0, n.debt_local - n.base.get("debt_local", 0.0))
         n.carbon_revenue = carbon_revenue(n)
-        income = share * n.gdp + take * n.export_revenue + n.carbon_revenue + n.tariff_revenue
-        income += n.tax_change * n.gdp - tax_credit_cost(n)
-        income -= r_hard * new_hard + r_local * new_local
-        n.capital += income * years
+        parts = income_parts(cfg, n)
+        borrowed = parts.pop("borrowed")
+        n.debt_local += borrowed * years
+        n.capital += sum(parts.values()) * years
         if n.capital < 0:  # a shortfall is borrowed locally, as for any spending (M8)
             n.debt_local -= n.capital
             n.capital = 0.0
