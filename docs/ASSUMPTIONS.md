@@ -804,6 +804,12 @@ planning)").
 196. **Leader portraits are abstract** (web/static/leaders.js): flat drawings of an unnamed
      head of government with a title, in front of a scene of the nation's energy system
      (what it makes, burns or sells). No real people, no national costume.
+197. **The orders drawer shows a summary layer in whole numbers** (web/static/orders.js).
+     Each order has an icon, one line, and "gives / takes" tags written from its rules; the
+     full rule text is one click away. Amounts are typed as whole numbers in friendly units
+     (% of your energy, $ bn, %, years) and converted back to the game's units when sent, so
+     an order can be up to half a unit off what a decimal entry would give. Costs, payoffs
+     and refusals are rounded for display only; the simulation is unchanged.
 
 ## Open questions
 

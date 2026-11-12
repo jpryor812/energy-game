@@ -155,6 +155,10 @@ Each run leaves `notes.md`, `report.md` and `transcript.jsonl` in its folder. `-
   derived from the starting data.
 - **Left-hand order rail:** the order menus and map modes stack down the left edge; a menu
   opens a tall drawer of its orders, each unfolding in place into its form.
+- **Picture-first orders:** each order shows an icon, one line and "gives / takes" tags;
+  power sources are picture tiles with cost, build time and power price; sizes are whole
+  numbers (% of your energy, $ bn); a result card shows cost and payoff, with the full
+  rules behind "Details".
 - **M16 (fixes from playtest round 3):** tax cuts are mostly borrowed instead of emptying the
   energy budget, the screen shows where capital comes from, amounts a hair over a limit are
   trimmed rather than refused, forest payments wear off and earn less credit, and the playtest

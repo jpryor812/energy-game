@@ -23,7 +23,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
-from sim import canonical, config, diplomacy, regions, scoring, trade, view
+from sim import canonical, config, construction, diplomacy, regions, scoring, trade, view
 from sim.catalogue import catalogue
 from sim.session import Game, SaveError
 from web.profiles import profiles
@@ -137,6 +137,7 @@ class Server:
                 "rank": scores[nid]["rank"] if nid in scores else None,
                 "personality": cfg.nat_spec(nid)["personality"],
                 "techs": len(n.techs) + len(n.licensed),
+                "demand": round(n.demand, 3),  # W3: deal sizes as a share of the host's energy
             }
         regs = {}
         for rid, r in sorted(w.regions.items()):
@@ -167,7 +168,21 @@ class Server:
             }
             for h in w.history
         ]
-        return {"me": me, "nations": nations, "regions": regs, "history": history}
+        # W3: the orders drawer shows build times and whether a source is clean
+        sources = {
+            s: {
+                "quarters": construction.build_time(cfg, w.nations[me], s),
+                "category": cfg.category(s),
+            }
+            for s in cfg.source_ids
+        }
+        return {
+            "me": me,
+            "nations": nations,
+            "regions": regs,
+            "history": history,
+            "sources": sources,
+        }
 
     def state(self) -> dict[str, Any]:
         game = self._game()

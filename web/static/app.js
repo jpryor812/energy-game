@@ -5,6 +5,7 @@ import { VIGNETTE } from "./vignettes.js";
 import { chronicle } from "./charts.js";
 import { PLAYABLE_COLOR, PERSONALITY, SOURCE_COLOR, nationTint, NATION_TINT_FAMILY, REGION_TINT } from "./owners.js";
 import { LEADERS, leaderPortrait, skyColor } from "./leaders.js";
+import { ORDERS, FX, SOURCE_ICON, DEAL_ICON, DEAL_LINE } from "./orders.js";
 
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -15,10 +16,11 @@ const S = { meta: null, data: null, plan: [], checks: [], map: null, menu: null,
 
 const money = (t) => {
   if (t == null || Number.isNaN(t)) return "-";
-  const b = t * 1000;
-  if (Math.abs(b) >= 1000) return `$${(b / 1000).toFixed(2)} tn`;
-  if (Math.abs(b) >= 10) return `$${b.toFixed(0)} bn`;
-  return `$${b.toFixed(1)} bn`;
+  const b = t * 1000, sign = b < 0 ? "−" : "";
+  if (Math.abs(b) >= 10000) return `${sign}$${Math.round(Math.abs(b) / 1000)} tn`;
+  if (Math.abs(b) >= 1000) return `${sign}$${(Math.abs(b) / 1000).toFixed(1)} tn`;
+  if (b !== 0 && Math.abs(b) < 0.5) return `${sign}under $1 bn`;
+  return `${sign}$${Math.round(Math.abs(b))} bn`;
 };
 const pct = (x, d = 0) => (x == null ? "-" : `${(x * 100).toFixed(d)}%`);
 const spct = (x, d = 1) => (x == null ? "-" : `${x >= 0 ? "+" : ""}${(x * 100).toFixed(d)}%`);
@@ -161,8 +163,8 @@ function renderTopbar() {
     k === "domestic" ? "3 a quarter, unused ones bank up to 6." : "2 a quarter, unused ones bank up to 4.");
   const res = [
     ["Capital", money(r.capital), `${money(total)} / yr`, capTip],
-    ["Political cap.", num(r.political_capital, 1), "", pcTip],
-    ["Influence", num(r.influence, 1), "for talks", ttTable("Influence", [], "Bought with capital; spent on diplomatic talks.")],
+    ["Political cap.", num(r.political_capital, 0), "", pcTip],
+    ["Influence", num(r.influence, 0), "for talks", ttTable("Influence", [], "Bought with capital; spent on diplomatic talks.")],
     ["Domestic", `${(r.slots.domestic ?? 0) - (used.domestic || 0)}/${r.slots.domestic ?? 0}`, "slots left", slotTip("domestic")],
     ["Diplomatic", `${(r.slots.diplomatic ?? 0) - (used.diplomatic || 0)}/${r.slots.diplomatic ?? 0}`, "slots left", slotTip("diplomatic")],
   ];
@@ -572,9 +574,13 @@ function drawDrawer() {
   const ico = d.menu ? MENU[d.menu].ico : "✎";
   el.classList.remove("hidden");
   el.innerHTML = `<div class="panel-head"><span class="drawer-ico">${ico}</span><div class="titles"><h2>${esc(d.title)}</h2><div class="sub">${d.types.length} order${d.types.length > 1 ? "s" : ""} · choose one to open it</div></div><button class="icon-btn" id="d-x" title="Close">✕</button></div>
-    <div class="panel-body drawer-body">${d.types.map((t) => `<div class="acc" data-t="${t}">
-      <button class="acc-head"><span class="acc-text"><span class="t">${esc(nice(t))}</span><span class="slot">${esc(cat[t].slot)} slot · ${esc(shortCost(cat[t].cost))}</span></span><span class="chev">▸</span></button>
-      <div class="acc-body"></div></div>`).join("")}</div>`;
+    <div class="panel-body drawer-body">${d.types.map((t) => {
+      const o = ORDERS[t] || {}, [pi, pl] = payWith(cat[t].cost);
+      return `<div class="acc" data-t="${t}">
+      <button class="acc-head"><span class="acc-ico">${o.icon || "◆"}</span><span class="acc-text"><span class="t">${esc(nice(t))}</span><span class="line">${esc(o.line || "")}</span>
+        <span class="acc-tags"><span class="tag">${cat[t].slot === "domestic" ? "🏠 Home" : "🌐 Abroad"}</span><span class="tag">${pi} ${pl}</span></span></span><span class="chev">▸</span></button>
+      <div class="acc-body"></div></div>`;
+    }).join("")}</div>`;
   $("#d-x").onclick = closeDrawer;
   placeAlerts();
   el.querySelectorAll(".acc-head").forEach((b) => (b.onclick = () => {
@@ -601,22 +607,124 @@ function rangeOf(desc) {
   return m ? [+m[1], +m[2]] : null;
 }
 
-function control(type, name, spec, value) {
+// ---------- order forms: picture tiles, whole-number units, a Civ-style result card ----------
+
+const whole = (x) => (x == null || Number.isNaN(+x) ? "-" : Math.round(+x).toLocaleString());
+const years = (q) => (q % 4 === 0 ? `${q / 4} yr${q === 4 ? "" : "s"}` : q < 4 ? `${q} qtr${q > 1 ? "s" : ""}` : `${Math.round(q / 4)} yrs`);
+const shareOf = (ej, demand) => { const p = (ej / demand) * 100; return p > 0 && p < 1 ? "under 1%" : `${whole(p)}%`; };
+const chip = (ico, text, cls = "") => `<span class="fx ${cls}"><i>${ico}</i>${esc(text)}</span>`;
+const fxChips = (keys = [], cls = "") => keys.map((k) => chip(FX[k][0], FX[k][1], cls)).join("");
+const humane = (text) => String(text)
+  .replace(/(-?\d+(?:\.\d+)?)\s*T\$/g, (_, x) => money(+x))
+  .replace(/(-?\d+(?:\.\d+)?) capital\b/g, (_, x) => `${money(+x)} of capital`) // capital is in T$
+  .replace(/\d+\.\d+/g, (x) => (Math.abs(+x) >= 1 ? whole(+x) : String(+(+x).toPrecision(1))));
+const SIZE_TYPES = ["build_capacity", "retire_capacity", "build_grid_storage", "retrofit_ccs"];
+const myDemand = () => S.data.screen.energy.demand || 1;
+
+function payWith(cost) {
+  const c = String(cost);
+  if (c.includes("political")) return ["🏛", "Political capital"];
+  if (c.includes("influence")) return ["🎖", "Influence"];
+  if (/capital|price|penalty/.test(c)) return ["💰", "Capital"];
+  return ["✓", "Free"];
+}
+
+// Which unit a number is shown in. Values the player types are whole numbers in these units;
+// `scale` turns them back into the game's own units when the order is sent.
+function unitOf(type, name, desc, form) {
+  const val = (n) => {
+    const e = form && form.querySelector(`[name="${n}"]`);
+    if (!e) return null;
+    try { return JSON.parse(e.value || "null"); } catch { return e.value; }
+  };
+  const cap = S.data.screen.resources.capital || 0;
+  const bnChips = () => [...new Set([0.1, 0.25, 0.5].map((f) => Math.round(cap * f * 1000)).filter((v) => v >= 1))];
+  const d = String(desc);
+  if (name === "amount" && SIZE_TYPES.includes(type)) return { unit: "% of your energy", scale: myDemand() / 100, chips: [1, 2, 5, 10] };
+  if (type === "propose_deal" && name === "amount") {
+    if (val("deal_type") === "climate_loan") return { unit: "$ bn", scale: 0.001, chips: bnChips(), dyn: true };
+    const host = S.data.world.nations[(form && form.querySelector('[name="target"]') || {}).value];
+    return { unit: "% of their energy", scale: ((host && host.demand) || 1) / 100, chips: [1, 2, 5], dyn: true };
+  }
+  if (name === "__term") {
+    const dt = type === "respond_deal" ? (S.data.screen.deals.inbox.find((x) => x.id === val("deal_id")) || {}).type : val("deal_type");
+    if (dt === "energy_as_a_service") return { unit: "$ per GJ", scale: 1, dyn: true };
+    if (dt === "equity_for_energy") return { unit: "% of profit", scale: 0.01, dyn: true };
+    return { unit: "% a year", scale: 0.01, dyn: true };
+  }
+  if (type === "set_tax_credit" && name === "rate") {
+    return val("kind") === "manufacturing" ? { unit: "% of sales", scale: 0.01, dyn: true } : { unit: "$ per GJ", scale: 1, dyn: true };
+  }
+  if (d.includes("T$")) return { unit: "$ bn", scale: 0.001, chips: bnChips() };
+  if (d.includes("MtCO2")) return { unit: d.includes("/yr") ? "Mt CO2 a year" : "Mt CO2", scale: 1 };
+  if (d.includes("factory units")) return { unit: "factory lines", scale: 1, chips: [1, 2, 5] };
+  if (d.includes("$/t") || name === "max_price" || name === "min_price") return { unit: "$ per tonne", scale: 1 };
+  if (type === "set_tax_rate") return { unit: "points of GDP", scale: 0.01 };
+  if (name === "duration") return { unit: "years", scale: 4 };
+  if (name === "year") return { unit: "", scale: 1 };
+  if (type === "make_pledge" && name === "target") return { unit: "% of 2025 emissions", scale: 0.01, chips: [80, 50, 25, 0] };
+  if (type === "set_permitting") return { unit: "% reform", scale: 0.01, chips: [0, 25, 50, 100] };
+  if (/share|level|collateral|exit_penalty/.test(name) || /\b0 to (0\.\d|1)\b/.test(d)) return { unit: "%", scale: 0.01 };
+  return { unit: "", scale: 1 };
+}
+
+function tileInfo(type, v) {
+  const sc = S.data.screen, cost = (sc.energy.costs || {})[v], src = (S.data.world.sources || {})[v];
+  const lines = [];
+  if (["build_capacity", "build_grid_storage", "set_subsidy", "finance_region", "propose_deal"].includes(type) && cost) {
+    if (type !== "propose_deal" && type !== "finance_region") lines.push(`${money(cost.unit_cost * myDemand() * 0.01)} per 1%`);
+    if (cost.lcoe != null) lines.push(`$${whole(cost.lcoe)}/GJ power`);
+  }
+  if (type === "retire_capacity") lines.push(`you have ${shareOf((sc.energy.capacity || {})[v] || 0, myDemand())}`);
+  if (src && ["build_capacity", "build_grid_storage", "finance_region", "propose_deal"].includes(type)) lines.push(`⏱ ${years(src.quarters)}`);
+  const tag = src ? (src.category === "fossil" ? `<span class="tile-tag dirty">CO2</span>` : src.category === "enabler" ? "" : `<span class="tile-tag clean">clean</span>`) : "";
+  return { lines, tag };
+}
+
+// Sources in a familiar order: clean first, fossil next, technologies still to research last.
+const TILE_ORDER = ["solar", "onshore_wind", "offshore_wind", "hydro", "nuclear", "geothermal", "bioenergy", "storage", "long_duration_storage",
+  "grid", "electrolysers", "gas", "coal", "oil", "wind", "smr", "advanced_fission", "enhanced_geothermal", "fusion"];
+const SOURCE_NEEDS = { smr: "small_modular_reactors", advanced_fission: "advanced_fission", enhanced_geothermal: "enhanced_geothermal", fusion: "fusion" };
+const locked = (v) => {
+  const need = SOURCE_NEEDS[v];
+  return need ? !(S.data.screen.research.find((r) => r.tech === need) || {}).have : false;
+};
+
+function tilesControl(type, name, values, value) {
+  const rank = (v) => { const i = TILE_ORDER.indexOf(v); return (locked(v) ? 100 : 0) + (i < 0 ? 50 : i); };
+  values = name === "deal_type" ? values : [...values].sort((a, b) => rank(a) - rank(b));
+  const sel = JSON.stringify(values.includes(value) ? value : values.find((v) => !locked(v)) ?? values[0]);
+  return `<input type="hidden" name="${name}" data-kind="list" value="${esc(sel)}"><div class="tiles" data-for="${name}">${values.map((v) => {
+    const { lines, tag } = tileInfo(type, v);
+    const icon = name === "deal_type" ? DEAL_ICON[v] : SOURCE_ICON[v] || "◆";
+    const sub = name === "deal_type" ? `<span class="tile-sub">${esc(DEAL_LINE[v] || "")}</span>` : lines.map((l) => `<span class="tile-sub">${esc(l)}</span>`).join("");
+    const lock = name !== "deal_type" && locked(v);
+    return `<button type="button" class="tile ${JSON.stringify(v) === sel ? "on" : ""} ${lock ? "locked" : ""}" data-v="${esc(JSON.stringify(v))}" ${lock ? 'title="Needs research first"' : ""}>${lock ? `<span class="tile-tag lock">🔒</span>` : tag}<span class="tile-ico">${icon}</span><span class="tile-name">${esc(nice(v))}</span>${sub}</button>`;
+  }).join("")}</div>`;
+}
+
+function segControl(name, values, value, label = nice) {
+  const sel = JSON.stringify(values.includes(value) ? value : values[0]);
+  return `<input type="hidden" name="${name}" data-kind="list" value="${esc(sel)}"><div class="seg" data-for="${name}">${values.map((v) =>
+    `<button type="button" class="${JSON.stringify(v) === sel ? "on" : ""}" data-v="${esc(JSON.stringify(v))}">${esc(label(v))}</button>`).join("")}</div>`;
+}
+
+function control(type, name, spec, value, form) {
   const sc = S.data.screen, me = sc.country;
   const opt = (v, l, sel) => `<option value="${esc(v)}" ${sel ? "selected" : ""}>${esc(l)}</option>`;
+  if (type === "set_tax_credit" && name === "tech") {
+    const m = /generation: \[([^\]]*)\]; manufacturing: \[([^\]]*)\]/.exec(String(spec));
+    const parse = (s) => s.split(",").map((x) => x.trim().replace(/'/g, ""));
+    return { tiles: true, html: (kind) => tilesControl(type, name, parse(kind === "manufacturing" ? m[2] : m[1]), value) };
+  }
   if (Array.isArray(spec)) {
-    const costs = sc.energy.costs || {};
-    const costed = ["build_capacity", "build_grid_storage", "set_subsidy", "retire_capacity"].includes(type) && (name === "source" || name === "kind");
-    const label = (v) => {
-      const c = costed && costs[v];
-      if (!c) return nice(v);
-      const have = (sc.energy.capacity || {})[v];
-      const parts = [`${money(c.unit_cost)} per EJ/yr`];
-      if (c.lcoe != null) parts.push(`$${num(c.lcoe, 1)}/GJ`);
-      if (type === "retire_capacity") parts.push(`you have ${num(have || 0, 2)} EJ/yr`);
-      return `${nice(v)} — ${parts.join(" · ")}`;
-    };
-    const list = type === "retire_capacity" ? spec.filter((v) => (sc.energy.capacity || {})[v] > 0) : spec;
+    let list = spec;
+    if (type === "retire_capacity") list = spec.filter((v) => (sc.energy.capacity || {})[v] > 0);
+    const allSources = list.every((v) => SOURCE_ICON[v]);
+    if (name === "deal_type" || (allSources && list.length <= 15 && type !== "invest_research")) return tilesControl(type, name, list, value);
+    if (typeof list[0] === "boolean") return segControl(name, list, value, (v) => (v ? "On" : "Off"));
+    if (list.length <= 4) return segControl(name, list, value);
+    const label = name === "region" ? regionName : nice;
     return `<select name="${name}" data-kind="list">${list.map((v) => opt(JSON.stringify(v), label(v), JSON.stringify(v) === JSON.stringify(value))).join("")}</select>`;
   }
   const d = String(spec);
@@ -629,46 +737,86 @@ function control(type, name, spec, value) {
   }
   if (d.includes("inbox") || d.includes("active deals")) {
     const list = d.includes("inbox") ? sc.deals.inbox : sc.deals.active;
-    return list.length ? `<select name="${name}" data-kind="str">${list.map((x) => opt(x.id, `${x.id} ${nice(x.type)} (${x.financier} → ${x.host})`, x.id === value)).join("")}</select>` : `<div class="muted">None.</div>`;
+    return list.length ? `<select name="${name}" data-kind="str">${list.map((x) => opt(x.id, `${x.id} ${nice(x.type)} (${nationName(x.financier)} → ${nationName(x.host)})`, x.id === value)).join("")}</select>` : `<div class="muted">None.</div>`;
   }
   if (d.includes("technology")) {
     const techs = type === "set_license_price" ? sc.research.filter((r) => r.have && !r.licensed) : sc.research;
     return techs.length ? `<select name="${name}" data-kind="str">${techs.map((r) => opt(r.tech, r.name, r.tech === value)).join("")}</select>` : `<div class="muted">You have researched nothing to sell yet.</div>`;
   }
   if (d.includes("list of nation")) return null;
-  const range = rangeOf(d);
-  const canMax = d.includes('"max"');
-  const isMax = value === "max";
-  const v = isMax ? "" : value ?? (range ? range[0] : "");
-  return `<div class="row"><input name="${name}" data-kind="num" type="number" step="any" ${range ? `min="${range[0]}" max="${range[1]}"` : ""} value="${esc(v)}" ${isMax ? "disabled" : ""}>
-    ${canMax ? `<label class="muted row" style="gap:4px;white-space:nowrap"><input type="checkbox" data-max="${name}" ${isMax ? "checked" : ""}> max</label>` : ""}</div>`;
+  return { num: true, canMax: d.includes('"max"'), value, desc: d };
+}
+
+function numControl(type, name, c, form) {
+  const u = unitOf(type, name, c.desc, form);
+  const isMax = c.value === "max";
+  let v = "";
+  if (!isMax && c.value != null && c.value !== "") v = Math.round(+c.value / u.scale);
+  if (v === 0 && +c.value > 0) v = ""; // an example too small to show as a whole number
+  if (v === "" && !isMax) v = u.chips ? u.chips[0] : 1;
+  if (type === "set_tax_credit" && name === "rate" && !v) v = 1;
+  return `<div class="amt"><input name="${name}" data-kind="num" data-scale="${u.scale}" type="number" step="1" value="${esc(v)}" ${isMax ? "disabled" : ""}>
+      <span class="unit" data-unit="${name}">${esc(u.unit)}</span></div>
+    <div class="chips" data-chips="${name}">${(u.chips || []).map((x) => `<button type="button" data-set="${x}">${x}${u.unit.startsWith("%") ? "%" : ""}</button>`).join("")}${c.canMax ? `<label class="maxchip"><input type="checkbox" data-max="${name}" ${isMax ? "checked" : ""}> Max</label>` : ""}</div>`;
 }
 
 function renderForm(el, type, preset, { compact = false } = {}) {
-  const spec = S.meta.catalogue[type];
+  const spec = S.meta.catalogue[type], info = ORDERS[type] || {};
   const ex = spec.example || {};
   const FIELD_ORDER = {
     propose_deal: ["target", "deal_type", "source", "amount", "rate | price | share", "duration", "currency", "collateral", "exit_penalty"],
+    set_tax_credit: ["kind", "tech", "rate"],
   };
   const order = FIELD_ORDER[type];
-  const params = Object.entries(spec.params).sort(([a], [b]) => (order ? order.indexOf(a) - order.indexOf(b) : 0));
-  let rows = "";
-  for (const [name, desc] of params) {
-    if (name === "rate | price | share") {
-      const counter = type === "respond_deal";
-      rows += `<div class="form-row"><label id="term-label">${counter ? "Counter term" : "Interest rate"}</label><div><input name="__term" data-kind="num" type="number" step="any" value="${ex.rate ?? ex.price ?? ex.share ?? ""}"></div><div class="hint" id="term-hint">${counter ? "only used if you counter: the rate, price or share you would accept" : "a year, 0 to 0.3"}</div></div>`;
+  // choices first (what), then amounts (how much); the server sends parameters alphabetically
+  const AMOUNTS = ["amount", "level", "share", "rate", "price", "min_price", "max_price", "year", "duration", "on", "response"];
+  const rankOf = (n) => (order ? order.indexOf(n) : AMOUNTS.includes(n) || (type === "make_pledge" && n === "target") ? 1 : 0);
+  const params = Object.entries(spec.params).sort(([a], [b]) => rankOf(a) - rankOf(b));
+  const LEVEL = { set_carbon_price: "Carbon price", set_tax_rate: "Tax change", set_permitting: "Reform", set_activity_cap: "Cap on heavy industry", set_tariff: "Tariff" };
+  const LABEL = { amount: "Size", source: "Source", kind: "Kind", deal_type: "Deal", target: type === "make_pledge" ? "Target" : "Nation",
+    level: LEVEL[type] || "Level", on: "Ban new fossil plants", tech: "Technology", bloc: "Club", deal_id: "Deal", event_id: "Event",
+    share: type === "rebate" ? "Share handed back" : type === "set_subsidy" ? "Share of cost paid" : type === "set_domestic_content" ? "Share made at home" : "Share",
+    max_price: "Highest price", min_price: "Lowest price", rate: type === "set_tax_credit" ? "Credit" : "Rate" };
+  el.innerHTML = `${compact ? "" : `<h2 style="font-size:20px">${esc(nice(type))}</h2>`}
+    ${info.gives || info.takes ? `<div class="fx-rows">${info.gives ? `<div class="fx-row"><span class="fx-k">Gives</span>${fxChips(info.gives, "good")}</div>` : ""}${info.takes ? `<div class="fx-row"><span class="fx-k">Takes</span>${fxChips(info.takes, "bad")}</div>` : ""}</div>` : ""}
+    ${dealPreface(type, preset)}
+    <form id="af"></form>
+    <div class="result" id="af-check"><span class="muted">Checking…</span></div>
+    <div class="row between" style="margin-top:10px"><button type="button" class="linkish" id="af-more">ⓘ Details</button><button class="btn primary" id="af-add">Add to orders</button></div>
+    <div class="details hidden" id="af-details"><p>${esc(shortCost(spec.summary))}</p>${info.note ? `<p>${esc(info.note)}</p>` : ""}<p class="muted">Cost: ${esc(shortCost(spec.cost))} · ${esc(spec.slot)} slot</p></div>`;
+  const form = $("#af", el);
+  // fields: built in order so later fields can read earlier ones (deal type, kind)
+  const rows = [];
+  for (const [pname, desc] of params) {
+    const name = pname === "rate | price | share" ? "__term" : pname;
+    if (name === "__term" && type === "respond_deal") {
+      rows.push({ name, html: () => numControl(type, name, { desc: "", value: null }, form), label: "Counter terms", hint: "only if you counter" });
       continue;
     }
-    const val = preset[name] ?? ex[name];
-    const c = control(type, name, desc, val);
+    if (name === "__term") {
+      const TERM_DEFAULT = { equipment_on_credit: 0.06, climate_loan: 0.03, energy_as_a_service: 15, equity_for_energy: 0.3 };
+      const dealType = () => JSON.parse((form.querySelector('[name="deal_type"]') || { value: "null" }).value);
+      rows.push({ name, html: () => numControl(type, name, { desc: "", value: TERM_DEFAULT[dealType()] ?? ex.rate }, form), label: "Terms" });
+      continue;
+    }
+    const c = control(type, name, desc, preset[name] ?? ex[name], form);
     if (c === null) continue;
-    rows += `<div class="form-row"><label>${esc(nice(name))}</label><div>${c}</div>${Array.isArray(desc) ? "" : `<div class="hint">${esc(desc)}</div>`}</div>`;
+    let html;
+    if (c && c.num) html = () => numControl(type, name, c, form);
+    else if (c && c.tiles) html = () => c.html(JSON.parse((form.querySelector('[name="kind"]') || { value: '"generation"' }).value));
+    else html = () => c;
+    rows.push({ name, html, label: LABEL[name] || nice(name) });
   }
-  el.innerHTML = `${compact ? "" : `<h2 style="font-size:20px">${esc(nice(type))}</h2>`}<p class="summary-text">${esc(shortCost(spec.summary))}</p>${dealPreface(type, preset)}
-    <div class="muted" style="font-size:13px">Cost: ${esc(shortCost(spec.cost))} · ${spec.slot} slot</div><div class="brass-rule"></div>
-    <form id="af">${rows}</form><div class="check-box" id="af-check"><span class="muted">Checking…</span></div>
-    <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn primary" id="af-add">Add to this quarter's orders</button></div>`;
-  const form = $("#af", el);
+  form.innerHTML = rows.map((r) => `<div class="field" data-field="${r.name}"><label>${esc(r.label)}${r.hint ? ` <span class="muted">(${esc(r.hint)})</span>` : ""}</label><div class="field-c">${r.html()}</div></div>`).join("");
+  // fields whose unit or choices depend on another field are redrawn when that field changes
+  const redraw = (names) => names.forEach((n) => {
+    const r = rows.find((x) => x.name === n);
+    const box = form.querySelector(`[data-field="${n}"] .field-c`);
+    if (r && box) box.innerHTML = r.html();
+  });
+  const DEPENDS = { target: ["amount"], deal_type: ["amount", "__term"], kind: ["tech", "rate"], deal_id: ["__term"] };
+  if (["propose_deal", "respond_deal", "set_tax_credit"].includes(type)) redraw([...new Set(Object.values(DEPENDS).flat())]);
+
   const build = () => {
     const act = { type };
     form.querySelectorAll("[name]").forEach((inp) => {
@@ -678,7 +826,7 @@ function renderForm(el, type, preset, { compact = false } = {}) {
       else if (inp.dataset.kind === "num") {
         const box = form.querySelector(`[data-max="${n}"]`);
         if (box && box.checked) act[n] = "max";
-        else if (inp.value !== "") act[n] = +inp.value;
+        else if (inp.value !== "") act[n] = +(+inp.value * +inp.dataset.scale).toPrecision(6);
         else if (type === "set_license_price" && n === "price") act[n] = null;
       }
     });
@@ -698,37 +846,69 @@ function renderForm(el, type, preset, { compact = false } = {}) {
     if (my !== seq) return;
     const r = (res.results || []).slice(-1)[0];
     const box = $("#af-check", el);
-    if (!r) { box.innerHTML = `<span class="bad">${esc(res.error || "Could not check")}</span>`; return; }
-    const cost = Object.entries(r.cost || {}).filter(([, v]) => v).map(([k, v]) => k === "capital" ? money(v) : `${num(v, 1)} ${k.replace("_", " ")}`).join(", ");
-    const amt = r.action.amount !== undefined && act.amount === "max" ? ` (max resolves to ${+Number(r.action.amount).toPrecision(4)})` : "";
-    box.innerHTML = r.ok ? `<span class="good">✓ Possible after your other orders.</span> Costs ${cost || "nothing now"}${amt}.${r.note ? ` ${esc(r.note)}.` : ""}` : `<span class="bad">✗ ${esc(r.reason)}</span>`;
+    if (!r) { box.className = "result bad"; box.innerHTML = `<div class="r-head">✗ ${esc(res.error || "Could not check")}</div>`; return; }
+    box.className = `result ${r.ok ? "ok" : "bad"}`;
+    const costs = Object.entries(r.cost || {}).filter(([, v]) => v).map(([k, v]) =>
+      k === "capital" ? chip("💰", money(v)) : k === "political_capital" ? chip("🏛", `${whole(v)} political capital`) : k === "influence" ? chip("🎖", `${whole(v)} influence`) : chip("•", `${whole(v)} ${k.replace(/_/g, " ")}`)).join("");
+    box.innerHTML = `<div class="r-head">${r.ok ? "✓ Ready to order" : `✗ ${esc(humane(r.reason))}`}</div>
+      ${r.ok ? `<div class="r-row"><span class="fx-k">Costs</span>${costs || chip("✓", "nothing now")}</div>` : ""}
+      ${r.ok ? payoff(type, r.action) : ""}${r.ok && r.note ? `<div class="r-note">${esc(humane(r.note))}</div>` : ""}`;
+  };
+  const onChange = (ev) => {
+    const t = ev.target;
+    if (t.dataset && t.dataset.max) { const inp = form.querySelector(`[name="${t.dataset.max}"]`); if (inp) inp.disabled = t.checked; }
+    const n = t.name || (t.closest("[data-for]") || {}).dataset?.for;
+    if (n && DEPENDS[n]) redraw(DEPENDS[n]);
+    preview();
   };
   form.addEventListener("input", preview);
-  form.addEventListener("change", (ev) => {
-    if (ev.target.dataset.max) {
-      const inp = form.querySelector(`[name="${ev.target.dataset.max}"]`);
-      inp.disabled = ev.target.checked;
+  form.addEventListener("change", onChange);
+  form.addEventListener("click", (ev) => {
+    const tile = ev.target.closest("[data-v]");
+    if (tile) {
+      const wrap = tile.parentElement, name = wrap.dataset.for;
+      wrap.querySelectorAll("[data-v]").forEach((b) => b.classList.toggle("on", b === tile));
+      form.querySelector(`[name="${name}"]`).value = tile.dataset.v;
+      if (DEPENDS[name]) redraw(DEPENDS[name]);
+      preview();
+      return;
     }
-    preview();
+    const set = ev.target.closest("[data-set]");
+    if (set) {
+      const name = set.parentElement.dataset.chips, inp = form.querySelector(`[name="${name}"]`);
+      inp.value = set.dataset.set; inp.disabled = false;
+      const mx = form.querySelector(`[data-max="${name}"]`); if (mx) mx.checked = false;
+      preview();
+    }
   });
   form.addEventListener("submit", (ev) => ev.preventDefault());
-  // The price term follows the deal type: interest for credit and loans, a price for energy as a
-  // service, a margin share for equity.
-  const TERM = {
-    equipment_on_credit: ["Interest rate", "a year, 0 to 0.3", 0.06], climate_loan: ["Interest rate", "a year, 0 to 0.3 (concessional is low)", 0.03],
-    energy_as_a_service: ["Price", "$ per GJ the plant can produce, 0 to 50", 15], equity_for_energy: ["Your share", "of the plant's operating margin, 0 to 1", 0.3],
-  };
-  const dealSel = form.querySelector('[name="deal_type"]');
-  const syncTerm = () => {
-    const t = TERM[JSON.parse(dealSel.value)];
-    if (!t) return;
-    $("#term-label", el).textContent = t[0];
-    $("#term-hint", el).textContent = t[1];
-    form.querySelector('[name="__term"]').value = t[2];
-  };
-  if (dealSel && type === "propose_deal") { dealSel.addEventListener("change", syncTerm); syncTerm(); }
+  $("#af-more", el).onclick = () => $("#af-details", el).classList.toggle("hidden");
   $("#af-add", el).onclick = () => { addToPlan(build()); };
   preview();
+}
+
+// What the order buys, in whole numbers, from the screen's own figures.
+function payoff(type, a) {
+  const sc = S.data.screen, src = (S.data.world.sources || {})[a.source || a.kind];
+  const out = [];
+  if (type === "build_capacity" && a.amount > 0) {
+    const cost = (sc.energy.costs || {})[a.source] || {};
+    out.push(chip("⚡", `+${shareOf(a.amount, myDemand())} of your energy`, "good"));
+    if (src) out.push(chip("⏱", `online in ${years(src.quarters)}`));
+    if (cost.lcoe != null) out.push(chip("💲", `$${whole(cost.lcoe)}/GJ (your average $${whole(sc.energy.price)})`));
+    if (src) out.push(src.category === "fossil" ? chip("🏭", "burns fossil fuel", "bad") : chip("🌱", "no CO2", "good"));
+  } else if (type === "retire_capacity" && a.amount > 0) {
+    out.push(chip("⚡", `−${shareOf(a.amount, myDemand())} of your energy`, "bad"));
+    if (src && src.category === "fossil") out.push(chip("🌱", "less CO2", "good"));
+  } else if (type === "build_grid_storage" && a.amount > 0) {
+    out.push(chip("⚡", `+${shareOf(a.amount, myDemand())} more wind and solar usable`, "good"));
+    if (src) out.push(chip("⏱", `ready in ${years(src.quarters)}`));
+  } else if (type === "finance_region" && src) {
+    out.push(chip("⏱", `built in ${years(src.quarters)}`), chip("🌱", "cuts the region's CO2", "good"));
+  } else {
+    return "";
+  }
+  return `<div class="r-row"><span class="fx-k">Gives</span>${out.join("")}</div>`;
 }
 
 const DEAL_TYPES = {
@@ -747,22 +927,23 @@ const DEAL_HOST = {
 
 function dealPreface(type, preset) {
   if (type === "propose_deal") {
-    return `<div class="deal-types">${Object.entries(DEAL_TYPES).map(([k, [t, d]]) => `<div class="deal-type"><b>${t}</b><span>${d}</span></div>`).join("")}</div>
-      <p class="muted" style="font-size:12.5px">Every deal earns you financed climate credit for the cut it makes abroad and builds trust. A nation hosts deals up to half its energy demand. The host answers next quarter, and may counter.</p>`;
+    return `<p class="muted small-note">They answer next quarter and may counter. Every deal earns climate credit for the cut it makes and builds trust.</p>`;
   }
   if (type === "respond_deal") {
     const d = S.data.screen.deals.inbox.find((x) => x.id === preset.deal_id);
     if (!d) return "";
-    const t = d.terms;
-    const rows = [["Type", nice(d.type)], ["From", `${nationName(d.financier)} → ${nationName(d.host)}`], ["Source", nice(t.source || "")],
-      ["Amount", d.type === "climate_loan" ? money(t.amount) : `${num(t.amount, 3)} EJ/yr`], ["Duration", `${t.duration} quarters`],
-      ...("rate" in t ? [["Interest", pct(t.rate, 1)]] : []), ...("price" in t ? [["Price", `$${num(t.price, 2)}/GJ`]] : []),
-      ...("share" in t ? [["Their share", pct(t.share)]] : []), ["Currency", t.currency || "local"], ["Collateral", pct(t.collateral)],
-      ["Exit penalty", pct(t.exit_penalty)], ["Expires", d.expires]];
-    const host = d.host === S.data.screen.country;
-    const why = host ? DEAL_HOST[d.type] : (DEAL_TYPES[d.type] || ["", ""])[1];
+    const t = d.terms, host = d.host === S.data.screen.country;
+    const hostDemand = (S.data.world.nations[d.host] || {}).demand || myDemand();
+    const rows = [["Deal", `${DEAL_ICON[d.type] || ""} ${nice(d.type)}`], ["From", `${nationName(d.financier)} → ${nationName(d.host)}`],
+      ["Source", `${SOURCE_ICON[t.source] || ""} ${nice(t.source || "")}`],
+      ["Size", d.type === "climate_loan" ? money(t.amount) : `${shareOf(t.amount, hostDemand)} of ${host ? "your" : "their"} energy`],
+      ["Length", `${whole(t.duration / 4)} years`],
+      ...("rate" in t ? [["Interest", `${whole(t.rate * 100)}% a year`]] : []), ...("price" in t ? [["Price", `$${whole(t.price)}/GJ`]] : []),
+      ...("share" in t ? [["Their share", `${whole(t.share * 100)}%`]] : []), ["Collateral", `${whole(t.collateral * 100)}%`],
+      ["Exit penalty", `${whole(t.exit_penalty * 100)}%`], ["Expires", d.expires]];
+    const why = host ? DEAL_HOST[d.type] : DEAL_LINE[d.type];
     return `<div class="offer-terms">${rows.map(([k, v]) => `<div class="stat"><span class="k">${k}</span><span>${esc(v)}</span></div>`).join("")}</div>
-      <p class="muted" style="font-size:12.5px">${esc(why)} Accepting adds clean capacity ${host ? "at home" : "abroad"}; you can host deals up to half your energy demand.</p>`;
+      <p class="muted small-note">${esc(why)}</p>`;
   }
   return "";
 }
