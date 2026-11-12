@@ -145,6 +145,11 @@ Each run leaves `notes.md`, `report.md` and `transcript.jsonl` in its folder. `-
   painted political map with map modes, a resource bar with breakdowns, alerts, nation and
   region panels with interactions, order menus with live checks, quarterly dispatches, and
   event and election windows.
+- **W2 (web interface, deeper screens):** a Chronicle of the game so far (warming, world and
+  your CO2, GDP, approval, capital as synced small multiples with a table view), a research
+  tree with prerequisite arrows and fund or licence buttons, deal screens that explain each
+  deal type and show an offer's terms from your side, build costs per source, and planned
+  orders kept across page reloads.
 - **M16 (fixes from playtest round 3):** tax cuts are mostly borrowed instead of emptying the
   energy budget, the screen shows where capital comes from, amounts a hair over a limit are
   trimmed rather than refused, forest payments wear off and earn less credit, and the playtest

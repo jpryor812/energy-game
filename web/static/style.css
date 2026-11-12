@@ -276,6 +276,7 @@ h3 { font-size: 16px; color: var(--brass); margin: 10px 0 6px; }
   display: flex; flex-direction: column;
 }
 .window.wide { width: min(980px, calc(100% - 32px)); }
+.window.xwide { width: min(1260px, calc(100% - 32px)); }
 .win-head { display: flex; align-items: center; gap: 10px; padding: 12px 16px;
   border-bottom: 1px solid var(--line); }
 .win-head h2 { flex: 1; }
@@ -361,3 +362,30 @@ h3 { font-size: 16px; color: var(--brass); margin: 10px 0 6px; }
   .menu-btn { width: 66px; }
   .res { min-width: 78px; padding: 0 9px; }
 }
+
+/* ---------- W2: research tree, deals ---------- */
+
+.tech-tree { position: relative; display: flex; gap: 48px; align-items: flex-start;
+  overflow-x: auto; padding-bottom: 6px; }
+.tech-col { display: flex; flex-direction: column; gap: 10px; position: relative; z-index: 1;
+  flex: none; width: 262px; }
+.tech-col.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 540px; }
+.tech-col.two .tech-col-head { grid-column: 1 / -1; }
+.tech-col-head { font-family: var(--display); font-weight: 700; color: var(--brass); font-size: 14px;
+  letter-spacing: 0.06em; border-bottom: 1px solid var(--line); padding-bottom: 3px; }
+.tech-card { border: 1px solid var(--line); background: linear-gradient(180deg, #1d2531, #151b24);
+  padding: 8px 10px; font-size: 13px; }
+.tech-card.researched, .tech-card.licensed { border-color: var(--brass); }
+.tech-card.researched .meter > i, .tech-card.licensed .meter > i { background: var(--good); }
+.tech-card.locked { opacity: 0.72; }
+.tech-card .tech-state { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+.tech-card.researched .tech-state, .tech-card.licensed .tech-state { color: var(--good); }
+.tech-card.underway .tech-state { color: var(--brass-hi); }
+.tech-gives { color: var(--text); font-size: 12px; margin-bottom: 2px; }
+.tech-links { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 0; overflow: visible; }
+.tech-links path { fill: none; stroke: var(--brass-dim); stroke-width: 1.5; }
+.deal-types { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 4px 0 8px; }
+.deal-type { border: 1px solid var(--line); padding: 6px 8px; font-size: 12.5px; }
+.deal-type b { display: block; color: var(--brass); font-family: var(--display); font-size: 14px; }
+.deal-type span { color: var(--muted); }
+.offer-terms { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 14px; margin: 6px 0; font-size: 13px; }

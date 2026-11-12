@@ -2,6 +2,7 @@
 // this file holds no game rules.
 import { WorldMap, MODES } from "./map.js";
 import { VIGNETTE } from "./vignettes.js";
+import { chronicle } from "./charts.js";
 import { PLAYABLE_COLOR, PERSONALITY, SOURCE_COLOR, nationTint, NATION_TINT_FAMILY, REGION_TINT } from "./owners.js";
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -21,7 +22,8 @@ const money = (t) => {
 const pct = (x, d = 0) => (x == null ? "-" : `${(x * 100).toFixed(d)}%`);
 const spct = (x, d = 1) => (x == null ? "-" : `${x >= 0 ? "+" : ""}${(x * 100).toFixed(d)}%`);
 const num = (x, d = 1) => (x == null ? "-" : Number(x).toLocaleString(undefined, { maximumFractionDigits: d, minimumFractionDigits: d }));
-const nice = (s) => String(s).replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+const NAMES = { smr: "Small modular reactors", ccs: "Carbon capture", hvdc_supergrid: "HVDC supergrid", euu: "EU" };
+const nice = (s) => NAMES[s] || String(s).replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
 const nationName = (id) => (S.meta.nations[id] ? S.meta.nations[id].name.replace(/\s*\(.*\)/, "") : id);
 const regionName = (id) => S.meta.regions[id] || id;
 const colorOf = (id) => PLAYABLE_COLOR[id] || (NATION_TINT_FAMILY[id] ? nationTint(id) : "#888");
@@ -99,7 +101,9 @@ async function boot() {
 }
 
 function setData(data) {
+  const fresh = !S.data || S.data.name !== data.name || S.data.screen.turn !== data.screen.turn;
   S.data = data;
+  if (fresh) restorePlan();
   for (const id of ["topbar", "outliner", "mapmodes", "menubar", "endturn", "legend"]) $(`#${id}`).classList.remove("hidden");
   S.map.update(data.world);
   renderAll();
@@ -238,6 +242,7 @@ function renderOutliner() {
 let checkSeq = 0;
 async function checkPlan() {
   const seq = ++checkSeq;
+  savePlan();
   S.checks = [];
   renderOutliner(); renderTopbar(); renderEndturn();
   if (!S.plan.length || S.data.screen.over) return;
@@ -245,6 +250,17 @@ async function checkPlan() {
   if (seq !== checkSeq) return;
   S.checks = res.results || [];
   renderOutliner(); renderTopbar(); renderEndturn(); renderAlerts();
+}
+
+const planKey = () => S.data && `plan:${S.data.name}:${S.data.screen.turn}`;
+function savePlan() {
+  try { localStorage.setItem(planKey(), JSON.stringify(S.plan)); } catch { /* storage unavailable */ }
+}
+function restorePlan() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(planKey()) || "[]");
+    if (Array.isArray(saved)) S.plan = saved;
+  } catch { S.plan = []; }
 }
 
 function addToPlan(act) {
@@ -334,7 +350,7 @@ function closeWindows() {
 
 function openWindow({ title, body, foot = "", doc = false, wide = false, onClose }) {
   hideTip();
-  $("#windows").innerHTML = `<div class="window ${doc ? "document" : "chrome"} ${wide ? "wide" : ""}">
+  $("#windows").innerHTML = `<div class="window ${doc ? "document" : "chrome"} ${wide === "x" ? "xwide" : wide ? "wide" : ""}">
       <div class="win-head"><h2>${title}</h2><button class="icon-btn" id="win-x" title="Close">✕</button></div>
       <div class="win-body">${body}</div>${foot ? `<div class="win-foot">${foot}</div>` : ""}</div>`;
   $("#veil").classList.remove("hidden");
@@ -460,6 +476,7 @@ function newGameWindow() {
 
 function openMenu(key) {
   if (key === "ledger") return ledgerWindow();
+  if (key === "research") return researchWindow();
   S.menu = key; renderMenubar();
   actionWindow(MENU[key].title, MENU[key].actions, MENU[key].actions[0], {});
 }
@@ -490,7 +507,19 @@ function control(type, name, spec, value) {
   const sc = S.data.screen, me = sc.country;
   const opt = (v, l, sel) => `<option value="${esc(v)}" ${sel ? "selected" : ""}>${esc(l)}</option>`;
   if (Array.isArray(spec)) {
-    return `<select name="${name}" data-kind="list">${spec.map((v) => opt(JSON.stringify(v), nice(v), JSON.stringify(v) === JSON.stringify(value))).join("")}</select>`;
+    const costs = sc.energy.costs || {};
+    const costed = ["build_capacity", "build_grid_storage", "set_subsidy", "retire_capacity"].includes(type) && (name === "source" || name === "kind");
+    const label = (v) => {
+      const c = costed && costs[v];
+      if (!c) return nice(v);
+      const have = (sc.energy.capacity || {})[v];
+      const parts = [`${money(c.unit_cost)} per EJ/yr`];
+      if (c.lcoe != null) parts.push(`$${num(c.lcoe, 1)}/GJ`);
+      if (type === "retire_capacity") parts.push(`you have ${num(have || 0, 2)} EJ/yr`);
+      return `${nice(v)} — ${parts.join(" · ")}`;
+    };
+    const list = type === "retire_capacity" ? spec.filter((v) => (sc.energy.capacity || {})[v] > 0) : spec;
+    return `<select name="${name}" data-kind="list">${list.map((v) => opt(JSON.stringify(v), label(v), JSON.stringify(v) === JSON.stringify(value))).join("")}</select>`;
   }
   const d = String(spec);
   if (d.includes("another nation")) {
@@ -520,11 +549,16 @@ function control(type, name, spec, value) {
 function renderForm(el, type, preset) {
   const spec = S.meta.catalogue[type];
   const ex = spec.example || {};
-  const params = Object.entries(spec.params);
+  const FIELD_ORDER = {
+    propose_deal: ["target", "deal_type", "source", "amount", "rate | price | share", "duration", "currency", "collateral", "exit_penalty"],
+  };
+  const order = FIELD_ORDER[type];
+  const params = Object.entries(spec.params).sort(([a], [b]) => (order ? order.indexOf(a) - order.indexOf(b) : 0));
   let rows = "";
   for (const [name, desc] of params) {
     if (name === "rate | price | share") {
-      rows += `<div class="form-row"><label>Price term</label><div><input name="__term" data-kind="num" type="number" step="any" value="${ex.rate ?? ex.price ?? ex.share ?? ""}"></div><div class="hint">${esc(desc)} — the term that applies to the deal type</div></div>`;
+      const counter = type === "respond_deal";
+      rows += `<div class="form-row"><label id="term-label">${counter ? "Counter term" : "Interest rate"}</label><div><input name="__term" data-kind="num" type="number" step="any" value="${ex.rate ?? ex.price ?? ex.share ?? ""}"></div><div class="hint" id="term-hint">${counter ? "only used if you counter: the rate, price or share you would accept" : "a year, 0 to 0.3"}</div></div>`;
       continue;
     }
     const val = preset[name] ?? ex[name];
@@ -532,7 +566,7 @@ function renderForm(el, type, preset) {
     if (c === null) continue;
     rows += `<div class="form-row"><label>${esc(nice(name))}</label><div>${c}</div>${Array.isArray(desc) ? "" : `<div class="hint">${esc(desc)}</div>`}</div>`;
   }
-  el.innerHTML = `<h2 style="font-size:20px">${esc(nice(type))}</h2><p class="summary-text">${esc(shortCost(spec.summary))}</p>
+  el.innerHTML = `<h2 style="font-size:20px">${esc(nice(type))}</h2><p class="summary-text">${esc(shortCost(spec.summary))}</p>${dealPreface(type, preset)}
     <div class="muted" style="font-size:13px">Cost: ${esc(shortCost(spec.cost))} · ${spec.slot} slot</div><div class="brass-rule"></div>
     <form id="af">${rows}</form><div class="check-box" id="af-check"><span class="muted">Checking…</span></div>
     <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn primary" id="af-add">Add to this quarter's orders</button></div>`;
@@ -580,8 +614,59 @@ function renderForm(el, type, preset) {
     preview();
   });
   form.addEventListener("submit", (ev) => ev.preventDefault());
+  // The price term follows the deal type: interest for credit and loans, a price for energy as a
+  // service, a margin share for equity.
+  const TERM = {
+    equipment_on_credit: ["Interest rate", "a year, 0 to 0.3", 0.06], climate_loan: ["Interest rate", "a year, 0 to 0.3 (concessional is low)", 0.03],
+    energy_as_a_service: ["Price", "$ per GJ the plant can produce, 0 to 50", 15], equity_for_energy: ["Your share", "of the plant's operating margin, 0 to 1", 0.3],
+  };
+  const dealSel = form.querySelector('[name="deal_type"]');
+  const syncTerm = () => {
+    const t = TERM[JSON.parse(dealSel.value)];
+    if (!t) return;
+    $("#term-label", el).textContent = t[0];
+    $("#term-hint", el).textContent = t[1];
+    form.querySelector('[name="__term"]').value = t[2];
+  };
+  if (dealSel && type === "propose_deal") { dealSel.addEventListener("change", syncTerm); syncTerm(); }
   $("#af-add", el).onclick = () => { addToPlan(build()); };
   preview();
+}
+
+const DEAL_TYPES = {
+  equipment_on_credit: ["Equipment on credit", "You build the plant in their country; they repay cost plus interest (rate) over the duration once it runs. Risk: default if their hard currency runs out."],
+  climate_loan: ["Climate loan", "You lend cash (amount in T$) that builds the plant at their cost; repaid with interest. Usually concessional."],
+  energy_as_a_service: ["Energy as a service", "You own and run the plant; they pay a price per GJ it can produce. Steady income; they can exit by paying the penalty."],
+  equity_for_energy: ["Equity for energy", "You take a share of the plant's operating margin. No fixed payments, so no default, but the plant can fail if the host becomes unreliable."],
+};
+
+const DEAL_HOST = {
+  equipment_on_credit: "They build the plant in your country; you repay its cost plus interest over the duration once it runs. If your hard currency runs out you default and lose trust.",
+  climate_loan: "They lend the cash to build the plant at your cost; you repay it with interest.",
+  energy_as_a_service: "They own and run the plant in your country; you pay the price per GJ it can produce, and can exit by paying the penalty.",
+  equity_for_energy: "They build the plant and take a share of its operating margin. No fixed payments, but the plant can fail if your country becomes unreliable.",
+};
+
+function dealPreface(type, preset) {
+  if (type === "propose_deal") {
+    return `<div class="deal-types">${Object.entries(DEAL_TYPES).map(([k, [t, d]]) => `<div class="deal-type"><b>${t}</b><span>${d}</span></div>`).join("")}</div>
+      <p class="muted" style="font-size:12.5px">Every deal earns you financed climate credit for the cut it makes abroad and builds trust. A nation hosts deals up to half its energy demand. The host answers next quarter, and may counter.</p>`;
+  }
+  if (type === "respond_deal") {
+    const d = S.data.screen.deals.inbox.find((x) => x.id === preset.deal_id);
+    if (!d) return "";
+    const t = d.terms;
+    const rows = [["Type", nice(d.type)], ["From", `${nationName(d.financier)} → ${nationName(d.host)}`], ["Source", nice(t.source || "")],
+      ["Amount", d.type === "climate_loan" ? money(t.amount) : `${num(t.amount, 3)} EJ/yr`], ["Duration", `${t.duration} quarters`],
+      ...("rate" in t ? [["Interest", pct(t.rate, 1)]] : []), ...("price" in t ? [["Price", `$${num(t.price, 2)}/GJ`]] : []),
+      ...("share" in t ? [["Their share", pct(t.share)]] : []), ["Currency", t.currency || "local"], ["Collateral", pct(t.collateral)],
+      ["Exit penalty", pct(t.exit_penalty)], ["Expires", d.expires]];
+    const host = d.host === S.data.screen.country;
+    const why = host ? DEAL_HOST[d.type] : (DEAL_TYPES[d.type] || ["", ""])[1];
+    return `<div class="offer-terms">${rows.map(([k, v]) => `<div class="stat"><span class="k">${k}</span><span>${esc(v)}</span></div>`).join("")}</div>
+      <p class="muted" style="font-size:12.5px">${esc(why)} Accepting adds clean capacity ${host ? "at home" : "abroad"}; you can host deals up to half your energy demand.</p>`;
+  }
+  return "";
 }
 
 function dealWindow(id) {
@@ -590,18 +675,87 @@ function dealWindow(id) {
 
 // ---------- ledger ----------
 
-function ledgerWindow() {
+function researchWindow() {
+  S.menu = "research"; renderMenubar();
+  const sc = S.data.screen, techs = S.meta.techs;
+  const row = Object.fromEntries(sc.research.map((r) => [r.tech, r]));
+  const depth = {};
+  const d = (t) => (depth[t] ??= techs[t].requires.length ? 1 + Math.max(...techs[t].requires.map(d)) : 0);
+  Object.keys(techs).forEach(d);
+  const cols = [];
+  const unlocks = (t) => Object.values(techs).some((x) => x.requires.includes(t));
+  const byName = Object.keys(techs).sort((a, b) => techs[a].name.localeCompare(techs[b].name));
+  for (const t of byName) (cols[depth[t]] ??= []).push(t);
+  // In a two-column tier, put technologies that unlock others in the right-hand column, next to
+  // the tier they lead to, so their arrows do not cross other cards.
+  cols.forEach((c, i) => {
+    if (c.length <= 5) return;
+    const lead = c.filter(unlocks), rest = c.filter((t) => !unlocks(t)), out = [];
+    while (lead.length || rest.length) { out.push(rest.shift() ?? lead.shift()); if (lead.length) out.push(lead.shift()); else if (rest.length) out.push(rest.shift()); }
+    cols[i] = out.filter(Boolean);
+  });
+  const card = (t) => {
+    const r = row[t], spec = techs[t];
+    const state = r.have ? (r.licensed ? "licensed" : "researched") : r.blocked ? "locked" : r.progress > 0 ? "underway" : "open";
+    const offer = r.offers[0];
+    const label = { researched: "Researched", licensed: "Licensed", locked: "Locked", underway: `${pct(r.progress)} done`, open: "Not started" }[state];
+    return `<div class="tech-card ${state}" data-tech="${t}">
+      <div class="row between"><b>${esc(spec.name)}</b><span class="tech-state">${label}</span></div>
+      <div class="meter" style="margin:5px 0"><i style="width:${(r.have ? 1 : r.progress) * 100}%"></i></div>
+      <div class="tech-gives">${esc(r.gives.map((g) => g.replace(/_/g, " ")).join(" · "))}</div>
+      <div class="muted" style="font-size:12px">${money(r.cost_now)} in all · at least ${spec.min_quarters} quarters${spec.earliest_year ? ` · not before ${spec.earliest_year}` : ""}${r.first ? ` · first: ${esc(nationName(r.first[0]))}` : ""}</div>
+      ${state === "locked" ? `<div class="warn" style="font-size:12px">${esc(String(r.blocked).replace(/_/g, " "))}</div>` : ""}
+      <div class="row" style="gap:6px;margin-top:6px">
+        ${!r.have && !r.blocked ? `<button class="btn small" data-fund="${t}" ${tip(ttTable("Fund this quarter", [["Most that speeds it", money(r.useful_now)]], "Adds a 'max' order: it spends up to what speeds the research, if you can afford it."))}>Fund</button>` : ""}
+        ${!r.have && offer ? `<button class="btn small" data-buy="${t}" data-seller="${offer[0]}">Licence from ${esc(offer[0])} · ${money(offer[1])}</button>` : ""}
+        ${r.have && !r.licensed ? `<button class="btn small" data-sell="${t}">${r.my_price == null ? "Offer licences" : `Selling at ${money(r.my_price)}`}</button>` : ""}
+      </div></div>`;
+  };
+  const win = openWindow({
+    title: "The research tree", wide: "x", onClose: () => { S.menu = null; renderMenubar(); },
+    body: `<p class="summary-text" style="margin-top:0">Research finishes no faster than its minimum time; more money brings you closer to it. Anything another nation has finished costs you 40% less, and patents expire ten years after the first completion. Arrows show what each technology needs first.</p>
+      <div class="tech-tree" id="tree">${cols.map((c, i) => `<div class="tech-col ${c.length > 5 ? "two" : ""}"><div class="tech-col-head">${["Foundations: no prerequisites", "Second wave", "Third wave", "Frontier"][i] || `Tier ${i + 1}`}</div>${c.map(card).join("")}</div>`).join("")}<svg class="tech-links" id="tree-links"></svg></div>`,
+  });
+  requestAnimationFrame(() => {
+    const tree = $("#tree", win), svg = $("#tree-links", win);
+    const box = tree.getBoundingClientRect();
+    svg.setAttribute("width", tree.scrollWidth);
+    svg.setAttribute("height", tree.scrollHeight);
+    let paths = "";
+    for (const [t, spec] of Object.entries(techs)) {
+      const to = tree.querySelector(`[data-tech="${t}"]`).getBoundingClientRect();
+      for (const req of spec.requires) {
+        const from = tree.querySelector(`[data-tech="${req}"]`).getBoundingClientRect();
+        const x1 = from.right - box.left, y1 = from.top + from.height / 2 - box.top;
+        const x2 = to.left - box.left, y2 = to.top + to.height / 2 - box.top;
+        const mx = (x1 + x2) / 2;
+        paths += `<path d="M${x1} ${y1} C${mx} ${y1} ${mx} ${y2} ${x2 - 6} ${y2}" /><path d="M${x2 - 8} ${y2 - 4} L${x2} ${y2} L${x2 - 8} ${y2 + 4}" />`;
+      }
+    }
+    svg.innerHTML = paths;
+  });
+  win.querySelectorAll("[data-fund]").forEach((b) => (b.onclick = () => addToPlan({ type: "fund_research", tech: b.dataset.fund, amount: "max" })));
+  win.querySelectorAll("[data-buy]").forEach((b) => (b.onclick = () => addToPlan({ type: "buy_license", tech: b.dataset.buy, seller: b.dataset.seller })));
+  win.querySelectorAll("[data-sell]").forEach((b) => (b.onclick = () => actionWindow("Sell licences", ["set_license_price"], "set_license_price", { tech: b.dataset.sell })));
+}
+
+function ledgerWindow(tab = "standings") {
   S.menu = "ledger"; renderMenubar();
   const sc = S.data.screen;
   const rows = sc.leaders.map((l, i) => `<tr><td>${i + 1}</td><td>${crestMini(l.nation)} ${esc(nationName(l.nation))}${l.nation === sc.country ? " <span class='good'>(you)</span>" : ""}</td><td style="text-align:right">${num(l.score, 1)}</td><td style="text-align:right">${spct(S.data.world.nations[l.nation].emissions_change, 0)}</td><td style="text-align:right">${pct(S.data.world.nations[l.nation].clean_share)}</td></tr>`).join("");
   const races = sc.races.map((r) => `<tr><td>${esc(nice(r.race))}</td><td>${r.leader ? esc(nationName(r.leader)) : "<span class='muted'>no one yet</span>"}</td><td class="muted">${esc(r.measure || "")}</td></tr>`).join("");
-  openWindow({
+  const tabs = [["standings", "Standings"], ["chronicle", "Chronicle"]];
+  const win = openWindow({
     title: "The ledger", wide: true, onClose: () => { S.menu = null; renderMenubar(); },
-    body: `<div style="display:grid;grid-template-columns:1.2fr 1fr;gap:18px">
+    body: `<div class="tabs" style="margin:-6px -6px 12px">${tabs.map(([k, l]) => `<button class="tab ${k === tab ? "active" : ""}" data-tab="${k}">${l}</button>`).join("")}</div><div id="ledger-body"></div>`,
+  });
+  const body = $("#ledger-body", win);
+  if (tab === "chronicle") chronicle(body, S.data.world.history);
+  else body.innerHTML = `<div style="display:grid;grid-template-columns:1.2fr 1fr;gap:18px">
       <div><h3>Standings</h3><table style="width:100%;border-collapse:collapse;font-size:14px"><tr class="muted"><td>#</td><td>Nation</td><td style="text-align:right">Score</td><td style="text-align:right">CO2 vs 2025</td><td style="text-align:right">Clean</td></tr>${rows}</table></div>
       <div><h3>Bonus races</h3><table style="width:100%;font-size:13px">${races}</table>
-      <h3>How the score works</h3><p class="summary-text">Score = (half your absolute standing + half your progress against your own 2025 start, times your country's difficulty) × the World Multiplier, plus bonuses. Top four with the world at or below 1.6 °C and cooling is Champion.</p></div></div>`,
-  });
+      <h3>How the score works</h3><p class="summary-text">Score = (half your absolute standing + half your progress against your own 2025 start, times your country's difficulty) × the World Multiplier, plus bonuses. Top four with the world at or below 1.6 °C and cooling is Champion.</p></div></div>`;
+  win.querySelectorAll("[data-tab]").forEach((b) => (b.onclick = () => ledgerWindow(b.dataset.tab)));
 }
 const crestMini = (id) => `<i class="swatch" style="background:${colorOf(id)}"></i>`;
 
@@ -735,7 +889,7 @@ function openRealm(tab = "overview") {
     const tabs = [["overview", "Realm"], ["vote", "Elections"], ["energy", "Energy"], ["research", "Research"]];
     panelShell(head, tabs, current, realmTab(current));
     $("#panel").querySelectorAll(".tab").forEach((b) => (b.onclick = () => { current = b.dataset.tab; draw(); }));
-    $("#panel").querySelectorAll("[data-research]").forEach((b) => (b.onclick = () => actionWindow("Research", ["fund_research", "buy_license", "set_license_price"], "fund_research", { tech: b.dataset.research, amount: "max" })));
+    $("#panel").querySelectorAll("[data-research]").forEach((b) => (b.onclick = () => researchWindow()));
   };
   S.panel = draw;
   draw();

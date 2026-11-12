@@ -66,6 +66,16 @@ class Server:
             },
             "regions": {rid: cfg.regions["regions"][rid]["name"] for rid in cfg.region_ids},
             "difficulties": list(cfg.tuning["difficulty"]["levels"]),
+            # W2: the tech tree's shape (prerequisites and earliest years) for the tree view
+            "techs": {
+                tid: {
+                    "name": cfg.rtech(tid)["name"],
+                    "requires": list(cfg.rtech(tid).get("requires", [])),
+                    "earliest_year": (cfg.rtech(tid).get("earliest_year") or {}).get("value"),
+                    "min_quarters": cfg.rtech(tid)["min_quarters"]["value"],
+                }
+                for tid in cfg.tech_ids
+            },
             "catalogue": catalogue(cfg),
             "saves": self.list_saves(),
             "current": self.name,

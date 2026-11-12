@@ -20,6 +20,7 @@ def server(cfg, tmp_path):
 def test_new_check_turn_wait_load(cfg, server, tmp_path):
     meta = server.handle("GET", "/api/meta", {})
     assert meta["playable"] == cfg.playable_ids and "build_capacity" in meta["catalogue"]
+    assert meta["techs"]["fusion"]["requires"] == ["advanced_fission"]  # W2: the tree's shape
     state = server.handle("POST", "/api/new", {"country": "AAA", "seed": 2, "name": "g1"})
     assert state["screen"]["country"] == "AAA" and set(state["world"]["regions"])
     act = [{"type": "set_carbon_price", "level": 10}]
