@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Energy Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700&family=Alegreya:ital@0;1&family=Cormorant+SC:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+</head>
+<body>
+  <div id="map"></div>
+
+  <header id="topbar" class="chrome hidden">
+    <button id="realm" title="Your nation">
+      <div class="crest" id="realm-crest"></div>
+      <div>
+        <div class="realm-name" id="realm-name"></div>
+        <div class="realm-sub" id="realm-sub"></div>
+      </div>
+    </button>
+    <div class="resources" id="resources"></div>
+    <div class="spacer"></div>
+    <div class="world-stats" id="world-stats"></div>
+    <div id="date-box"><div class="date" id="date"></div><div class="muted" id="turn-of"></div></div>
+  </header>
+
+  <div id="alerts"></div>
+  <aside id="panel" class="chrome hidden"></aside>
+  <aside id="outliner" class="chrome hidden"></aside>
+  <div id="legend" class="chrome hidden"></div>
+  <nav id="mapmodes" class="chrome hidden"></nav>
+  <nav id="menubar" class="chrome hidden"></nav>
+  <div id="endturn" class="chrome hidden"></div>
+
+  <div id="veil" class="hidden"></div>
+  <div id="windows"></div>
+  <div id="tooltip" class="hidden"></div>
+  <div id="toast" class="chrome hidden"></div>
+  <div id="busy" class="hidden">The ministry deliberates&hellip;</div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
