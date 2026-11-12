@@ -307,3 +307,49 @@ degC and rising wherever the agents stopped.
 
 Run agents two or three at a time: OpenRouter holds back credit for every request in flight,
 so seven at once can be refused while the balance is still positive.
+
+## Round 4 (M16): a three-agent check of the fixes, Claude Haiku 5.5 via OpenRouter
+
+Three agents played the M16 build (normal difficulty, seeds 51-53), run at once with the new
+in-flight retry; all three finished. Cost $0.96. Reports in `games/r4_*/report.md` (not in git).
+
+| Country | Seed | Result | Elections | Score | Rank | Warming 2049 |
+|---|---|---|---|---|---|---|
+| USA | 51 | Full game, Prosperous but Doomed | 6 of 6 won | 64.2 | 4 | 1.69 degC |
+| Vietnam | 52 | Full game, Shared Failure | 6 of 6 won | 53.9 | 14 | 1.68 degC |
+| Hunter (EU) | 53 | Full game, Prosperous but Doomed | 6 of 6 won | 76.3 | 1 | 1.66 degC |
+
+### Did the M16 fixes work?
+
+1. **Tax cuts: yes.** All three still cut taxes by 2 points, but kept capital to spend: the USA
+   lent 0.59 T$ to regions and funded six events. The cost now arrives late, as intended: the
+   USA ended with 12 T$ of new debt and about 0.6 T$ a year of interest, which its agent called
+   the main drag on growth and the vote in the last terms. Vietnam's whole budget is tiny (2% of
+   a 0.5-1 T$ economy), so the interest ate most of it; its agent asked for more early capital.
+2. **Events and regional finance are now used.** The USA pledged to seven events and six were
+   funded; it found pledging to nearly full funds cheap and low-risk. Without a large economy
+   pledging, funds still end 15-20% short (Vietnam's seven all failed).
+3. **Rounding: no complaints this round.**
+4. **Forest fund: still the best early climate lever, but now has to be paid for.** Paying
+   0.1-0.5 T$ a quarter kept the hunter's climate component near 0.98; when payments slowed,
+   warming crept back. The climate component itself tops out easily (USA 0.97, hunter 1.0), so
+   it stops separating strong from very strong climate play.
+
+### New findings (checked against the code)
+
+1. **Display bug, introduced in M16 and fixed:** the ECONOMY line printed
+   `{ec['approval']:.2f}` literally (all three agents). A test now checks the screen for
+   unfilled placeholders.
+2. **Carbon removal is not "$1.2 a tonne" (the hunter's claim is wrong).** It paid 0.063 T$ for
+   50 Mt a year of capacity, about $1,260 per tonne-per-year at the cost floor; over a 25-year
+   life at a 7% discount rate plus 8 GJ of energy per tonne, that is roughly $150 a tonne, the
+   floor set in `data/techs.yaml`. It is still the strongest late lever: the hunter's removal
+   took EU net emissions to about -1,700 Mt a year, won first-to-net-zero and rank 1, and the
+   hunter reckons starting it in 2028 instead of 2038 would have reached Champion. Removal at
+   this scale is a deliberate design choice (ASSUMPTIONS 90) and a question for reviewers.
+3. **Political capital still piles up** (59-86 unused at the end) and **the middle game is
+   still quiet** (2029-2037 or 2042-2046 in each report).
+4. **Not yet checked:** that credit sales clear any amount at a low price once a nation is net
+   negative; Vietnam's report of stability fixed at 0.40; a USA equity deal that "failed
+   unexplained" (equity plants can fail by seeded chance, by design, but the screen may not say
+   why).

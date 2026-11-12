@@ -554,7 +554,7 @@ def render(obs: dict[str, Any], brief: bool = False) -> str:
         "",
         f"ECONOMY: GDP {ec['gdp']:.3f} T$ ({_pct(ec['gdp_vs_2025'])} vs 2025), growth "
         f"{ec['growth_annual'] * 100:.2f}%/yr (this quarter at an annual rate; a disaster "
-        "quarter shows its one-off loss) | approval {ec['approval']:.2f} | stability "
+        f"quarter shows its one-off loss) | approval {ec['approval']:.2f} | stability "
         f"{ec['stability']:.2f} (falls below {ec['fallen_below']}) | tax "
         f"{ec['tax_change'] * 100:+.1f} pt",
         f"  jobs (m): {_kv(ec['jobs'], '{:.2f}')} | FX reserves {ec['fx_reserves']:.3f} | "

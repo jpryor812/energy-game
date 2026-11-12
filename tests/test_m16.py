@@ -88,3 +88,12 @@ def test_runner_waits_as_openrouter_asks():
     assert agent.retry_after("45", "") == 45
     assert agent.retry_after(None, '"headers":{"Retry-After":"120') == 120
     assert agent.retry_after(None, "no hint") == 120
+
+
+def test_screen_has_no_unfilled_placeholders(cfg):
+    """Round 4: an f-string split in M16 printed "{ec['approval']:.2f}" literally."""
+    game = Game.new(cfg, "AAA", seed=1)
+    game.wait(2)
+    for brief in (False, True):
+        text = view.render(view.observe(game), brief=brief)
+        assert "{" not in text and "}" not in text
