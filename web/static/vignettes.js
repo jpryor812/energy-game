@@ -1,5 +1,5 @@
 // Engraved-style line vignettes for event windows (inline SVG, drawn in the parchment ink).
-const INK = "#5a4127";
+const INK = "#0f6b33";
 const frame = (inner) => `<svg viewBox="0 0 600 120" width="100%" height="120" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
   <defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
     <line x1="0" y1="0" x2="0" y2="6" stroke="${INK}" stroke-opacity="0.12" stroke-width="1.2"/></pattern></defs>

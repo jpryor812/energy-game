@@ -229,7 +229,7 @@ function renderOutliner() {
   const evs = sc.events.open.map((e) => `<div class="plan-item"><div class="what"><b>${e.id}</b> ${nice(e.type)} in ${esc(regionName(e.region))}<div class="why muted">${pct(e.pledged / e.target)} of ${money(e.target)} · until ${e.deadline}${e.you_pledged ? ` · you ${money(e.you_pledged)}` : ""}</div></div><button class="btn small" data-ev="${e.id}">Open</button></div>`).join("");
   const notes = (sc.notices || []).filter((n) => !n.startsWith("Score ")).slice(0, 8).map((n) => `<div class="plan-item"><div class="what" style="font-size:12.5px">${esc(n)}</div></div>`).join("");
   $("#outliner").innerHTML = `
-    <div class="sec-head"><span>This quarter's orders</span><span class="muted" style="font-family:var(--body);font-size:12px">${S.plan.length} planned</span></div>
+    <div class="sec-head"><span>This quarter's orders</span><span class="muted" style="font-size:12px">${S.plan.length} planned</span></div>
     <div class="sec-body">${planRows}</div>
     ${inbox ? `<div class="sec-head"><span>Offers to you</span></div><div class="sec-body">${inbox}</div>` : ""}
     ${evs ? `<div class="sec-head"><span>Event funds</span></div><div class="sec-body">${evs}</div>` : ""}

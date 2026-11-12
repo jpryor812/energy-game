@@ -56,11 +56,12 @@ export class WorldMap {
     this.svg = svg;
     const defs = svg.append("defs");
     const oc = defs.append("radialGradient").attr("id", "ocean").attr("cx", "50%").attr("cy", "45%").attr("r", "75%");
-    oc.append("stop").attr("offset", "0%").attr("stop-color", "#25495a");
-    oc.append("stop").attr("offset", "100%").attr("stop-color", "#0e202a");
+    oc.append("stop").attr("offset", "0%").attr("stop-color", "#4fb6f0");
+    oc.append("stop").attr("offset", "60%").attr("stop-color", "#2f95dc");
+    oc.append("stop").attr("offset", "100%").attr("stop-color", "#1f74c0");
     const paper = defs.append("filter").attr("id", "paper").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
     paper.append("feTurbulence").attr("type", "fractalNoise").attr("baseFrequency", 0.9).attr("numOctaves", 3).attr("seed", 7);
-    paper.append("feColorMatrix").attr("values", "0 0 0 0 0.45  0 0 0 0 0.36  0 0 0 0 0.22  0 0 0 0.55 0");
+    paper.append("feColorMatrix").attr("values", "0 0 0 0 0.45  0 0 0 0 0.40  0 0 0 0 0.30  0 0 0 0.35 0");
     defs.append("filter").attr("id", "soften").append("feGaussianBlur").attr("stdDeviation", 2.2);
     const glow = defs.append("filter").attr("id", "glow").attr("x", "-20%").attr("y", "-20%").attr("width", "140%").attr("height", "140%");
     glow.append("feGaussianBlur").attr("stdDeviation", 2).attr("result", "b");
@@ -176,11 +177,11 @@ export class WorldMap {
       case "clean":
         return rec ? cleanScale(rec.clean_share) : NEUTRAL_LAND;
       case "trust":
-        if (owner.kind === "nation" && owner.id === me) return "#c6a76a";
+        if (owner.kind === "nation" && owner.id === me) return "#22c55e";
         return rec && rec.trust_in_you != null ? trustScale(rec.trust_in_you) : NEUTRAL_LAND;
       case "club":
         if (owner.kind === "region") return "#cfc6b2";
-        return rec && rec.club ? "#c6a76a" : "#8e8a80";
+        return rec && rec.club ? "#22c55e" : "#b9b5ab";
       case "score":
         if (owner.kind === "region") return "#cfc6b2";
         return rec && rec.score != null ? scoreScale(rec.score) : NEUTRAL_LAND;
@@ -200,13 +201,13 @@ export class WorldMap {
       return `<div class="ramp" style="background:linear-gradient(90deg,${stops})"></div>
         <div class="row between muted"><span>${a}</span><span>${b}</span></div>`;
     };
-    const head = `<div style="font-family:var(--display);font-weight:700;color:var(--brass)">${MODES[this.mode].name}</div>`;
+    const head = `<div class="disp" style="color:var(--brass-hi);font-size:11px">${MODES[this.mode].name}</div>`;
     switch (this.mode) {
       case "emissions": return head + ramp(emissionsScale, -0.8, 0.5, "−80% since 2025", "+50%");
       case "clean": return head + ramp(cleanScale, 0, 0.9, "0% clean", "90%");
       case "trust": return head + ramp(trustScale, 0, 1, "distrust", "trust");
       case "score": return head + ramp(scoreScale, 40, 80, "40", "80");
-      case "club": return head + `<div class="legend-list"><span><i class="swatch" style="background:#c6a76a"></i>member</span><span><i class="swatch" style="background:#8e8a80"></i>outside</span></div>`;
+      case "club": return head + `<div class="legend-list"><span><i class="swatch" style="background:#22c55e"></i>member</span><span><i class="swatch" style="background:#b9b5ab"></i>outside</span></div>`;
       case "events": return head + `<div class="legend-list"><span><i class="swatch" style="background:#e0a53f"></i>open fund</span></div>`;
       default: return head + `<div class="legend-list">${Object.entries(PLAYABLE_COLOR).map(([k, c]) =>
         `<span><i class="swatch" style="background:${c}"></i>${k}</span>`).join("")}</div>

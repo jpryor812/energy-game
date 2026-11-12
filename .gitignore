@@ -9,3 +9,6 @@ games/
 
 # Secrets (M10): API keys for the playtest runner live here, never in git
 .env
+
+# Personal-use font (licence forbids redistribution): kept locally, never committed
+web/static/fonts/Baserona*

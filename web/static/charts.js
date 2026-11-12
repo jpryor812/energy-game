@@ -1,10 +1,10 @@
 // The Chronicle: small multiples of the game so far, one measure per chart (one y-axis each),
 // a shared quarter axis and a crosshair synced across all of them, plus a table view.
 
-const LINE = "#c6a76a";
-const REF = "#8d8576";
-const GRID = "rgba(236, 227, 207, 0.08)";
-const TEXT = "#a49b88";
+const LINE = "#16a34a";
+const REF = "#8aa294";
+const GRID = "rgba(19, 38, 27, 0.08)";
+const TEXT = "#587063";
 
 export const SERIES = [
   { key: "warming", title: "World warming", unit: "°C", fmt: (v) => v.toFixed(2),
@@ -60,7 +60,7 @@ function small(box, history, s) {
   const x = d3.scaleLinear([0, Math.max(1, history.length - 1)], [m.l, W - m.r]);
   const y = d3.scaleLinear([floor, hi + pad], [H - m.b, m.t]).nice(4);
 
-  box.innerHTML = `<div class="row between"><span style="font-family:var(--display);font-weight:700;color:var(--brass)">${s.title}</span>
+  box.innerHTML = `<div class="row between"><span class="disp" style="color:var(--brass-hi);font-size:11px">${s.title}</span>
     <span class="num" data-read style="font-size:13px"></span></div>${s.note ? `<div class="muted" style="font-size:11px;margin-top:-2px">${s.note}</div>` : ""}`;
   const svg = d3.select(box).append("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("width", "100%")
     .attr("role", "img").attr("aria-label", `${s.title}, ${s.unit}`);
@@ -82,8 +82,8 @@ function small(box, history, s) {
   const line = d3.line().x((d, i) => x(i)).y((d) => y(d)).curve(d3.curveMonotoneX);
   svg.append("path").attr("d", line(vals)).attr("fill", "none").attr("stroke", LINE).attr("stroke-width", 2)
     .attr("stroke-linejoin", "round").attr("stroke-linecap", "round");
-  const cross = svg.append("line").attr("y1", m.t).attr("y2", H - m.b).attr("stroke", "rgba(236,227,207,0.35)");
-  const dot = svg.append("circle").attr("r", 4).attr("fill", LINE).attr("stroke", "#161d27").attr("stroke-width", 2);
+  const cross = svg.append("line").attr("y1", m.t).attr("y2", H - m.b).attr("stroke", "rgba(19,38,27,0.3)");
+  const dot = svg.append("circle").attr("r", 4).attr("fill", LINE).attr("stroke", "#ffffff").attr("stroke-width", 2);
   const read = box.querySelector("[data-read]");
   const chart = {
     onhover: null,
