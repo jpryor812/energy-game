@@ -26,6 +26,7 @@ from typing import Any
 from sim import canonical, config, diplomacy, regions, scoring, trade, view
 from sim.catalogue import catalogue
 from sim.session import Game, SaveError
+from web.profiles import profiles
 
 ROOT = Path(__file__).resolve().parent.parent
 STATIC = Path(__file__).resolve().parent / "static"
@@ -48,6 +49,7 @@ class Server:
         self.game: Game | None = None
         self.name: str | None = None
         self.lock = threading.Lock()
+        self._profiles: dict[str, Any] | None = None
 
     # --- read-only views --------------------------------------------------------------------
 
@@ -76,10 +78,18 @@ class Server:
                 }
                 for tid in cfg.tech_ids
             },
+            # the new-game screen: strengths, weaknesses and figures, easiest nation first
+            "profiles": self.profiles(),
+            "profile_order": list(self.profiles()),  # JSON keys are sorted, so the order goes here
             "catalogue": catalogue(cfg),
             "saves": self.list_saves(),
             "current": self.name,
         }
+
+    def profiles(self) -> dict[str, Any]:
+        if self._profiles is None:
+            self._profiles = profiles(self.cfg)
+        return self._profiles
 
     def list_saves(self) -> list[dict[str, Any]]:
         out = []

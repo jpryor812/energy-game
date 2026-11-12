@@ -69,3 +69,29 @@ def test_http_serves_page_and_api_and_blocks_traversal(server):
         assert exc.value.code == 409  # no game loaded
     finally:
         httpd.shutdown()
+
+
+def test_profiles_sorted_by_difficulty_with_pros_and_cons(cfg, server):
+    """The new-game screen: every playable nation, easiest first, with strengths and weaknesses."""
+    meta = server.handle("GET", "/api/meta", {})
+    order, prof = meta["profile_order"], meta["profiles"]
+    assert sorted(order) == sorted(cfg.playable_ids) and set(prof) == set(order)
+    from web.profiles import DIFFICULTY_ORDER
+
+    ranks = [DIFFICULTY_ORDER.index(prof[nid]["difficulty"]) for nid in order]
+    assert ranks == sorted(ranks)
+    for p in prof.values():
+        assert p["pros"] and p["cons"] and p["figures"]
+        assert not any("{" in line or "}" in line for line in p["pros"] + p["cons"])
+
+
+def test_profiles_on_the_real_data():
+    from sim import config
+    from web.profiles import profiles
+
+    real = config.load()
+    prof = profiles(real)
+    assert list(prof)[0] == "USA"  # the one easy nation leads the list
+    assert any("workshop" in line for line in prof["CHN"]["pros"])
+    assert any("Net fuel exporter" in line for line in prof["RUS"]["pros"])
+    assert any("Coal-heavy" in line for line in prof["IND"]["cons"])

@@ -793,6 +793,17 @@ planning)").
      one-off loss (China saw -7.4% beside a +3.5% trend in round 3). Now labelled so.
 194. **The playtest runner waits and retries** when OpenRouter refuses a request for in-flight
      credit (HTTP 402), so several agents can run at once.
+195. **Nation profiles on the new-game screen are derived, not written** (web/profiles.py).
+     Each strength or weakness is a fact about the 2025 start compared with the other 15
+     nations: a nation in the top or bottom 4 on a measure (GDP, growth, clean share, coal
+     share, export openness, carbon price) gets a line, plus natural cut-offs (fuel production
+     above or below use, climate vulnerability and permitting opposition above or below the
+     typical 1.0, the world's largest maker of a piece of equipment or more than an even 1/16
+     share). The cut-offs choose what is worth showing and change no rules. Starting public
+     debt is left out because only debt above the 2025 level affects the game.
+196. **Leader portraits are abstract** (web/static/leaders.js): flat drawings of an unnamed
+     head of government with a title, in front of a scene of the nation's energy system
+     (what it makes, burns or sells). No real people, no national costume.
 
 ## Open questions
 

@@ -4,6 +4,7 @@ import { WorldMap, MODES } from "./map.js";
 import { VIGNETTE } from "./vignettes.js";
 import { chronicle } from "./charts.js";
 import { PLAYABLE_COLOR, PERSONALITY, SOURCE_COLOR, nationTint, NATION_TINT_FAMILY, REGION_TINT } from "./owners.js";
+import { LEADERS, leaderPortrait, skyColor } from "./leaders.js";
 
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -435,29 +436,77 @@ function textWindow() {
 }
 
 function newGameWindow() {
-  const m = S.meta;
-  let pick = m.playable[0];
-  const cards = m.playable.map((id) => {
-    const n = m.nations[id], p = PERSONALITY[n.personality] || ["", ""];
-    return `<button class="country-card ${id === pick ? "active" : ""}" data-c="${id}">${crest(id)}<div><div class="n">${esc(n.name)}</div><div class="d">${nice(n.difficulty)} · ${esc(p[0])} in the computer's hands</div></div></button>`;
-  }).join("");
-  const saves = m.saves.map((s) => `<div class="save-row"><span>${esc(s.name)} <span class="muted">${esc(s.country)}, seed ${s.seed}, ${s.quarters_played} quarters played</span></span><button class="btn small" data-load="${esc(s.name)}">Continue</button></div>`).join("");
-  const win = openWindow({
-    title: "A new government", wide: true,
-    body: `<p class="summary-text">Lead one country's energy economy from 2025 to 2049, a quarter at a time. Your score is your nation's prosperity multiplied by how the world did on climate. Win elections, keep the lights on, and bring the world below 1.6 °C.</p>
-      <h3>Choose your nation</h3><div class="country-cards">${cards}</div>
-      <div class="row" style="margin-top:12px;gap:16px">
-        <label class="muted">World <select id="ng-diff">${m.difficulties.map((d) => `<option ${d === "normal" ? "selected" : ""}>${d}</option>`).join("")}</select></label>
-        <label class="muted">Seed <input id="ng-seed" type="number" value="${1 + Math.floor(Math.random() * 999)}" style="width:90px"></label>
-        <label class="muted">Save name <input id="ng-name" placeholder="optional" style="width:150px"></label>
+  const m = S.meta, P = m.profiles;
+  const order = m.profile_order; // easiest first
+  let pick = order[0];
+  let tab = "new";
+  const groups = [];
+  for (const id of order) {
+    const d = P[id].difficulty;
+    if (!groups.length || groups[groups.length - 1].d !== d) groups.push({ d, ids: [] });
+    groups[groups.length - 1].ids.push(id);
+  }
+  const pips = (d) => {
+    const n = { easy: 1, easy_to_medium: 2, medium: 2, hard: 3 }[d] || 1;
+    return `<span class="pips" title="${esc(nice(d))}">${[1, 2, 3].map((i) => `<i class="${i <= n ? "on" : ""}"></i>`).join("")}</span>`;
+  };
+  const list = groups.map((g) => `<div class="ng-group"><span>${esc(nice(g.d))}</span><span>score ×${P[g.ids[0]].score_multiplier}</span></div>
+    ${g.ids.map((id) => `<button class="ng-row" data-c="${id}">${crest(id)}<span class="ng-row-text"><span class="n">${esc(P[id].name)}</span><span class="a">${esc(P[id].archetype)}</span></span>${pips(P[id].difficulty)}</button>`).join("")}`).join("");
+  const saves = m.saves.length
+    ? m.saves.map((s) => `<div class="ng-save">${crest(s.country)}<div class="ng-row-text"><span class="n">${esc(s.name)}</span><span class="a">${esc(m.nations[s.country]?.name || s.country)} · seed ${s.seed} · ${s.difficulty || "normal"} world · ${s.quarters_played} quarters played</span></div><button class="btn small" data-load="${esc(s.name)}">Continue</button></div>`).join("")
+    : `<p class="muted">No saved games yet.</p>`;
+
+  hideTip();
+  $("#windows").innerHTML = `<div class="window chrome ng">
+    <div class="win-head"><h2>Choose your nation</h2><span class="ng-goal">2025 to 2049 · your score is your nation's prosperity times how the world did on climate</span><button class="icon-btn" id="win-x" title="Close">✕</button></div>
+    <div class="ng-body">
+      <div class="ng-portrait" id="ng-portrait"></div>
+      <div class="ng-list">
+        <div class="tabs ng-tabs"><button class="tab" data-tab="new">New game</button><button class="tab" data-tab="saves">Saved (${m.saves.length})</button></div>
+        <div class="ng-scroll" id="ng-new">${list}</div>
+        <div class="ng-scroll hidden" id="ng-saves">${saves}</div>
       </div>
-      ${saves ? `<h3>Saved games</h3><div class="saves">${saves}</div>` : ""}`,
-    foot: `<button class="btn primary" id="ng-go">Take office</button>`,
-  });
-  win.querySelectorAll(".country-card").forEach((b) => (b.onclick = () => {
-    pick = b.dataset.c;
-    win.querySelectorAll(".country-card").forEach((x) => x.classList.toggle("active", x === b));
-  }));
+      <div class="ng-detail" id="ng-detail"></div>
+    </div>
+    <div class="win-foot"><div class="ng-settings" id="ng-settings">
+        <label>World <select id="ng-diff">${m.difficulties.map((d) => `<option ${d === "normal" ? "selected" : ""}>${d}</option>`).join("")}</select></label>
+        <label>Seed <input id="ng-seed" type="number" value="${1 + Math.floor(Math.random() * 999)}"></label>
+        <label>Save name <input id="ng-name" placeholder="optional"></label>
+      </div><span class="muted ng-foot-note hidden" id="ng-foot-note">Saved games continue where you left off.</span><button class="btn primary" id="ng-go">Take office</button></div>
+  </div>`;
+  $("#veil").classList.remove("hidden");
+  const win = $("#windows .window");
+  const close = () => closeWindows();
+  if (S.data) { $("#win-x").onclick = close; $("#veil").onclick = close; } else { $("#win-x").remove(); $("#veil").onclick = null; }
+
+  const show = (id) => {
+    pick = id;
+    const p = P[id], L = LEADERS[id], pers = PERSONALITY[p.personality] || ["", ""];
+    win.querySelectorAll(".ng-row").forEach((b) => b.classList.toggle("active", b.dataset.c === id));
+    $("#ng-portrait").style.background = skyColor(id);
+    $("#ng-portrait").innerHTML = `${leaderPortrait(id, { label: `${L.title} of ${p.name}` })}
+      <div class="ng-plate" style="--nc:${colorOf(id)}"><div class="t">${esc(L.title)}</div><div class="n">${esc(p.name)}</div></div>`;
+    $("#ng-detail").innerHTML = `
+      <div class="ng-title">${crest(id, true)}<div><h2>${esc(p.name)}</h2><div class="ng-arch">${esc(p.archetype)}</div>
+        <div class="ng-tags"><span class="tag">${pips(p.difficulty)} ${esc(nice(p.difficulty))}</span><span class="tag">Score ×${p.score_multiplier}</span></div></div></div>
+      <h3>Strengths</h3><ul class="ng-points pro">${p.pros.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+      <h3>Weaknesses</h3><ul class="ng-points con">${p.cons.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+      <h3>In 2025</h3><div class="ng-figs">${p.figures.map(([k, v]) => `<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join("")}</div>
+      <p class="ng-ai"><b>If the computer leads it:</b> ${esc(pers[0])}. ${esc(pers[1])}</p>`;
+    $("#ng-detail").scrollTop = 0;
+    $("#ng-go").textContent = `Take office: ${p.name}`;
+  };
+  const setTab = (t) => {
+    tab = t;
+    win.querySelectorAll(".ng-tabs .tab").forEach((b) => b.classList.toggle("active", b.dataset.tab === t));
+    $("#ng-new").classList.toggle("hidden", t !== "new");
+    $("#ng-settings").classList.toggle("hidden", t !== "new");
+    $("#ng-saves").classList.toggle("hidden", t !== "saves");
+    $("#ng-go").classList.toggle("hidden", t !== "new");
+    $("#ng-foot-note").classList.toggle("hidden", t === "new");
+  };
+  win.querySelectorAll(".ng-row").forEach((b) => (b.onclick = () => show(b.dataset.c)));
+  win.querySelectorAll(".ng-tabs .tab").forEach((b) => (b.onclick = () => setTab(b.dataset.tab)));
   win.querySelectorAll("[data-load]").forEach((b) => (b.onclick = async () => {
     try { S.plan = []; setData(await api("/api/load", { name: b.dataset.load })); closeWindows(); } catch (e) { toast(e.message); }
   }));
@@ -472,6 +521,8 @@ function newGameWindow() {
       openRealm();
     } catch (e) { toast(e.message); }
   };
+  show(pick);
+  setTab(tab);
 }
 
 // ---------- action windows ----------

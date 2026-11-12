@@ -150,6 +150,9 @@ Each run leaves `notes.md`, `report.md` and `transcript.jsonl` in its folder. `-
   tree with prerequisite arrows and fund or licence buttons, deal screens that explain each
   deal type and show an offer's terms from your side, build costs per source, and planned
   orders kept across page reloads.
+- **Nation selection screen:** a Civ-style chooser with an abstract leader portrait, the six
+  nations listed easiest first, and each nation's strengths, weaknesses and 2025 figures,
+  derived from the starting data.
 - **M16 (fixes from playtest round 3):** tax cuts are mostly borrowed instead of emptying the
   energy budget, the screen shows where capital comes from, amounts a hair over a limit are
   trimmed rather than refused, forest payments wear off and earn less credit, and the playtest
