@@ -392,16 +392,41 @@ def _leave_apply(cfg, world, n, act):
     diplomacy.leave_club(world, n.id)
 
 
-DEAL_PRICE_MAX = {"rate": 0.3, "price": 50.0, "share": 1.0}  # validation bounds, not tuning
+DEAL_PRICE_MAX = {"rate": 0.3, "price": 50.0, "share": 1.0, "markup": 1.0}  # bounds, not tuning
+POWER_MAX = 10.0  # EJ/yr of clean power a factory partnership can commit (a validation bound)
+PRICE_KEYS = {
+    "energy_as_a_service": "price", "equity_for_energy": "share", "equipment_sale": "markup",
+    "factory_partnership": "share",
+}  # fmt: skip
 
 
 def _price_key(deal) -> str:
-    """The term a counter-offer changes: interest rate, price per GJ, or equity share."""
-    return {"energy_as_a_service": "price", "equity_for_energy": "share"}.get(deal.type, "rate")
+    """The term a counter-offer changes: interest rate, price per GJ, equity or earnings
+    share, or a sale's markup."""
+    kind = deal if isinstance(deal, str) else deal.type
+    return PRICE_KEYS.get(kind, "rate")
 
 
 def _deal_terms(cfg, act) -> dict:
     kind = _choice(act, "deal_type", list(deals.TYPES))
+    if kind == "factory_partnership":
+        return {
+            "tech": _choice(act, "tech", list(trade.EQUIPMENT)),
+            "amount": _positive(act),
+            "capital_share": _num(act, "capital_share", 0.0, 1.0),
+            "power": _num(act, "power", 0.0, POWER_MAX) if "power" in act else 0.0,
+            "share": _num(act, "share", 0.0, 1.0),
+            "duration": int(_num(act, "duration", 4, cfg.tune("deals.max_duration"))),
+            "currency": "local",  # earnings come out of the host's economy
+        }
+    if kind == "equipment_sale":
+        return {
+            "source": _choice(act, "source", sorted(trade.EQUIPMENT_OF)),
+            "amount": _positive(act),
+            "markup": _num(act, "markup", 0.0, DEAL_PRICE_MAX["markup"]),
+            "duration": 0,  # paid at signing
+            "currency": "hard",
+        }
     clean = [s for s in cfg.energy_source_ids if cfg.category(s) != "fossil"]
     terms = {
         "source": _choice(act, "source", clean),
@@ -423,6 +448,19 @@ def _deal_terms(cfg, act) -> dict:
 def _propose_check(cfg, world, n, act):
     _target(world, n, act)
     terms = _deal_terms(cfg, act)
+    draft = deals.Deal("draft", act["deal_type"], n.id, act["target"], terms, deals.OPEN, world.t)
+    if act["deal_type"] == "factory_partnership":
+        cost = deals.build_cost(cfg, world, draft)
+        if cost > n.capital + 1e-12:
+            raise Rejected(f"needs {cost:.4g} capital for your share, has {n.capital:.4g}")
+        return {}
+    if act["deal_type"] == "equipment_sale" and not deals.self_supplied(cfg, world, draft):
+        line = trade.EQUIPMENT_OF[terms["source"]]
+        spare = deals.spare_output(cfg, world, n.id, line)
+        raise Rejected(
+            f"your {line} factories can supply only {spare:.4g} T$ more equipment this year; "
+            f"this sale needs {deals.equipment_value(cfg, world, draft):.4g}"
+        )
     if not research.can_build(cfg, n, terms["source"]):  # M12: the financier supplies it
         need = cfg.requires(terms["source"])
         raise Rejected(f"{terms['source']} needs the {need} technology, which you do not have")
@@ -455,6 +493,9 @@ def _respond_check(cfg, world, n, act):
     deal = _open_deal(world, n, act)
     response = _choice(act, "response", ["accept", "refuse", "counter"])
     if response == "accept" and deal.host == n.id:
+        outlay = deals.host_outlay(cfg, world, deal)
+        if outlay > n.capital + 1e-12:
+            raise Rejected(f"needs {outlay:.4g} capital to pay your part now, has {n.capital:.4g}")
         size, room = deals.deal_capacity(cfg, world, deal), deals.host_room(cfg, world, n.id)
         if size > room + 1e-12:
             raise Rejected(
@@ -483,6 +524,10 @@ def _respond_apply(cfg, world, n, act):
         deals.propose(world, deal.financier, deal.host, deal.type, terms)
     elif deals.build_cost(cfg, world, deal) > world.nations[deal.financier].capital:
         deal.status = "lapsed"  # the financier can no longer pay
+    elif deals.host_outlay(cfg, world, deal) > world.nations[deal.host].capital + 1e-12:
+        deal.status = "lapsed"  # the host can no longer pay its part
+    elif deal.type == "equipment_sale" and not deals.self_supplied(cfg, world, deal):
+        deal.status = "lapsed"  # the seller's factories are now fully booked
     else:
         deals.activate(cfg, world, deal)
 

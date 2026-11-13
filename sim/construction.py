@@ -55,9 +55,12 @@ def retire_world_factories(cfg: Config, world: World, dt: int) -> None:
 FACTORY = "factory_"  # pipeline prefix for clean-tech factories, e.g. "factory_solar"
 
 
-def complete(n: Nation, t: int) -> dict[str, float]:
+def complete(
+    n: Nation, t: int, supplied: list[tuple[str, str, float]] | None = None
+) -> dict[str, float]:
     """Bring finished projects online; return energy capacity completed per source. Finished
-    factories add to factory capacity instead."""
+    factories add to factory capacity instead. Projects whose equipment a named supplier makes
+    (W4) are also listed in `supplied` as (supplier, source, amount)."""
     done: dict[str, float] = defaultdict(float)
     remaining = []
     for c in n.pipeline:
@@ -69,6 +72,8 @@ def complete(n: Nation, t: int) -> dict[str, float]:
         else:
             n.capacity[c.source] = n.capacity.get(c.source, 0.0) + c.amount
             done[c.source] += c.amount
+            if c.supplier is not None and supplied is not None:
+                supplied.append((c.supplier, c.source, c.amount))
     n.pipeline = remaining
     return dict(done)
 
@@ -79,9 +84,11 @@ def build_time(cfg: Config, n: Nation | None, source: str) -> int:
     return tech.build_quarters(cfg, n, source)
 
 
-def queue(cfg: Config, n: Nation, source: str, amount: float, t: int) -> None:
+def queue(
+    cfg: Config, n: Nation, source: str, amount: float, t: int, supplier: str | None = None
+) -> None:
     if amount > 0:
-        n.pipeline.append(Construction(source, amount, t + build_time(cfg, n, source)))
+        n.pipeline.append(Construction(source, amount, t + build_time(cfg, n, source), supplier))
 
 
 COST_DRIVEN = (
@@ -295,13 +302,19 @@ def apply(world: World, cfg: Config, dt: int) -> dict[str, float]:
     completed per source (all nations)."""
     completed: dict[str, float] = defaultdict(float)
     by_nation: dict[str, dict[str, float]] = {}
+    direct: list[tuple[str, str, str, float]] = []  # (buyer, supplier, source, amount)
     retire_world_factories(cfg, world, dt)
     clean = [s for s in cfg.source_ids if cfg.category(s) != "fossil"]
     for nid in sorted(world.nations):
         n = world.nations[nid]
         retire(cfg, nid, n, dt)
-        done = complete(n, world.t)
-        by_nation[nid] = done
+        supplied: list[tuple[str, str, float]] = []
+        done = complete(n, world.t, supplied)
+        market = dict(done)  # what buys equipment on the world market
+        for supplier, s, amount in supplied:
+            market[s] = market.get(s, 0.0) - amount
+            direct.append((nid, supplier, s, amount))
+        by_nation[nid] = {s: v for s, v in market.items() if v > 1e-15}
         alpha = 1 - (1 - cfg.tune("jobs.smoothing")) ** dt
         n.build_rate += alpha * (sum(done.values()) * 4 / dt - n.build_rate)
         if "carbon_removal" in cfg.source_ids:
@@ -317,5 +330,5 @@ def apply(world: World, cfg: Config, dt: int) -> dict[str, float]:
     # the rest of the world's building is already assumed to scale with the 16 nations')
     regional = regions.complete(cfg, world)
     costs = {s: tech.unit_cost(cfg, world, s) for s in trade.EQUIPMENT_OF}
-    trade.apply_equipment(cfg, world, by_nation, costs, dt, regional)
+    trade.apply_equipment(cfg, world, by_nation, costs, dt, regional, direct)
     return dict(completed)

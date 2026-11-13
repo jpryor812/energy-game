@@ -179,6 +179,11 @@ Each run leaves `notes.md`, `report.md` and `transcript.jsonl` in its folder. `-
   earnings, or a price for the power); their answer updates as you change the terms, "What would
   it take?" finds terms they accept, and each side's projected Impact is shown. Planned orders
   take their capital off the top bar at once.
+- **W4 part 2 (panels and factories):** plants you build abroad use your own factories' panels
+  and turbines when they have room (your sale and your jobs); you can sell a plant outright for
+  cash at a negotiated markup, or fund a clean-tech factory in another country with capital and
+  cheap clean power for a share of its earnings, riskier the less you fund and the poorer the
+  host.
 - **M16 (fixes from playtest round 3):** tax cuts are mostly borrowed instead of emptying the
   energy budget, the screen shows where capital comes from, amounts a hair over a limit are
   trimmed rather than refused, forest payments wear off and earn less credit, and the playtest

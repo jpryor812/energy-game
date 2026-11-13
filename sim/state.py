@@ -32,16 +32,22 @@ class Pledge:
 
 @dataclass
 class Construction:
-    """Capacity under construction; comes online at `complete_turn`."""
+    """Capacity under construction; comes online at `complete_turn`. `supplier` is the nation
+    whose factories make its equipment (W4: a deal's plant built from the financier's own
+    factories), or None to buy it on the world market."""
 
     source: str
     amount: float
     complete_turn: int
+    supplier: str | None = None
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> Construction:
         return cls(
-            source=d["source"], amount=float(d["amount"]), complete_turn=int(d["complete_turn"])
+            source=d["source"],
+            amount=float(d["amount"]),
+            complete_turn=int(d["complete_turn"]),
+            supplier=d.get("supplier"),
         )
 
 

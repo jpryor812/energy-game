@@ -30,7 +30,6 @@ from sim import (
     elections,
     runner,
     scoring,
-    tech,
     trade,
     turn,
 )
@@ -138,10 +137,11 @@ class Game:
         for r in results:
             a = r["action"]
             if r["ok"] and a["type"] == "propose_deal":
-                n = w.nations[self.country]
-                cost = a["amount"]
-                if a["deal_type"] != "climate_loan":
-                    cost = tech.nation_unit_cost(self.cfg, w, n, a["source"]) * a["amount"]
+                terms = actions._deal_terms(self.cfg, a)
+                draft = deals.Deal(
+                    "draft", a["deal_type"], self.country, a["target"], terms, deals.OPEN, w.t
+                )
+                cost = deals.build_cost(self.cfg, w, draft)
                 r["note"] = f"paid when they sign: {cost:.4g} T$ (back if they refuse)"
                 r["reserve"] = cost
         return results
@@ -223,7 +223,8 @@ def notices(cfg: Config, before: World, after: World, me: str) -> list[str]:
             continue
         old = before.deals.get(did)
         other = d.host if d.financier == me else d.financier
-        what = f"{did} {d.type} ({d.financier}->{d.host}, {d.terms.get('source')})"
+        made = d.terms.get("source") or f"{d.terms.get('tech')} factory"
+        what = f"{did} {d.type} ({d.financier}->{d.host}, {made})"
         size = (
             f"{d.terms['amount']:.3g} T$" if d.type == "climate_loan"
             else f"{d.terms['amount']:.3g} EJ/yr"

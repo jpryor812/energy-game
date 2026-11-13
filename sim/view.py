@@ -659,7 +659,11 @@ def render(obs: dict[str, Any], brief: bool = False) -> str:
             ends = f" until {t['end_label']}" if "end_label" in t else ""
             lines.append(
                 f"  ACTIVE {d['id']} {d['type']} {d['financier']}->{d['host']} "
-                f"{t.get('source')} {t.get('capacity', t.get('amount', 0)):.3g} EJ{ends}"
+                + (
+                    f"{t.get('tech')} factory {t.get('amount', 0):.3g} T$/yr{ends}"
+                    if "tech" in t
+                    else f"{t.get('source')} {t.get('capacity', t.get('amount', 0)):.3g} EJ{ends}"
+                )
             )
     s = o["score"]
     lines.append("")

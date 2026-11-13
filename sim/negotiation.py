@@ -94,11 +94,15 @@ def financier_accepts_counter(cfg: Config, world: World, deal: Deal, value: floa
 
 
 def _online(cfg: Config, world: World, deal: Deal) -> int:
+    if deal.type == "factory_partnership":
+        return world.t + int(cfg.tune("industry.factory_build_time"))
     return world.t + construction.build_time(cfg, world.nations[deal.host], deal.terms["source"])
 
 
 def capacity(cfg: Config, world: World, deal: Deal) -> float:
-    """EJ/yr the deal builds in the host."""
+    """EJ/yr of power plant the deal builds in the host (a factory builds none)."""
+    if deal.type == "factory_partnership":
+        return 0.0
     if deal.type == "climate_loan":
         host = world.nations[deal.host]
         return deal.terms["amount"] / tech.nation_unit_cost(cfg, world, host, deal.terms["source"])
@@ -111,17 +115,25 @@ def projected_impact(cfg: Config, world: World, deal: Deal) -> dict[str, float]:
     credit while the deal lasts. Each side's own yearly cut so far is held as it is."""
     turns = int(cfg.tune("time.turns"))
     host = world.nations[deal.host]
-    out_ej = capacity(cfg, world, deal) / cfg.src(deal.terms["source"], "headroom")
-    cut = out_ej * trade.displaced_ef(cfg, host)  # Mt/yr
     online = _online(cfg, world, deal)
-    pay_from = world.t + 1 if deal.type == "climate_loan" else online
-    end = min(turns, pay_from + int(deal.terms["duration"]))
-    credited_years = max(0, end - online) / 4
     host_years = max(0, turns - online) / 4
-    gains = {
-        deal.financier: cfg.tune("credits.weight_financed") * cut * credited_years,
-        deal.host: cfg.tune("credits.weight_real") * cut * host_years,
-    }
+    if deal.type == "factory_partnership":
+        gains = _factory_gains(cfg, world, deal, online, turns)
+    else:
+        out_ej = capacity(cfg, world, deal) / cfg.src(deal.terms["source"], "headroom")
+        cut = out_ej * trade.displaced_ef(cfg, host)  # Mt/yr
+        if deal.type == "equipment_sale":  # the seller earns exported credit while it runs
+            life = cfg.tune("credits.exported_cut_lifespan")
+            kept = sum((1 - 1 / life) ** (q / 4) for q in range(max(0, turns - online))) / 4
+            fin_gain = cfg.tune("credits.weight_exported") * cut * kept
+        else:
+            pay_from = world.t + 1 if deal.type == "climate_loan" else online
+            end = min(turns, pay_from + int(deal.terms["duration"]))
+            fin_gain = cfg.tune("credits.weight_financed") * cut * max(0, end - online) / 4
+        gains = {
+            deal.financier: fin_gain,
+            deal.host: cfg.tune("credits.weight_real") * cut * host_years,
+        }
     out = {}
     for nid, mt in gains.items():
         base = world.nations[nid].base["emissions"]
@@ -130,6 +142,31 @@ def projected_impact(cfg: Config, world: World, deal: Deal) -> dict[str, float]:
         s = cfg.tune("scoring.climate_scale")
         out[nid] = 100 * (scoring.logistic((now + extra) / s) - scoring.logistic(now / s))
     return out
+
+
+def _factory_gains(cfg, world, deal, online: int, turns: int) -> dict[str, float]:
+    """Credited Mt over the game from a partnership factory, as the simulation credits it: the
+    host earns exported credit on the share of the factory's output it sells abroad (the cut the
+    plants it equips make, fading as they retire), and the financier its stake's share of that
+    while the deal lasts. An estimate on today's sales and prices."""
+    host = world.nations[deal.host]
+    power = deal.terms.get("power", 0.0) * host.energy_price * 1e-3
+    made = (deals.factory_profit(cfg, world, deal) - power) / cfg.tune("industry.factory_margin")
+    line = deal.terms["tech"]
+    world_demand = sum(n.equipment_demand.get(line, 0.0) for n in world.nations.values())
+    home = host.equipment_demand.get(line, 0.0)
+    abroad = 1 - home / world_demand if world_demand > 0 else 1.0  # its buyers outside the host
+    per_q = deals.line_cut(cfg, world, deal, max(0.0, made) * abroad / 4)  # added each quarter
+    keep = (1 - 1 / cfg.tune("credits.exported_cut_lifespan")) ** 0.25
+    end = min(turns, online + int(deal.terms["duration"]))
+    rate, host_mt, fin_mt = 0.0, 0.0, 0.0
+    for q in range(online, turns):
+        rate = rate * keep + per_q
+        host_mt += rate / 4
+        if q < end:
+            fin_mt += rate / 4
+    w = cfg.tune("credits.weight_exported")
+    return {deal.financier: w * deals.stake(cfg, world, deal) * fin_mt, deal.host: w * host_mt}
 
 
 def preview(cfg: Config, world: World, deal: Deal) -> dict[str, Any]:
@@ -152,6 +189,22 @@ def preview(cfg: Config, world: World, deal: Deal) -> dict[str, Any]:
     if deal.type == "equity_for_energy":
         p = deals.failure_chance(cfg, world, deal)
         out["survival"] = (1 - p) ** int(deal.terms["duration"])
+    if deal.type == "factory_partnership":
+        p = deals.factory_failure_chance(cfg, world, deal)
+        out["survival"] = (1 - p) ** int(deal.terms["duration"])
+        out["stake"] = deals.stake(cfg, world, deal)
+        out["host_pays"] = deals.host_outlay(cfg, world, deal)
+        out["power_cost_per_year"] = deals._power_cost(cfg, world, deal)
+        out["development"] = deals.development(world, deal.host)
+    if deal.type == "equipment_sale":
+        out["price"] = deals.sale_price(cfg, world, deal)
+    if deal.type in deals.PANELS:
+        out["from_your_factories"] = deals.self_supplied(cfg, world, deal)
+        src = deal.terms["source"]
+        if src in trade.EQUIPMENT_OF:
+            line = trade.EQUIPMENT_OF[src]
+            out["spare_output"] = deals.spare_output(cfg, world, deal.financier, line)
+            out["equipment_value"] = deals.equipment_value(cfg, world, deal)
     if out["answer"] != ACCEPT:
         out["would_take"] = what_it_takes(cfg, world, deal)
     return out

@@ -378,6 +378,13 @@ function describe(a) {
       return `${SOURCE_ICON[v] ? SOURCE_ICON[v] + " " : ""}${nice(v)}`;
     }
     if (typeof v !== "number") return "";
+    if (a.type === "propose_deal" && a.deal_type === "factory_partnership") {
+      if (k === "amount") return `${money(v)} of output a year`;
+      if (k === "capital_share") return `you fund ${whole(v * 100)}%`;
+      if (k === "power") return v > 0 ? `${shareOf(v, (S.data.world.nations[a.target] || {}).demand || myDemand())} of their energy as power` : "";
+      if (k === "share") return `${whole(v * 100)}% of earnings`;
+    }
+    if (a.type === "propose_deal" && k === "markup") return `${whole(v * 100)}% markup`;
     if (a.type === "propose_deal" && k === "amount") {
       return a.deal_type === "climate_loan" ? money(v) : `${shareOf(v, (S.data.world.nations[a.target] || {}).demand || myDemand())} of their energy`;
     }
@@ -956,6 +963,8 @@ function control(type, name, spec, value, form) {
     let list = spec;
     if (type === "retire_capacity") list = spec.filter((v) => (sc.energy.capacity || {})[v] > 0);
     const allSources = list.every((v) => SOURCE_ICON[v]);
+    // Sales and factory partnerships are made at the trade table (Open talks), not here.
+    if (name === "deal_type") list = list.filter((v) => !["equipment_sale", "factory_partnership"].includes(v));
     if (name === "deal_type" || (allSources && list.length <= 15 && type !== "invest_research")) return tilesControl(type, name, list, value);
     if (typeof list[0] === "boolean") return segControl(name, list, value, (v) => (v ? "On" : "Off"));
     if (list.length <= 4) return segControl(name, list, value);
@@ -1000,7 +1009,7 @@ function renderForm(el, type, preset, { compact = false } = {}) {
   const spec = S.meta.catalogue[type], info = ORDERS[type] || {};
   const ex = spec.example || {};
   const FIELD_ORDER = {
-    propose_deal: ["target", "deal_type", "source", "amount", "rate | price | share", "duration", "currency", "collateral", "exit_penalty"],
+    propose_deal: ["target", "deal_type", "source", "amount", "rate | price | share | markup", "duration", "currency", "collateral", "exit_penalty"],
     set_tax_credit: ["kind", "tech", "rate"],
   };
   const order = FIELD_ORDER[type];
@@ -1024,7 +1033,8 @@ function renderForm(el, type, preset, { compact = false } = {}) {
   // fields: built in order so later fields can read earlier ones (deal type, kind)
   const rows = [];
   for (const [pname, desc] of params) {
-    const name = pname === "rate | price | share" ? "__term" : pname;
+    if (pname.startsWith("tech, capital_share")) continue; // factory partnerships: the trade table
+    const name = pname.startsWith("rate | price | share") ? "__term" : pname;
     if (name === "__term" && type === "respond_deal") {
       rows.push({ name, html: () => numControl(type, name, { desc: "", value: null }, form), label: "Counter terms", hint: "only if you counter" });
       continue;
@@ -1069,7 +1079,7 @@ function renderForm(el, type, preset, { compact = false } = {}) {
     if ("__term" in act) {
       const term = act.__term; delete act.__term;
       const dt = act.deal_type || (S.data.screen.deals.inbox.find((x) => x.id === act.deal_id) || {}).type;
-      const key = dt === "energy_as_a_service" ? "price" : dt === "equity_for_energy" ? "share" : "rate";
+      const key = termKey(dt);
       if (type === "respond_deal" && act.response !== "counter") { /* no term */ } else if (term !== undefined) act[key] = term;
     }
     return act;
@@ -1213,21 +1223,29 @@ const REPLY = {
 };
 // What each side can put on the table, and the deal type each pairing makes.
 const GIVES = {
-  panels: { ico: "☀️", name: "Panels and turbines", sub: "Clean plant you build in their country" },
+  build: { ico: "☀️", name: "A plant you build", sub: "Panels and turbines from your own factories when they have room" },
   capital: { ico: "💰", name: "Capital", sub: "A loan that builds clean plant there" },
   plant: { ico: "🏭", name: "A plant you run", sub: "You own it; they buy its power" },
+  factory: { ico: "🏗", name: "Fund a factory", sub: "A clean-tech factory line in their country" },
 };
 const GETS = {
+  cash: { ico: "💵", name: "Cash now", sub: "They buy the plant outright" },
   repay: { ico: "📈", name: "Repayments with interest", sub: "Back over the years, plus interest" },
-  share: { ico: "🤝", name: "A share of its earnings", sub: "Paid while the plant does well; it can fail" },
+  share: { ico: "🤝", name: "A share of its earnings", sub: "Paid while it does well; it can fail" },
   price: { ico: "⚡", name: "A price for its power", sub: "Per unit of power it can make" },
 };
-const PAIRS = { "panels/repay": "equipment_on_credit", "panels/share": "equity_for_energy", "capital/repay": "climate_loan", "plant/price": "energy_as_a_service" };
+const PAIRS = {
+  "build/cash": "equipment_sale", "build/repay": "equipment_on_credit", "build/share": "equity_for_energy",
+  "capital/repay": "climate_loan", "plant/price": "energy_as_a_service", "factory/share": "factory_partnership",
+};
 const TERM = {
   rate: { unit: "% a year", step: 1, toUnit: (v) => v * 100, fromUnit: (u) => u / 100, label: "Interest" },
-  share: { unit: "% of profit", step: 5, toUnit: (v) => v * 100, fromUnit: (u) => u / 100, label: "Their share to you" },
+  share: { unit: "%", step: 5, toUnit: (v) => v * 100, fromUnit: (u) => u / 100, label: "Your share of the earnings" },
   price: { unit: "$ per GJ", step: 1, toUnit: (v) => v, fromUnit: (u) => u, label: "Price" },
+  markup: { unit: "% over your cost", step: 5, toUnit: (v) => v * 100, fromUnit: (u) => u / 100, label: "Your markup" },
 };
+const FACTORY_LINES = { solar: ["☀️", "Solar panels"], wind: ["🌬", "Wind turbines"], storage: ["🔋", "Batteries"] };
+const LINE_SOURCES = ["solar", "onshore_wind", "offshore_wind"]; // what factory lines make panels and turbines for
 const OFFER_LINE = {
   equipment_on_credit: "a clean plant built in your country. You repay its cost with interest.",
   climate_loan: "a loan that builds clean plant in your country. You repay it with interest.",
@@ -1236,7 +1254,7 @@ const OFFER_LINE = {
 };
 // The same terms seen from the host's side, when another nation offers you a deal.
 const THEIR_TERM = { rate: "Interest you pay", share: "Their share of the profit", price: "Price you pay for the power" };
-const termKey = (dt) => ({ energy_as_a_service: "price", equity_for_energy: "share" })[dt] || "rate";
+const termKey = (dt) => ({ energy_as_a_service: "price", equity_for_energy: "share", equipment_sale: "markup", factory_partnership: "share" })[dt] || "rate";
 
 function talksWindow(id, view = "talk", opt = {}) {
   closeDrawer();
@@ -1302,34 +1320,45 @@ function talksWindow(id, view = "talk", opt = {}) {
   };
 
   // The trade table.
-  const T = opt.trade || { give: "panels", get: "repay", source: "solar", size: 1, years: 5, term: null };
+  const T = opt.trade || { give: "build", get: "repay", source: "solar", size: 1, years: 5, term: null, line: "solar", fsize: 10, cshare: 100, power: 0 };
   const trade = () => {
     const dt = PAIRS[`${T.give}/${T.get}`];
     const key = termKey(dt), tm = TERM[key];
     const costs = sc.energy.costs || {};
-    if (T.term == null) T.term = key === "rate" ? 8 : key === "share" ? 50 : Math.round((costs[T.source] || {}).lcoe || 8);
-    const sources = S.meta.catalogue.propose_deal.params.source.filter((s) => !locked(s))
+    if (T.term == null) T.term = { rate: 8, share: 50, markup: 15 }[key] ?? Math.round((costs[T.source] || {}).lcoe || 8);
+    let sources = S.meta.catalogue.propose_deal.params.source.filter((s) => !locked(s))
       .sort((a, b) => TILE_ORDER.indexOf(a) - TILE_ORDER.indexOf(b));
+    if (dt === "equipment_sale") sources = sources.filter((s) => LINE_SOURCES.includes(s));
+    if (!sources.includes(T.source)) T.source = sources[0];
     const capLeft = Math.max(0, sc.resources.capital - plannedSpend());
     const sizeChips = T.give === "capital" ? [...new Set([0.1, 0.25, 0.5].map((f) => Math.max(1, Math.round(capLeft * f * 1000))))] : [0.5, 1, 2, 5];
     const sizeUnit = T.give === "capital" ? "$ bn" : "% of their energy";
     const tile = (group, k, o, on, off) => `<button type="button" class="tile ${on ? "on" : ""}" data-${group}="${k}" ${off ? "disabled" : ""}><span class="tile-ico">${o.ico}</span><span class="tile-name">${esc(o.name)}</span><span class="tile-sub">${esc(o.sub)}</span></button>`;
     const chips = (name, vals, cur, fmt) => `<div class="chips">${vals.map((x) => `<button type="button" class="${x === cur ? "on" : ""}" data-${name}="${x}">${fmt(x)}</button>`).join("")}${vals.includes(cur) ? "" : `<button type="button" class="on">${fmt(cur)}</button>`}</div>`;
+    const giveBody = T.give === "factory" ? `
+          <div class="trade-label">Factory line</div>
+          <div class="tiles small">${Object.entries(FACTORY_LINES).map(([k, [ico, name]]) => `<button type="button" class="tile ${k === T.line ? "on" : ""}" data-line="${k}"><span class="tile-ico">${ico}</span><span class="tile-name">${esc(name)}</span></button>`).join("")}</div>
+          <div class="trade-label">Size ($ bn of output a year)</div>
+          ${chips("fsize", [5, 10, 25], T.fsize, (x) => `$${x} bn`)}
+          <div class="trade-label">Your share of the cost (they pay the rest)</div>
+          ${chips("cshare", [25, 50, 75, 100], T.cshare, (x) => `${x}%`)}
+          <div class="trade-label">Cheap clean power from you (lowers its costs)</div>
+          ${chips("power", [0, 0.5, 1], T.power, (x) => (x ? `${x}% of their energy` : "None"))}` : `
+          <div class="trade-label">Built with</div>
+          <div class="tiles small">${sources.map((s) => `<button type="button" class="tile ${s === T.source ? "on" : ""}" data-source="${s}"><span class="tile-ico">${SOURCE_ICON[s] || "◆"}</span><span class="tile-name">${esc(nice(s))}</span></button>`).join("")}</div>
+          <div class="trade-label">How much (${sizeUnit})</div>
+          ${chips("size", sizeChips, T.size, (x) => T.give === "capital" ? `$${whole(x)} bn` : `${x}%`)}`;
     right.innerHTML = `<div class="trade">
       <div class="trade-cols">
         <div class="trade-col"><h3>You give</h3>
           <div class="tiles">${Object.entries(GIVES).map(([k, o]) => tile("give", k, o, k === T.give)).join("")}</div>
-          <div class="trade-label">Built with</div>
-          <div class="tiles small">${sources.map((s) => `<button type="button" class="tile ${s === T.source ? "on" : ""}" data-source="${s}"><span class="tile-ico">${SOURCE_ICON[s] || "◆"}</span><span class="tile-name">${esc(nice(s))}</span></button>`).join("")}</div>
-          <div class="trade-label">How much (${sizeUnit})</div>
-          ${chips("size", sizeChips, T.size, (x) => T.give === "capital" ? `$${whole(x)} bn` : `${x}%`)}
+          ${giveBody}
         </div>
         <div class="trade-col"><h3>They give</h3>
           <div class="tiles">${Object.entries(GETS).map(([k, o]) => tile("get", k, o, k === T.get, !PAIRS[`${T.give}/${k}`])).join("")}</div>
           <div class="trade-label">${tm.label} (${tm.unit})</div>
           <div class="stepper"><button type="button" data-step="-1">−</button><b>${whole(T.term)}</b><button type="button" data-step="1">+</button></div>
-          <div class="trade-label">For</div>
-          ${chips("years", [3, 5, 10], T.years, (x) => `${x} years`)}
+          ${dt === "equipment_sale" ? "" : `<div class="trade-label">For</div>${chips("years", [3, 5, 10], T.years, (x) => `${x} years`)}`}
         </div>
       </div>
       <div class="trade-verdict" id="tv">${say("Let us see…")}</div>
@@ -1344,11 +1373,17 @@ function talksWindow(id, view = "talk", opt = {}) {
     }));
     right.querySelectorAll("[data-get]").forEach((b) => (b.onclick = () => { T.get = b.dataset.get; T.term = null; redraw(); }));
     right.querySelectorAll("[data-source]").forEach((b) => (b.onclick = () => { T.source = b.dataset.source; if (key === "price") T.term = null; redraw(); }));
-    right.querySelectorAll("[data-size]").forEach((b) => (b.onclick = () => { T.size = +b.dataset.size; redraw(); }));
-    right.querySelectorAll("[data-years]").forEach((b) => (b.onclick = () => { T.years = +b.dataset.years; redraw(); }));
+    right.querySelectorAll("[data-line]").forEach((b) => (b.onclick = () => { T.line = b.dataset.line; redraw(); }));
+    for (const k of ["size", "years", "fsize", "cshare", "power"]) {
+      right.querySelectorAll(`[data-${k}]`).forEach((b) => (b.onclick = () => { T[k] = +b.dataset[k]; redraw(); }));
+    }
     right.querySelectorAll("[data-step]").forEach((b) => (b.onclick = () => { T.term = Math.max(0, T.term + +b.dataset.step * tm.step); redraw(); }));
     $("#t-back", right).onclick = () => talk();
     const action = () => {
+      if (dt === "factory_partnership") {
+        return { type: "propose_deal", target: id, deal_type: dt, tech: T.line, amount: T.fsize / 1000, capital_share: T.cshare / 100,
+          power: (T.power / 100) * (v.demand || 1), share: tm.fromUnit(T.term), duration: T.years * 4 };
+      }
       const a = { type: "propose_deal", target: id, deal_type: dt, source: T.source, duration: T.years * 4, collateral: 0.2, exit_penalty: 0.3 };
       a.amount = T.give === "capital" ? T.size / 1000 : (T.size / 100) * (v.demand || 1);
       if (dt !== "equity_for_energy") a.currency = "hard";
@@ -1368,13 +1403,38 @@ function talksWindow(id, view = "talk", opt = {}) {
       $("#t-take", right).disabled = !r.ok || ans === "accept" || !r.would_take;
       if (!r.ok) { $("#ts", right).innerHTML = ""; return; }
       const imp = r.impact || {}, mine = imp[sc.country] || 0, theirs = imp[id] || 0;
-      const back = r.payment_per_year * r.years;
-      const rows = [
-        ["You pay when they sign", money(r.cost)],
-        [dt === "equity_for_energy" ? "They pay you, at today's prices" : "They pay you", `${money(r.payment_per_year / 4)} a quarter for ${r.years} years (about ${money(back)} in all)`],
-        ["Clean power it adds", `${shareOf(r.capacity, v.demand || 1)} of their energy, from ${quarterOf(r.online_turn)}`],
-      ];
-      if (r.survival != null) rows.push(["Chance the plant lasts the deal", pct(r.survival)]);
+      const perQ = `${money(r.payment_per_year / 4)} a quarter for ${r.years} years (about ${money(r.payment_per_year * r.years)} in all)`;
+      let rows;
+      if (dt === "factory_partnership") {
+        rows = [
+          ["You pay when they sign", `${money(r.cost)} (your ${pct(T.cshare / 100)} of the factory)`],
+          ["They pay when they sign", money(r.host_pays)],
+          ...(r.power_cost_per_year > 0 ? [["Your clean power costs you", `${money(r.power_cost_per_year / 4)} a quarter`]] : []),
+          ["They pay you, at today's sales", perQ],
+          ["It opens", quarterOf(r.online_turn)],
+          ["Your stake", pct(r.stake)],
+          ["Chance the factory lasts the deal", `${pct(r.survival)} <span class="muted">(less the less you fund and the poorer the host: their income is ${pct(r.development)} of the average)</span>`],
+        ];
+      } else if (dt === "equipment_sale") {
+        rows = [
+          ["They pay you when they sign", money(r.price)],
+          ["It costs you to build", money(r.cost)],
+          ["Your profit", money(r.price - r.cost)],
+          ["Clean power it adds", `${shareOf(r.capacity, v.demand || 1)} of their energy, from ${quarterOf(r.online_turn)}`],
+        ];
+      } else {
+        rows = [
+          ["You pay when they sign", money(r.cost)],
+          [dt === "equity_for_energy" ? "They pay you, at today's prices" : "They pay you", perQ],
+          ["Clean power it adds", `${shareOf(r.capacity, v.demand || 1)} of their energy, from ${quarterOf(r.online_turn)}`],
+        ];
+        if (r.survival != null) rows.push(["Chance the plant lasts the deal", pct(r.survival)]);
+      }
+      if (r.equipment_value > 0) {
+        rows.push(["Panels and turbines", r.from_your_factories
+          ? `made in your factories (${money(r.equipment_value)} of sales for you)`
+          : `bought on the world market: your factories have room for only ${money(r.spare_output)} more this year`]);
+      }
       $("#ts", right).innerHTML = `<table class="trade-table">${rows.map(([k, x]) => `<tr><td>${esc(k)}</td><td>${x}</td></tr>`).join("")}</table>
         <div class="trade-impact"><span>Projected Impact by 2049</span>
           <b class="${mine > 0 ? "good" : ""}">You ${mine >= 0 ? "+" : ""}${num(mine, 1)}</b>
@@ -1384,7 +1444,8 @@ function talksWindow(id, view = "talk", opt = {}) {
       if (!last || !last.would_take) return;
       const w = last.would_take;
       T.term = Math.floor(tm.toUnit(w[key]));
-      if (T.give === "capital") T.size = Math.floor(w.amount * 1000);
+      if (dt === "factory_partnership") T.fsize = Math.floor(w.amount * 1000);
+      else if (T.give === "capital") T.size = Math.floor(w.amount * 1000);
       else T.size = Math.floor((w.amount / (v.demand || 1)) * 100 * 2) / 2;
       redraw();
     };

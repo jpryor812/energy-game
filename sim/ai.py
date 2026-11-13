@@ -490,9 +490,14 @@ def fair_rate(cfg: Config, world: World, financier: str, host: str, kind: str) -
 def fair_term(cfg: Config, world: World, deal) -> float:
     """What an AI host thinks is a fair rate, equity share or price for `deal` (W4): what an AI
     financier would ask, or for energy as a service (which AIs do not offer) the plant's
-    levelized cost in the host."""
+    levelized cost in the host; for an equipment sale the usual markup, and for a factory
+    partnership a share of earnings equal to the financier's stake."""
     if deal.type == "equity_for_energy":
         return _ai(cfg, "equity_share_offer")
+    if deal.type == "equipment_sale":
+        return cfg.tune("deals.fair_markup")
+    if deal.type == "factory_partnership":
+        return deals.stake(cfg, world, deal)
     if deal.type == "energy_as_a_service":
         return tech.lcoe(cfg, world, world.nations[deal.host], deal.terms["source"])
     return fair_rate(cfg, world, deal.financier, deal.host, deal.type)
@@ -500,19 +505,32 @@ def fair_term(cfg: Config, world: World, deal) -> float:
 
 def overprice(cfg: Config, world: World, deal) -> float:
     """How far a deal's terms are above fair, as a share (0 at or below fair)."""
-    key = {"energy_as_a_service": "price", "equity_for_energy": "share"}.get(deal.type, "rate")
+    key = actions._price_key(deal)
     fair = fair_term(cfg, world, deal)
-    return max(0.0, deal.terms[key] / fair - 1) if fair > 0 else 0.0
+    if fair <= 0:
+        return math.inf if deal.terms[key] > 0 else 0.0  # asking for something for nothing
+    return max(0.0, deal.terms[key] / fair - 1)
 
 
 def _value_deal_as_host(cfg, world, nid, deal, personality, ctx, w_em, income) -> float:
     """Utility to the host of accepting `deal`, net of its payments, minus the bar to accept."""
     n = ctx.n
-    capacity = deal.terms["amount"]
-    if deal.type == "climate_loan":  # cash: value the capacity it buys at the host's cost
-        capacity = deal.terms["amount"] / tech.nation_unit_cost(cfg, world, n, deal.terms["source"])
-    build = {"type": "build_capacity", "source": deal.terms["source"], "amount": capacity}
+    if deal.type == "factory_partnership":  # W4: a factory line, not a plant
+        build = {
+            "type": "build_factory",
+            "tech": deal.terms["tech"],
+            "amount": deal.terms["amount"],
+        }
+    else:
+        capacity = deal.terms["amount"]
+        if deal.type == "climate_loan":  # cash: value the capacity it buys at the host's cost
+            unit = tech.nation_unit_cost(cfg, world, n, deal.terms["source"])
+            capacity = deal.terms["amount"] / unit
+        build = {"type": "build_capacity", "source": deal.terms["source"], "amount": capacity}
     eff = estimate(cfg, world, nid, build, ctx)
+    outlay = deals.host_outlay(cfg, world, deal)  # W4: paid at signing (a sale, a factory share)
+    if outlay > n.capital:
+        return -math.inf
     benefit = (
         _p(cfg, personality, "w_growth") * eff.growth
         + _p(cfg, personality, "w_security") * eff.security
@@ -523,7 +541,7 @@ def _value_deal_as_host(cfg, world, nid, deal, personality, ctx, w_em, income) -
     if payment + committed > _ai(cfg, "max_payment_share") * income[0]:
         return -math.inf  # cannot afford the payments
     cap_weight = _ai(cfg, "capital_cost_weight") / _p(cfg, personality, "budget_appetite")
-    cost = payment  # M9: a climate loan builds the plant, so principal is a real cost too
+    cost = payment + outlay  # M9: a climate loan builds the plant, so principal is a real cost
     value = benefit - cap_weight * cost / income[0]
     bar = -_p(cfg, personality, "w_deals") * _p(cfg, personality, "deal_affinity")
     bar -= _ai(cfg, "trust_weight") * (diplomacy.trust(world, nid, deal.financier) - 0.5)

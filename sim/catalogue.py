@@ -335,7 +335,13 @@ def catalogue(cfg: Config) -> dict[str, dict[str, Any]]:
             "equipment_on_credit lends the plant, climate_loan lends cash (T$) that builds it at "
             "the host's cost (rate); energy_as_a_service sells the "
             "power (price, $/GJ); equity_for_energy takes a share of the plant's margin (share; "
-            "the plant can fail if the host becomes unreliable).",
+            "the plant can fail if the host becomes unreliable). equipment_sale sells the plant "
+            "outright from your own factories (markup over your cost, paid at signing; solar or "
+            "wind). factory_partnership funds a clean-tech factory line there (tech solar, wind or "
+            "storage; amount in T$/yr of output; capital_share of its cost you pay, the host pays "
+            "the rest; optional power, EJ/yr of cheap clean power you supply) for a share of its "
+            "earnings; it can fail, more likely the less you fund and the poorer the host. Plants "
+            "you build use your own factories' panels and turbines when they have room.",
             "params": {
                 "target": others,
                 "deal_type": list(deals.TYPES),
@@ -345,7 +351,10 @@ def catalogue(cfg: Config) -> dict[str, dict[str, Any]]:
                 "collateral": "0 to 1",
                 "exit_penalty": "0 to 1",
                 "currency": ["hard", "local"],
-                "rate | price | share": "rate 0 to 0.3; price 0 to 50; share 0 to 1",
+                "rate | price | share | markup": "rate 0 to 0.3; price 0 to 50; share 0 to 1; "
+                "markup 0 to 1",
+                "tech, capital_share, power": "factory_partnership only: solar | wind | storage; "
+                "0 to 1; EJ/yr, 0 to 10",
             },
             "cost": "you must be able to finance it now (capital); paid when accepted",
             "example": {

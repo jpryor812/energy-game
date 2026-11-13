@@ -757,6 +757,11 @@ diplomacy:
   club_rate_discount: {value: 0.02, status: placeholder, note: "Interest rate cut on deals between carbon-club members."}
 
 deals:
+  panel_output_years: {value: 1.0, status: placeholder, note: "W4 part 2 (2026-11-12) - years of a nation's factory output its plant deals may take in any four quarters; within it, the deal's panels and turbines come from its own factories (its sale), beyond it from the world market."}
+  fair_markup: {value: 0.15, status: placeholder, note: "W4 part 2 - markup over the seller's cost an AI buyer thinks fair for an equipment sale. Unsourced approximate."}
+  factory_hazard: {value: 0.004, status: placeholder, note: "W4 part 2 - base chance per quarter that a partnership factory fails, before the stake, development and host-risk multipliers (about 8% over five years for a fully funded factory in a rich, stable country)."}
+  hazard_low_stake: {value: 2.0, status: placeholder, note: "W4 part 2 - extra failure hazard per unit of the factory the financier did not fund (stake 0 triples the hazard). The user's rule: less capital in, less guaranteed."}
+  hazard_development: {value: 2.0, status: placeholder, note: "W4 part 2 - extra failure hazard per unit the host's income per person falls short of the 16-nation average."}
   proposal_expiry: {value: 4, status: placeholder, note: "Quarters a proposal stays open."}
   host_capacity_cap: {value: 0.5, status: placeholder, note: "M9 - active deal capacity a nation can host, as a share of its energy demand. Round 1 saw offers of 10-17 EJ/yr to economies using 8-15 EJ."}
   max_duration: {value: 80, status: placeholder, note: "Longest deal, in quarters."}
@@ -811,6 +816,7 @@ industry:
   world_capacity_wind: {value: 0.1, status: placeholder, note: "World wind equipment factory capacity 2025, T$/yr. Unsourced approximate."}
   world_capacity_storage: {value: 0.1, status: placeholder, note: "World grid-battery factory capacity 2025, T$/yr. Unsourced approximate."}
   factory_capital_cost: {value: 0.5, status: placeholder, note: "T$ to build 1 T$/yr of factory output capacity. Unsourced approximate. M8 tried 1.0 (closer to integrated solar supply chains) but China then built too few factories to hold its manufacturing jobs and lost the 2032 vote in most seeds; kept at 0.5 pending playtests."}
+  factory_margin: {value: 0.15, status: placeholder, note: "W4 part 2 - a clean-tech factory's earnings as a share of its sales, for partnership payouts. Unsourced approximate."}
   factory_build_time: {value: 8, status: placeholder, note: "Quarters to build a factory."}
   factory_lifespan: {value: 20, status: placeholder, note: "Years a factory lasts. M9 - factory capacity everywhere (the rest of the world included) retires at 1/lifespan a year; it was never applied before."}
   credit_competitiveness: {value: 2.0, status: placeholder, note: "Market share ~ capacity x (1 + manufacturing credit)^x."}

@@ -878,6 +878,31 @@ planning)").
      turbines for repayments (equipment on credit) or a share of earnings (equity), capital for
      repayments (climate loan), or a plant you run for a price per unit of power (energy as a
      service). Collateral (20%), exit penalty (30%) and hard currency are fixed defaults there.
+211. **Plants you build come from your own factories when they have room** (W4 part 2, decided
+     with the user 2026-11-12): in equipment-on-credit, equity and equipment-sale deals, if the
+     financier's spare output on the matching line (capacity x `deals.panel_output_years`, less
+     what its deals of the last four quarters took) covers the plant's equipment, its factories
+     make it: the sale is its clean-tech export, not a world-market share. AI financiers follow
+     the same rule, so AI deals now feed the lender's factories (the AI world changes slightly).
+212. **Equipment sale**: the host buys the plant outright at the seller's cost plus a negotiated
+     markup, paid at signing; only solar and wind (the sources factory lines make) and only from
+     the seller's own spare output. The seller earns exported credit for the cut once it runs.
+     An AI buyer thinks `deals.fair_markup` (15%) fair and weighs the price against a year of its
+     capital income, so poorer nations rarely buy outright.
+213. **Factory partnership**: the financier pays `capital_share` of a factory line's cost in the
+     host (the host the rest) and may commit cheap clean power (costed at its own solar LCOE),
+     for `share` of the factory's earnings (its slice of the host's sales of that line x
+     `industry.factory_margin`, plus the power's value at the host's price). Each quarter it may
+     fail with chance `deals.factory_hazard` x (1 + `hazard_low_stake` x unfunded share) x (1 +
+     `hazard_development` x the host's shortfall from average income per person) x the host
+     risks equity deals face. An AI host thinks a share equal to the financier's stake fair.
+214. **A factory's climate credit follows the export credit the game already gives**: the plants
+     its panels equip would be built anyway, so a factory moves who makes them rather than how
+     many. The financier earns `credits.weight_exported` x its stake x the factory's slice of the
+     rise in the host's exported cut since it opened. This makes factories strong for small
+     nations' Impact (a $10 bn-a-year solar line projects about +12 Impact for Japan and +50 for
+     Nigeria, whose 2025 emissions are small), as the existing build-factory order already does
+     (an AI Nigeria ends near Impact 100 either way). Flagged for tuning.
 
 ## Open questions
 

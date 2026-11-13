@@ -245,10 +245,11 @@ Prosperous but Doomed, Green but Poor, Shared Failure) were retired with the Wor
 with the other nation's leader: talks, tariffs and trades are options in that conversation, and
 a trade is a table of what each side gives, with a live answer, a "what would it take" counter
 and each side's projected climate Impact. AI hosts now haggle: terms above a fair price are
-refused or countered. Part 2 (to come): selling panels made in your own factories (for cash,
-interest or a share of earnings) and funding factories abroad with capital or cheap clean power
-for a share of their earnings, riskier the less capital you put in and the less developed the
-host.
+refused or countered. Part 2 (built 2026-11-12): plants you build abroad use panels and turbines
+from your own factories when they have room; you can sell them for cash (at a markup), on
+interest or for a share of earnings; and you can fund factories abroad with capital or cheap
+clean power for a share of their earnings, riskier the less capital you put in and the less
+developed the host.
 
 Deals are the main way to grow beyond your own borders, and they carry the financial engineering that makes the game different from a pure policy sim. Each deal has terms, and the AI nation accepts or refuses based on its own interests and its trust in you.
 

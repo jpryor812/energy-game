@@ -215,6 +215,7 @@ def apply_equipment(
     unit_cost: dict[str, float],
     dt: int,
     regional: list[tuple[str, str, float]] | None = None,
+    direct: list[tuple[str, str, str, float]] | None = None,
 ) -> None:
     """Record clean-tech sales from this step's completed builds.
 
@@ -224,6 +225,9 @@ def apply_equipment(
     and adds to suppliers' exported-cut rate (Mt/yr displaced abroad by their equipment).
     `regional` lists capacity nations financed in the regions (M15) as (region, source, amount):
     the region buys its equipment by sim.regions.supplier_weights, all of it an export.
+    `direct` lists capacity whose equipment one supplier made under a deal (W4) as (buyer,
+    supplier, source, amount): all of it is that supplier's sale. Its climate credit comes through
+    the deal (sim.deals), not here, so it is not counted twice.
     """
     from sim import regions
 
@@ -269,6 +273,16 @@ def apply_equipment(
             exports[supplier] += weights[supplier] * value
             expected[supplier] += base.get(supplier, 0.0) * value
             world.nations[supplier].exported_cut_rate += weights[supplier] * cut
+    for buyer, supplier, source, amount in direct or []:
+        if source not in EQUIPMENT_OF or amount <= 0:
+            continue
+        tech = EQUIPMENT_OF[source]
+        value = cfg.src(source, "equipment_share") * unit_cost[source] * amount
+        demand[buyer][tech] += value
+        sales[supplier][tech] += value
+        if supplier != buyer:
+            exports[supplier] += value
+            expected[supplier] += base_shares(cfg, tech).get(supplier, 0.0) * value
     for nid, n in world.nations.items():
         n.cleantech_exports = exports[nid] * per_year
         n.base["cleantech_expected"] = expected[nid] * per_year
