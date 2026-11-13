@@ -477,6 +477,34 @@ def _tariff_cost_pp(cfg: Config, world: World, nid: str, partner: str, level: fl
     return cfg.tune("trade.tariff_price_drag") * paid / n.gdp * 100
 
 
+def fair_rate(cfg: Config, world: World, financier: str, host: str, kind: str) -> float:
+    """The interest an AI financier asks: the discount rate plus a premium for low trust, less
+    a concession on climate loans. Also the rate an AI host judges an offer against (W4)."""
+    trust = diplomacy.trust(world, financier, host)
+    rate = cfg.tune("market.discount_rate") + _ai(cfg, "deal_rate_premium") * (1 - trust)
+    if kind == "climate_loan":
+        rate = max(0.0, rate - _ai(cfg, "climate_loan_discount"))  # concessional
+    return rate
+
+
+def fair_term(cfg: Config, world: World, deal) -> float:
+    """What an AI host thinks is a fair rate, equity share or price for `deal` (W4): what an AI
+    financier would ask, or for energy as a service (which AIs do not offer) the plant's
+    levelized cost in the host."""
+    if deal.type == "equity_for_energy":
+        return _ai(cfg, "equity_share_offer")
+    if deal.type == "energy_as_a_service":
+        return tech.lcoe(cfg, world, world.nations[deal.host], deal.terms["source"])
+    return fair_rate(cfg, world, deal.financier, deal.host, deal.type)
+
+
+def overprice(cfg: Config, world: World, deal) -> float:
+    """How far a deal's terms are above fair, as a share (0 at or below fair)."""
+    key = {"energy_as_a_service": "price", "equity_for_energy": "share"}.get(deal.type, "rate")
+    fair = fair_term(cfg, world, deal)
+    return max(0.0, deal.terms[key] / fair - 1) if fair > 0 else 0.0
+
+
 def _value_deal_as_host(cfg, world, nid, deal, personality, ctx, w_em, income) -> float:
     """Utility to the host of accepting `deal`, net of its payments, minus the bar to accept."""
     n = ctx.n
@@ -499,6 +527,7 @@ def _value_deal_as_host(cfg, world, nid, deal, personality, ctx, w_em, income) -
     value = benefit - cap_weight * cost / income[0]
     bar = -_p(cfg, personality, "w_deals") * _p(cfg, personality, "deal_affinity")
     bar -= _ai(cfg, "trust_weight") * (diplomacy.trust(world, nid, deal.financier) - 0.5)
+    bar += _ai(cfg, "overprice_weight") * overprice(cfg, world, deal)  # W4: haggling
     if deal.terms["currency"] == "hard" and not cfg.nat_spec(nid)["hard_currency_issuer"]:
         bar += _ai(cfg, "currency_risk_weight") * payment / max(n.fx_reserves, 1e-9)
     return value - bar
@@ -542,10 +571,7 @@ def _deal_offer(cfg, world, nid, personality, w_em, income) -> tuple[float, Acti
     source = min(options, key=lambda s: (tech.lcoe(cfg, world, host, s), s))
     kind = cfg.tuning["ai"]["personalities"][personality]["preferred_deal"]
     unit = tech.nation_unit_cost(cfg, world, n, source)
-    trust = diplomacy.trust(world, nid, hid)
-    rate = cfg.tune("market.discount_rate") + _ai(cfg, "deal_rate_premium") * (1 - trust)
-    if kind == "climate_loan":
-        rate = max(0.0, rate - _ai(cfg, "climate_loan_discount"))  # concessional
+    rate = fair_rate(cfg, world, nid, hid, kind)
     years = _ai(cfg, "deal_duration") / 4
     host_income = income_per_year(cfg, host)[0]
     room = _ai(cfg, "max_payment_share") * host_income - deals.obligations(cfg, world, hid)

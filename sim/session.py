@@ -142,7 +142,8 @@ class Game:
                 cost = a["amount"]
                 if a["deal_type"] != "climate_loan":
                     cost = tech.nation_unit_cost(self.cfg, w, n, a["source"]) * a["amount"]
-                r["note"] = f"free now; {cost:.4g} T$ of your capital if accepted"
+                r["note"] = f"paid when they sign: {cost:.4g} T$ (back if they refuse)"
+                r["reserve"] = cost
         return results
 
     def summary(self) -> dict[str, Any]:

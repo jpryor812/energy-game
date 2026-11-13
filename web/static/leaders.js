@@ -13,6 +13,17 @@ export const LEADERS = {
   IND: { title: "Prime Minister", skin: "#a8724c", hair: "#1c1a19", style: "bun", suit: "#3b3a46", neck: "collar", scene: "solar" },
   RUS: { title: "President", skin: "#edc6a6", hair: "#c9c1b3", style: "receding", suit: "#2a2e2b", neck: "tie", scene: "pipeline" },
   VNM: { title: "Prime Minister", skin: "#d8a67c", hair: "#232120", style: "short", suit: "#26363a", neck: "open", glasses: false, scene: "port" },
+  // The ten nations the computer always plays (W4: for the diplomacy screen).
+  AUS: { title: "Prime Minister", skin: "#efc7a3", hair: "#8a6a45", style: "sidepart", suit: "#2c3440", neck: "open", scene: "solar" },
+  BRA: { title: "President", skin: "#b9825a", hair: "#2b2420", style: "receding", suit: "#2d3a2f", neck: "tie", scene: "forest" },
+  CAN: { title: "Prime Minister", skin: "#f0cba8", hair: "#5d4330", style: "short", suit: "#2a2f3d", neck: "tie", scene: "forest" },
+  GBR: { title: "Prime Minister", skin: "#f1c9a7", hair: "#b08a5c", style: "bob", suit: "#2f3346", neck: "collar", glasses: true, scene: "wind" },
+  IDN: { title: "President", skin: "#c48d61", hair: "#1d1b1a", style: "short", suit: "#2b3035", neck: "open", scene: "port" },
+  JPN: { title: "Prime Minister", skin: "#ebc39d", hair: "#2a2725", style: "sidepart", suit: "#24272e", neck: "tie", glasses: true, scene: "city" },
+  MEX: { title: "President", skin: "#c99167", hair: "#2a201b", style: "bun", suit: "#3a2f36", neck: "scarf", scene: "oilcity" },
+  NGA: { title: "President", skin: "#7a4a2e", hair: "#151312", style: "receding", suit: "#253228", neck: "open", glasses: true, scene: "oilcity" },
+  SAU: { title: "Energy Minister", skin: "#c8956a", hair: "#211d1b", style: "short", suit: "#e9e4d8", neck: "open", scene: "pipeline" },
+  ZAF: { title: "President", skin: "#8b5a3c", hair: "#1b1918", style: "short", suit: "#2c2f3a", neck: "tie", scene: "factory" },
 };
 
 const shade = (c, k) => d3.color(c).darker(k).formatHex();
@@ -24,10 +35,10 @@ let uid = 0;
 export const skyColor = (id) => tint(PLAYABLE_COLOR[id] || "#16a34a", 0.5);
 export const skyOf = (col) => tint(col, 0.5);
 
-export function leaderPortrait(id, { label = "" } = {}) {
+export function leaderPortrait(id, { label = "", color = null } = {}) {
   const L = LEADERS[id];
   if (!L) return "";
-  return portrait(L, PLAYABLE_COLOR[id] || "#16a34a", label || `Leader of ${id}`);
+  return portrait(L, color || PLAYABLE_COLOR[id] || "#16a34a", label || `Leader of ${id}`);
 }
 
 // Any figure: a look ({skin, hair, style, suit, neck, glasses, scene}) in front of a scene

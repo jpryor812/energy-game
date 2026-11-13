@@ -23,7 +23,17 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
-from sim import canonical, config, construction, diplomacy, regions, scoring, trade, view
+from sim import (
+    canonical,
+    config,
+    construction,
+    diplomacy,
+    negotiation,
+    regions,
+    scoring,
+    trade,
+    view,
+)
 from sim.catalogue import catalogue
 from sim.session import Game, SaveError
 from web.profiles import profiles
@@ -240,6 +250,41 @@ class Server:
     def check(self, body: dict[str, Any]) -> dict[str, Any]:
         return {"results": self._game().check(_actions(body))}
 
+    def negotiate(self, body: dict[str, Any]) -> dict[str, Any]:
+        """The trade table's live preview (sim/negotiation.py): the other side's answer, the
+        terms it would take, payments, risk and each side's projected Impact. Read-only.
+
+        Body: {"action": propose_deal} for an offer the player drafts, or {"deal_id": id,
+        "counter": value} for the player's counter to an offer in their inbox."""
+        game = self._game()
+        cfg, w, me = game.cfg, game.world, game.country
+        if "deal_id" in body:
+            deal = w.deals.get(body["deal_id"])
+            if deal is None or deal.host != me or deal.status != "proposed":
+                raise ApiError("no open offer to you with that id")
+            key = negotiation.actions._price_key(deal)
+            value = body.get("counter")
+            out: dict[str, Any] = {"ok": True, "price_key": key, "asked": deal.terms[key]}
+            if isinstance(value, int | float):
+                ok = negotiation.financier_accepts_counter(cfg, w, deal, float(value))
+                out["answer"] = negotiation.ACCEPT if ok else negotiation.REFUSE
+                floor = cfg.tune("ai.counter_accept_share") * deal.terms.get(
+                    "asked", deal.terms[key]
+                )
+                out["lowest"] = floor
+            out["impact"] = negotiation.projected_impact(cfg, w, deal)
+            out["capacity"] = negotiation.capacity(cfg, w, deal)
+            out["payment_per_year"] = negotiation.deals.annual_payment(cfg, w, deal)
+            return _rounded(out)
+        act = body.get("action")
+        if not isinstance(act, dict) or act.get("type") != "propose_deal":
+            raise ApiError("action must be a propose_deal")
+        result = game.check([act])[0]
+        if not result["ok"]:
+            return {"ok": False, "reason": result.get("reason", "not allowed")}
+        deal = negotiation.draft(cfg, w, me, game.expand([act])[0])
+        return _rounded({"ok": True} | negotiation.preview(cfg, w, deal))
+
     def turn(self, body: dict[str, Any]) -> dict[str, Any]:
         game = self._game()
         if game.over:
@@ -271,6 +316,7 @@ class Server:
         ("POST", "/api/new"): "new",
         ("POST", "/api/load"): "load",
         ("POST", "/api/check"): "check",
+        ("POST", "/api/negotiate"): "negotiate",
         ("POST", "/api/turn"): "turn",
         ("POST", "/api/wait"): "wait",
     }
@@ -282,6 +328,17 @@ class Server:
         with self.lock:
             fn = getattr(self, name)
             return fn() if method == "GET" else fn(body)
+
+
+def _rounded(x: Any) -> Any:
+    """Floats to 6 significant figures, for compact JSON."""
+    if isinstance(x, float):
+        return float(f"{x:.6g}")
+    if isinstance(x, dict):
+        return {k: _rounded(v) for k, v in x.items()}
+    if isinstance(x, list):
+        return [_rounded(v) for v in x]
+    return x
 
 
 def _actions(body: dict[str, Any]) -> list[dict[str, Any]]:

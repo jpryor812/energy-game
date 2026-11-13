@@ -270,7 +270,7 @@ function renderAll() {
 // Capital the planned orders will spend (each order's checked cost), so the top bar shows what is
 // left the moment an order is added, and gives it back when the order is removed.
 function plannedSpend() {
-  return S.plan.reduce((a, _, i) => { const c = S.checks[i]; return a + (c && c.ok && c.cost ? c.cost.capital || 0 : 0); }, 0);
+  return S.plan.reduce((a, _, i) => { const c = S.checks[i]; return a + (c && c.ok ? ((c.cost && c.cost.capital) || 0) + (c.reserve || 0) : 0); }, 0);
 }
 
 function renderTopbar() {
@@ -382,6 +382,8 @@ function describe(a) {
       return a.deal_type === "climate_loan" ? money(v) : `${shareOf(v, (S.data.world.nations[a.target] || {}).demand || myDemand())} of their energy`;
     }
     if (k === "rate" && a.type === "propose_deal") return `${whole(v * 100)}% a year`;
+    if (k === "share" && a.type === "propose_deal") return `${whole(v * 100)}% of profit`;
+    if (k === "price" && a.type === "propose_deal") return `$${whole(v)}/GJ`;
     if (k === "duration") return `${whole(v / 4)} years`;
     const u = unitOf(a.type, k, spec[k] || "", null);
     if (u.unit === "$ bn") return money(v);
@@ -389,7 +391,8 @@ function describe(a) {
     if (u.unit.startsWith("%")) return `${whole(v / u.scale)}${u.unit}`;
     return `${whole(v / u.scale)}${u.unit ? " " + u.unit : ""}`;
   };
-  const p = Object.entries(a).filter(([k]) => k !== "type").map(part).filter(Boolean).join(" · ");
+  const hidden = a.type === "propose_deal" ? ["type", "collateral", "exit_penalty", "currency"] : ["type"];
+  const p = Object.entries(a).filter(([k]) => !hidden.includes(k)).map(part).filter(Boolean).join(" · ");
   return `<span class="plan-ico">${(ORDERS[a.type] || {}).icon || "◆"}</span><b>${esc(nice(a.type))}</b>${p ? ` <span class="muted">${esc(p)}</span>` : ""}`;
 }
 
@@ -398,7 +401,7 @@ function renderOutliner() {
   const planRows = S.plan.length ? S.plan.map((a, i) => {
     const c = S.checks[i];
     const status = !c ? `<span class="muted">checking…</span>` : c.ok
-      ? `<span class="good">✓</span> <span class="muted">${Object.entries(c.cost || {}).filter(([, v]) => v).map(([k, v]) => k === "capital" ? money(v) : `${whole(v)} ${k.replace("_", " ")}`).join(", ") || "free"}${c.note ? `; ${esc(humane(c.note))}` : ""}</span>`
+      ? `<span class="good">✓</span> <span class="muted">${c.reserve ? "" : Object.entries(c.cost || {}).filter(([, v]) => v).map(([k, v]) => k === "capital" ? money(v) : `${whole(v)} ${k.replace("_", " ")}`).join(", ") || "free"}${c.note ? `${c.reserve ? "" : "; "}${esc(humane(c.note))}` : ""}</span>`
       : `<span class="bad">✗ ${esc(humane(c.reason))}</span>`;
     return `<div class="plan-item"><div class="what">${describe(a)}<div class="why">${status}</div></div><button class="icon-btn" data-rm="${i}" title="Remove">✕</button></div>`;
   }).join("") : `<div class="muted" style="padding:6px 2px">Nothing planned. Choose orders from the menus on the left, or click a nation.</div>`;
@@ -1182,8 +1185,260 @@ function dealPreface(type, preset) {
 }
 
 function dealWindow(id) {
-  actionWindow("Answer an offer", ["respond_deal"], "respond_deal", { deal_id: id });
+  const d = S.data.screen.deals.inbox.find((x) => x.id === id);
+  if (!d) return actionWindow("Answer an offer", ["respond_deal"], "respond_deal", { deal_id: id });
+  talksWindow(d.financier === S.data.screen.country ? d.host : d.financier, "offer", { deal: id });
 }
+
+// ---------- diplomacy: a meeting with another nation's leader, and the trade table ----------
+//
+// Clicking a nation offers one thing, Open talks. The meeting shows their leader and mood (their
+// trust in you), and offers talks, a tariff (or lifting yours), a trade, and answers to their
+// offers. The trade table composes the game's deal types from what each side gives, and asks
+// the server (/api/negotiate) how they would answer, what they would take, and what it does for
+// each side's Impact. Nothing is decided here: each choice becomes an order for this quarter.
+
+const MOODS = [[0.65, "Friendly", "good"], [0.45, "Wary", ""], [-1, "Cold", "bad"]];
+const moodOf = (t) => MOODS.find(([min]) => (t ?? 0.5) >= min);
+const GREETING = {
+  Friendly: "Good to see you. Our door is open. What do you have in mind?",
+  Wary: "We are listening. Say what you came to say.",
+  Cold: "You have not given us much reason to trust you. Make it worth our while.",
+};
+const REPLY = {
+  accept: "That works for us. Send it, and we will sign next quarter.",
+  counter: "Close. Move the terms a little and we have a deal.",
+  refuse: "We cannot accept that.",
+  invalid: "That is not something we can sign.",
+};
+// What each side can put on the table, and the deal type each pairing makes.
+const GIVES = {
+  panels: { ico: "☀️", name: "Panels and turbines", sub: "Clean plant you build in their country" },
+  capital: { ico: "💰", name: "Capital", sub: "A loan that builds clean plant there" },
+  plant: { ico: "🏭", name: "A plant you run", sub: "You own it; they buy its power" },
+};
+const GETS = {
+  repay: { ico: "📈", name: "Repayments with interest", sub: "Back over the years, plus interest" },
+  share: { ico: "🤝", name: "A share of its earnings", sub: "Paid while the plant does well; it can fail" },
+  price: { ico: "⚡", name: "A price for its power", sub: "Per unit of power it can make" },
+};
+const PAIRS = { "panels/repay": "equipment_on_credit", "panels/share": "equity_for_energy", "capital/repay": "climate_loan", "plant/price": "energy_as_a_service" };
+const TERM = {
+  rate: { unit: "% a year", step: 1, toUnit: (v) => v * 100, fromUnit: (u) => u / 100, label: "Interest" },
+  share: { unit: "% of profit", step: 5, toUnit: (v) => v * 100, fromUnit: (u) => u / 100, label: "Their share to you" },
+  price: { unit: "$ per GJ", step: 1, toUnit: (v) => v, fromUnit: (u) => u, label: "Price" },
+};
+const OFFER_LINE = {
+  equipment_on_credit: "a clean plant built in your country. You repay its cost with interest.",
+  climate_loan: "a loan that builds clean plant in your country. You repay it with interest.",
+  energy_as_a_service: "a plant we build and run in your country. You pay for its power.",
+  equity_for_energy: "a plant in your country, for a share of its profit.",
+};
+// The same terms seen from the host's side, when another nation offers you a deal.
+const THEIR_TERM = { rate: "Interest you pay", share: "Their share of the profit", price: "Price you pay for the power" };
+const termKey = (dt) => ({ energy_as_a_service: "price", equity_for_energy: "share" })[dt] || "rate";
+
+function talksWindow(id, view = "talk", opt = {}) {
+  closeDrawer();
+  const sc = S.data.screen, v = S.data.world.nations[id], L = LEADERS[id] || {};
+  const [, mood, moodCls] = moodOf(v.trust_in_you);
+  const win = openWindow({
+    title: `Talks with ${esc(nationName(id))}`, wide: "x",
+    body: `<div class="dip">
+      <div class="dip-left">
+        <div class="dip-portrait" style="background:${skyOf(colorOf(id))}">${leaderPortrait(id, { color: colorOf(id), label: `${L.title || "Leader"} of ${nationName(id)}` })}</div>
+        <div class="dip-name"><b>${esc(L.title || "Leader")}</b> of ${esc(nationName(id))}</div>
+        <div class="dip-mood ${moodCls}">${mood}</div>
+        <div class="dip-facts">
+          <div><span>Their trust in you</span><b>${whole((v.trust_in_you ?? 0.5) * 100)}</b></div>
+          <div><span>Your tariff on them</span><b>${pct(v.your_tariff)}</b></div>
+          <div><span>Their tariff on you</span><b>${pct(v.their_tariff)}</b></div>
+          <div><span>Carbon club</span><b>${v.club ? "member" : "outside"}</b></div>
+          <div><span>Rank</span><b>${v.rank ? `${v.rank} of 16` : "-"}</b></div>
+        </div>
+      </div>
+      <div class="dip-right" id="dip-right"></div></div>`,
+  });
+  const right = $("#dip-right", win);
+  const say = (line) => `<div class="dip-say">“${esc(line)}”</div>`;
+  const lockNote = (t) => !orderOpen(t) ? `opens ${quarterOf(opensAt(t))}` : "";
+  const planned = (pred) => S.plan.some(pred);
+
+  const talk = (line = GREETING[mood] + (v.their_tariff > 0 ? ` Our tariff on your goods stands at ${pct(v.their_tariff)}.` : "")) => {
+    const offers = sc.deals.inbox.filter((d) => d.financier === id);
+    const opts = [];
+    const infl = sc.resources.influence, need = (S.meta.catalogue.open_talks.cost.match(/[\d.]+/) || [5])[0];
+    const talksPlanned = planned((a) => a.type === "open_talks" && a.target === id);
+    opts.push({ k: "talks", t: "Let us build trust.", s: `Hold talks: their trust rises · ${need} influence`,
+      off: lockNote("open_talks") || (talksPlanned ? "already planned" : infl < +need ? `needs ${need} influence (you have ${whole(infl)}; buy it under Treasury)` : "") });
+    const club = v.club && sc.world.club.includes(sc.country);
+    if (v.your_tariff > 0) opts.push({ k: "lift", t: "We will lift our tariff on your goods.", s: "Trade recovers and they trust you more", off: lockNote("lift_tariff") || (planned((a) => a.type === "lift_tariff" && a.target === id) ? "already planned" : "") });
+    else opts.push({ k: "tariff", t: "Your goods will face a tariff.", s: "Protects your industry; costs their trust", off: lockNote("set_tariff") || (club ? "carbon club members cannot tariff each other" : "") });
+    opts.push({ k: "trade", t: "I have a proposal.", s: "Open the trade table", off: lockNote("propose_deal") });
+    offers.forEach((d) => opts.push({ k: `offer:${d.id}`, t: `About your offer of ${nice(d.type).toLowerCase()}…`, s: `${SOURCE_ICON[d.terms.source] || ""} ${nice(d.terms.source || "")} · expires ${d.expires}`, off: d.can_answer ? "" : "you can answer from next quarter" }));
+    opts.push({ k: "bye", t: "Farewell.", s: "" });
+    right.innerHTML = `${say(line)}<div class="dip-opts">${opts.map((o, i) => `<button class="dip-opt" data-k="${o.k}" ${o.off ? "disabled" : ""}><span class="n">${i + 1}</span><span><b>${esc(o.t)}</b>${o.s || o.off ? `<span class="s">${esc(o.off || o.s)}</span>` : ""}</span></button>`).join("")}</div>`;
+    right.querySelectorAll(".dip-opt").forEach((b) => (b.onclick = () => {
+      const k = b.dataset.k;
+      if (k === "bye") return closeWindows();
+      if (k === "talks") { addToPlan({ type: "open_talks", target: id }); return talk("We welcome the talks. Let us keep talking."); }
+      if (k === "lift") { addToPlan({ type: "lift_tariff", target: id }); return talk("A wise step. Our traders will be glad."); }
+      if (k === "tariff") return tariff();
+      if (k === "trade") return trade();
+      if (k.startsWith("offer:")) return offer(k.slice(6));
+    }));
+  };
+
+  const tariff = () => {
+    const max = 0.5;
+    right.innerHTML = `${say("A tariff? That will cost you our trust, and we may answer in kind.")}<div class="dip-opts">
+      ${[0.1, 0.25, max].map((l, i) => `<button class="dip-opt" data-l="${l}"><span class="n">${i + 1}</span><span><b>A ${pct(l)} tariff on their goods.</b><span class="s">${l >= max ? "The highest allowed" : l >= 0.25 ? "A strong signal" : "A warning shot"}</span></span></button>`).join("")}
+      <button class="dip-opt" data-l="back"><span class="n">←</span><span><b>Let me reconsider.</b></span></button></div>`;
+    right.querySelectorAll(".dip-opt").forEach((b) => (b.onclick = () => {
+      if (b.dataset.l === "back") return talk();
+      addToPlan({ type: "set_tariff", target: id, level: +b.dataset.l });
+      talk("So be it. We will remember this.");
+    }));
+  };
+
+  // The trade table.
+  const T = opt.trade || { give: "panels", get: "repay", source: "solar", size: 1, years: 5, term: null };
+  const trade = () => {
+    const dt = PAIRS[`${T.give}/${T.get}`];
+    const key = termKey(dt), tm = TERM[key];
+    const costs = sc.energy.costs || {};
+    if (T.term == null) T.term = key === "rate" ? 8 : key === "share" ? 50 : Math.round((costs[T.source] || {}).lcoe || 8);
+    const sources = S.meta.catalogue.propose_deal.params.source.filter((s) => !locked(s))
+      .sort((a, b) => TILE_ORDER.indexOf(a) - TILE_ORDER.indexOf(b));
+    const capLeft = Math.max(0, sc.resources.capital - plannedSpend());
+    const sizeChips = T.give === "capital" ? [...new Set([0.1, 0.25, 0.5].map((f) => Math.max(1, Math.round(capLeft * f * 1000))))] : [0.5, 1, 2, 5];
+    const sizeUnit = T.give === "capital" ? "$ bn" : "% of their energy";
+    const tile = (group, k, o, on, off) => `<button type="button" class="tile ${on ? "on" : ""}" data-${group}="${k}" ${off ? "disabled" : ""}><span class="tile-ico">${o.ico}</span><span class="tile-name">${esc(o.name)}</span><span class="tile-sub">${esc(o.sub)}</span></button>`;
+    const chips = (name, vals, cur, fmt) => `<div class="chips">${vals.map((x) => `<button type="button" class="${x === cur ? "on" : ""}" data-${name}="${x}">${fmt(x)}</button>`).join("")}${vals.includes(cur) ? "" : `<button type="button" class="on">${fmt(cur)}</button>`}</div>`;
+    right.innerHTML = `<div class="trade">
+      <div class="trade-cols">
+        <div class="trade-col"><h3>You give</h3>
+          <div class="tiles">${Object.entries(GIVES).map(([k, o]) => tile("give", k, o, k === T.give)).join("")}</div>
+          <div class="trade-label">Built with</div>
+          <div class="tiles small">${sources.map((s) => `<button type="button" class="tile ${s === T.source ? "on" : ""}" data-source="${s}"><span class="tile-ico">${SOURCE_ICON[s] || "◆"}</span><span class="tile-name">${esc(nice(s))}</span></button>`).join("")}</div>
+          <div class="trade-label">How much (${sizeUnit})</div>
+          ${chips("size", sizeChips, T.size, (x) => T.give === "capital" ? `$${whole(x)} bn` : `${x}%`)}
+        </div>
+        <div class="trade-col"><h3>They give</h3>
+          <div class="tiles">${Object.entries(GETS).map(([k, o]) => tile("get", k, o, k === T.get, !PAIRS[`${T.give}/${k}`])).join("")}</div>
+          <div class="trade-label">${tm.label} (${tm.unit})</div>
+          <div class="stepper"><button type="button" data-step="-1">−</button><b>${whole(T.term)}</b><button type="button" data-step="1">+</button></div>
+          <div class="trade-label">For</div>
+          ${chips("years", [3, 5, 10], T.years, (x) => `${x} years`)}
+        </div>
+      </div>
+      <div class="trade-verdict" id="tv">${say("Let us see…")}</div>
+      <div class="trade-sum" id="ts"></div>
+      <div class="row between" style="margin-top:10px"><button class="btn" id="t-back">← Back</button>
+        <span class="row" style="gap:8px"><button class="btn" id="t-take">What would it take?</button><button class="btn primary" id="t-go">Propose this trade</button></span></div></div>`;
+    const redraw = () => trade();
+    right.querySelectorAll("[data-give]").forEach((b) => (b.onclick = () => {
+      T.give = b.dataset.give;
+      if (!PAIRS[`${T.give}/${T.get}`]) T.get = Object.keys(GETS).find((g) => PAIRS[`${T.give}/${g}`]);
+      T.size = T.give === "capital" ? Math.max(1, Math.round(capLeft * 0.25 * 1000)) : 1; T.term = null; redraw();
+    }));
+    right.querySelectorAll("[data-get]").forEach((b) => (b.onclick = () => { T.get = b.dataset.get; T.term = null; redraw(); }));
+    right.querySelectorAll("[data-source]").forEach((b) => (b.onclick = () => { T.source = b.dataset.source; if (key === "price") T.term = null; redraw(); }));
+    right.querySelectorAll("[data-size]").forEach((b) => (b.onclick = () => { T.size = +b.dataset.size; redraw(); }));
+    right.querySelectorAll("[data-years]").forEach((b) => (b.onclick = () => { T.years = +b.dataset.years; redraw(); }));
+    right.querySelectorAll("[data-step]").forEach((b) => (b.onclick = () => { T.term = Math.max(0, T.term + +b.dataset.step * tm.step); redraw(); }));
+    $("#t-back", right).onclick = () => talk();
+    const action = () => {
+      const a = { type: "propose_deal", target: id, deal_type: dt, source: T.source, duration: T.years * 4, collateral: 0.2, exit_penalty: 0.3 };
+      a.amount = T.give === "capital" ? T.size / 1000 : (T.size / 100) * (v.demand || 1);
+      if (dt !== "equity_for_energy") a.currency = "hard";
+      a[key] = tm.fromUnit(T.term);
+      return a;
+    };
+    let last = null;
+    const seq = (S.tradeSeq = (S.tradeSeq || 0) + 1);
+    const wait = (ms) => new Promise((ok) => setTimeout(ok, ms));
+    wait(150).then(() => (seq === S.tradeSeq ? api("/api/negotiate", { action: action() }) : null)).then((r) => {
+      if (!r) return;
+      if (seq !== S.tradeSeq) return;
+      last = r;
+      const ans = r.ok ? r.answer : "invalid";
+      $("#tv", right).innerHTML = `<div class="dip-verdict ${ans}">${say(r.ok ? REPLY[ans] : `${REPLY.invalid} (${humane(r.reason)})`)}</div>`;
+      $("#t-go", right).disabled = !r.ok || ans === "refuse";
+      $("#t-take", right).disabled = !r.ok || ans === "accept" || !r.would_take;
+      if (!r.ok) { $("#ts", right).innerHTML = ""; return; }
+      const imp = r.impact || {}, mine = imp[sc.country] || 0, theirs = imp[id] || 0;
+      const back = r.payment_per_year * r.years;
+      const rows = [
+        ["You pay when they sign", money(r.cost)],
+        [dt === "equity_for_energy" ? "They pay you, at today's prices" : "They pay you", `${money(r.payment_per_year / 4)} a quarter for ${r.years} years (about ${money(back)} in all)`],
+        ["Clean power it adds", `${shareOf(r.capacity, v.demand || 1)} of their energy, from ${quarterOf(r.online_turn)}`],
+      ];
+      if (r.survival != null) rows.push(["Chance the plant lasts the deal", pct(r.survival)]);
+      $("#ts", right).innerHTML = `<table class="trade-table">${rows.map(([k, x]) => `<tr><td>${esc(k)}</td><td>${x}</td></tr>`).join("")}</table>
+        <div class="trade-impact"><span>Projected Impact by 2049</span>
+          <b class="${mine > 0 ? "good" : ""}">You ${mine >= 0 ? "+" : ""}${num(mine, 1)}</b>
+          <b class="${theirs > 0 ? "good" : ""}">${esc(nationName(id))} ${theirs >= 0 ? "+" : ""}${num(theirs, 1)}</b></div>`;
+    }).catch((e) => { $("#tv", right).innerHTML = say(e.message); });
+    $("#t-take", right).onclick = () => {
+      if (!last || !last.would_take) return;
+      const w = last.would_take;
+      T.term = Math.floor(tm.toUnit(w[key]));
+      if (T.give === "capital") T.size = Math.floor(w.amount * 1000);
+      else T.size = Math.floor((w.amount / (v.demand || 1)) * 100 * 2) / 2;
+      redraw();
+    };
+    $("#t-go", right).onclick = () => {
+      addToPlan(action());
+      talk("We will study it and answer next quarter.");
+    };
+  };
+
+  // Their offer to you: the terms from your side, your answer, and a counter with a live verdict.
+  const offer = (did) => {
+    const d = sc.deals.inbox.find((x) => x.id === did);
+    if (!d) return talk();
+    const key = termKey(d.type), tm = TERM[key], t = d.terms;
+    let counter = Math.floor(tm.toUnit(t[key]) * 0.8);
+    const draw = (preview = null, verdict = null) => {
+      const imp = (preview && preview.impact) || {};
+      const size = d.type === "climate_loan" ? money(t.amount) : shareOf(t.amount, myDemand()) + " of your energy";
+      right.innerHTML = `${say(`We offer you ${OFFER_LINE[d.type] || nice(d.type)}`)}
+        <div class="trade-cols">
+          <div class="trade-col"><h3>They give</h3><div class="offer-item">${SOURCE_ICON[t.source] || "◆"} ${esc(nice(t.source))} · ${size}</div></div>
+          <div class="trade-col"><h3>You give</h3><div class="offer-item">${GETS[{ rate: "repay", share: "share", price: "price" }[key]].ico} ${THEIR_TERM[key]}: <b>${whole(tm.toUnit(t[key]))}</b> ${tm.unit} for ${whole(t.duration / 4)} years</div></div>
+        </div>
+        ${preview ? `<div class="trade-impact"><span>Projected Impact by 2049</span><b class="good">You +${num(imp[sc.country] || 0, 1)}</b><b>${esc(nationName(id))} +${num(imp[id] || 0, 1)}</b></div>
+          <p class="muted" style="font-size:12.5px">You would pay ${money((preview.payment_per_year || 0) / 4).replace(/^\$/, "about $")} a quarter${key === "share" ? " at today's prices" : ""}.</p>` : ""}
+        <div class="dip-opts">
+          <button class="dip-opt" data-r="accept"><span class="n">1</span><span><b>We accept.</b><span class="s">The plant is built in your country</span></span></button>
+          <button class="dip-opt" data-r="refuse"><span class="n">2</span><span><b>No, thank you.</b></span></button>
+        </div>
+        <div class="trade-label">Or counter: ${THEIR_TERM[key].toLowerCase()} (${tm.unit})</div>
+        <div class="row" style="gap:10px"><div class="stepper"><button type="button" data-step="-1">−</button><b>${whole(counter)}</b><button type="button" data-step="1">+</button></div>
+          ${verdict ? `<span class="dip-verdict ${verdict}">${verdict === "accept" ? "They would take it." : "They would refuse."}</span>` : ""}
+          <button class="btn" id="o-counter">Send counter</button></div>
+        <div style="margin-top:10px"><button class="btn" id="o-back">← Back</button></div>`;
+      right.querySelectorAll("[data-r]").forEach((b) => (b.onclick = () => {
+        addToPlan({ type: "respond_deal", deal_id: did, response: b.dataset.r });
+        talk(b.dataset.r === "accept" ? "Excellent. We will begin at once." : "A pity. Perhaps another time.");
+      }));
+      right.querySelectorAll("[data-step]").forEach((b) => (b.onclick = () => { counter = Math.max(0, counter + +b.dataset.step * tm.step); ask(); }));
+      $("#o-counter", right).onclick = () => {
+        addToPlan({ type: "respond_deal", deal_id: did, response: "counter", [key]: tm.fromUnit(counter) });
+        talk("We will consider your counter and reply next quarter.");
+      };
+      $("#o-back", right).onclick = () => talk();
+    };
+    const ask = () => api("/api/negotiate", { deal_id: did, counter: tm.fromUnit(counter) }).then((r) => draw(r, r.answer)).catch(() => draw());
+    ask();
+  };
+
+  if (view === "offer" && opt.deal) offer(opt.deal);
+  else if (view === "trade") trade();
+  else talk();
+}
+
 
 // ---------- ledger ----------
 
@@ -1313,7 +1568,6 @@ function openNation(id, tab = "overview") {
     const head = `${crest(id, true)}<div class="titles"><h2>${esc(nationName(id))}</h2><div class="sub">${esc(pers[0])}${S.meta.nations[id].playable ? " · great power" : ""}</div></div>`;
     const offers = sc.deals.inbox.filter((d) => d.financier === id || d.host === id);
     const active = sc.deals.active.filter((d) => d.financier === id || d.host === id);
-    const forSale = sc.research.filter((r) => r.offers.some(([s]) => s === id));
     const body = `<p class="summary-text">${esc(pers[1])}</p>
       <div class="stat-grid">
         <div class="stat"><span class="k">GDP a quarter</span><span>${money(v.gdp / 4)}</span></div>
@@ -1332,23 +1586,11 @@ function openNation(id, tab = "overview") {
         <div class="stat"><span class="k">Your tariff on them</span><span>${pct(v.your_tariff)}</span></div>
         <div class="stat"><span class="k">Their tariff on you</span><span>${pct(v.their_tariff)}</span></div>
       </div>
-      ${offers.length ? `<h3>Offers between you</h3>${offers.map((d) => `<div class="plan-item"><div class="what"><b>${d.id}</b> ${nice(d.type)}, ${esc(d.terms.source || "")}</div>${d.can_answer ? `<button class="btn small" data-deal="${d.id}">Answer</button>` : ""}</div>`).join("")}` : ""}
-      ${active.length ? `<h3>Active deals</h3>${active.map((d) => `<div class="plan-item"><div class="what"><b>${d.id}</b> ${nice(d.type)} ${esc(d.terms.source || "")}</div></div>`).join("")}` : ""}
-      ${forSale.length ? `<h3>Licences they sell you</h3>${forSale.map((r) => `<div class="plan-item"><div class="what">${esc(r.name)} <span class="muted">${money(r.offers.find(([s]) => s === id)[1])}</span></div><button class="btn small" data-lic="${r.tech}">Buy</button></div>`).join("")}` : ""}
-      <h3>Interactions</h3>
-      <div class="interactions">
-        ${interaction("propose_deal", "Offer a deal", "Finance clean energy in their country", { target: id })}
-        ${interaction("open_talks", "Open talks", "Spend influence to raise their trust", { target: id })}
-        ${interaction("set_tariff", "Impose a tariff", "Tax their goods; costs trust", { target: id })}
-        ${interaction("lift_tariff", "Lift your tariff", "Remove a tariff you set", { target: id })}
-      </div>`;
+      ${offers.length ? `<h3>Offers between you</h3>${offers.map((d) => `<div class="plan-item"><div class="what"><b>${d.id}</b> ${nice(d.type)}, ${esc(nice(d.terms.source || ""))}<div class="why muted">${d.can_answer ? "Open talks to answer" : "answer from next quarter"}</div></div></div>`).join("")}` : ""}
+      ${active.length ? `<h3>Active deals</h3>${active.map((d) => `<div class="plan-item"><div class="what"><b>${d.id}</b> ${nice(d.type)} ${esc(nice(d.terms.source || ""))}</div></div>`).join("")}` : ""}
+      <button class="btn primary big talks-btn" id="open-talks">🤝 Open talks</button>`;
     panelShell(head, [], null, body);
-    $("#panel").querySelectorAll("[data-act]").forEach((b) => (b.onclick = () => {
-      const p = JSON.parse(b.dataset.preset);
-      actionWindow(`Toward ${nationName(id)}`, ["propose_deal", "open_talks", "set_tariff", "lift_tariff", "buy_license"], b.dataset.act, p);
-    }));
-    $("#panel").querySelectorAll("[data-deal]").forEach((b) => (b.onclick = () => dealWindow(b.dataset.deal)));
-    $("#panel").querySelectorAll("[data-lic]").forEach((b) => (b.onclick = () => actionWindow("Buy a licence", ["buy_license"], "buy_license", { tech: b.dataset.lic, seller: id })));
+    $("#open-talks").onclick = () => talksWindow(id);
   };
   S.panel = draw;
   draw();

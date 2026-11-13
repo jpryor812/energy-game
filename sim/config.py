@@ -285,6 +285,7 @@ REQUIRED_TUNING = (
     "scoring.weight_prosperity",
     "scoring.collapse_warming",
     "scoring.collapse_warning",
+    "ai.overprice_weight",
     "shocks.disaster_rate",
     "shocks.disaster_threshold",
     "shocks.disaster_gdp_loss",

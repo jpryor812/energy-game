@@ -172,6 +172,13 @@ Each run leaves `notes.md`, `report.md` and `transcript.jsonl` in its folder. `-
 - **Standings and paced orders (web):** a public leaderboard on the right ranks every nation
   with its Impact, GDP and growth; orders open in four waves over the first two years (8 at the
   start), each announced by an advisor, with a switch under Advice to open them all.
+- **Diplomacy screen and trade table (W4 part 1):** clicking a nation offers Open talks, a
+  Civilization-style meeting with its leader: build trust, impose or lift a tariff, propose a
+  trade, or answer their offers. The trade table pairs what you give (panels and turbines,
+  capital, or a plant you run) with what they give (repayments with interest, a share of
+  earnings, or a price for the power); their answer updates as you change the terms, "What would
+  it take?" finds terms they accept, and each side's projected Impact is shown. Planned orders
+  take their capital off the top bar at once.
 - **M16 (fixes from playtest round 3):** tax cuts are mostly borrowed instead of emptying the
   energy budget, the screen shows where capital comes from, amounts a hair over a limit are
   trimmed rather than refused, forest payments wear off and earn less credit, and the playtest

@@ -855,6 +855,29 @@ planning)").
      deals and pledging to events are always open. This paces the interface only: the
      simulation, the AI and the text game allow every order from the start, and Advice can open
      them all at once.
+207. **Planned orders take capital at once in the web interface**: the top bar shows capital
+     left after this quarter's planned orders, including the build cost a proposed deal would
+     need if accepted (it comes back if they refuse); income and GDP are shown per quarter.
+208. **An AI host haggles over price** (W4, `ai.overprice_weight`, decided with the user
+     2026-11-12): accepting a deal costs it utility in proportion to how far the rate, equity
+     share or price is above fair, where fair is what an AI financier would ask (the discount
+     rate plus a premium for low trust, concessional on climate loans; 50% equity) or, for energy
+     as a service, the plant's levelized cost in the host. AI financiers ask exactly fair terms,
+     so the AI-only world is byte-identical; only players' (and the scripted bots') offers above
+     fair are affected.
+209. **The trade table's verdict is a forecast** (sim/negotiation.py): the host AI answers next
+     quarter with the same valuation, on a state that will have moved a little. "What would it
+     take" searches the price term (and halves the size if needed) for the best terms the host
+     would accept. Projected Impact assumes the plant runs to 2049 for the host (real cuts at
+     weight 1) and earns the financier financed credit while the deal lasts; each side's own
+     yearly cut so far is held fixed.
+210. **Diplomacy screen** (web): a nation's panel offers only Open talks, which opens a meeting
+     with an abstract leader (all 16 nations now have one) whose mood follows their trust in you;
+     options are talks, a tariff (or lifting yours), a trade, and answers to their offers. The
+     trade table composes the four existing deal types from what each side gives: panels and
+     turbines for repayments (equipment on credit) or a share of earnings (equity), capital for
+     repayments (climate loan), or a plant you run for a price per unit of power (energy as a
+     service). Collateral (20%), exit penalty (30%) and hard currency are fixed defaults there.
 
 ## Open questions
 

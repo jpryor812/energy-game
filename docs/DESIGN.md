@@ -241,6 +241,15 @@ Prosperous but Doomed, Green but Poor, Shared Failure) were retired with the Wor
 
 ## Diplomacy and deals
 
+**Build note (W4 part 1, decided with the user 2026-11-12).** Diplomacy happens in a meeting
+with the other nation's leader: talks, tariffs and trades are options in that conversation, and
+a trade is a table of what each side gives, with a live answer, a "what would it take" counter
+and each side's projected climate Impact. AI hosts now haggle: terms above a fair price are
+refused or countered. Part 2 (to come): selling panels made in your own factories (for cash,
+interest or a share of earnings) and funding factories abroad with capital or cheap clean power
+for a share of their earnings, riskier the less capital you put in and the less developed the
+host.
+
 Deals are the main way to grow beyond your own borders, and they carry the financial engineering that makes the game different from a pure policy sim. Each deal has terms, and the AI nation accepts or refuses based on its own interests and its trust in you.
 
 **Relationships.** Every pair of countries has a trust score and each side holds some leverage over the other. Trust rises when you honor deals and pledges and falls when you default, overshoot, or break a pact. Blocs (a carbon club, a finance coalition, a mineral pact) are alliances, not mergers: members get cheaper deals and shared tools but give up some freedom.
