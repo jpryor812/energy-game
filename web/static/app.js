@@ -8,6 +8,7 @@ import { LEADERS, leaderPortrait, skyColor, portrait, skyOf } from "./leaders.js
 import { ADVISORS, TIPS } from "./tutorial.js";
 import { ORDERS, FX, SOURCE_ICON, DEAL_ICON, DEAL_LINE } from "./orders.js";
 import { WAVES, isOpen, opensAt } from "./unlocks.js";
+import { STAGES, currentStage, isDone } from "./goals.js";
 
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -109,7 +110,7 @@ async function boot() {
 function setData(data) {
   const fresh = !S.data || S.data.name !== data.name || S.data.screen.turn !== data.screen.turn;
   S.data = data;
-  if (fresh) restorePlan();
+  if (fresh) { restorePlan(); recordPlayed(); }
   for (const id of ["topbar", "outliner", "rail", "endturn", "legend"]) $(`#${id}`).classList.remove("hidden");
   S.map.update(data.world);
   renderAll();
@@ -136,23 +137,36 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private window: tips just repeat */ } },
 };
 const tipsKey = () => `tips:seen:${S.data.name}`;
+const openedKey = () => `menus:opened:${S.data.name}`;
+// Remember a menu or screen the player has opened (tips and goals react to first use).
+function noteOpened(k) {
+  if (!S.data) return;
+  const have = store.get(openedKey(), []);
+  if (have.includes(k)) return;
+  store.set(openedKey(), [...have, k]);
+  runTips(TIP_ON_OPEN[k]);
+  renderOutliner();
+}
 const tipsOff = () => store.get("tips:off", false);
 function tipHelpers() {
   const sc = S.data.screen, inc = sc.resources.income_per_year || {};
   const income = ["budget", "fossil_exports", "carbon", "tariffs", "tax", "tax_credits", "interest"].reduce((a, k) => a + (inc[k] || 0), 0);
   const solar = (sc.energy.costs || {}).solar;
-  return { sc, world: S.data.world, money, whole, pct, nation: nationName(sc.country), income, allOrders: allOrders(), solar1: solar ? solar.unit_cost * (sc.energy.demand || 0) * 0.01 : 0 };
+  return { sc, world: S.data.world, money, whole, pct, nation: nationName(sc.country), income, allOrders: allOrders(), opened: new Set(store.get(openedKey(), [])), solar1: solar ? solar.unit_cost * (sc.energy.demand || 0) * 0.01 : 0 };
 }
 function dueTips() {
   if (!S.data || S.data.screen.over) return [];
   const seen = new Set(store.get(tipsKey(), [])), h = tipHelpers();
   return TIPS.filter((t) => { if (seen.has(t.id)) return false; try { return t.when(h); } catch { return false; } });
 }
-function runTips() {
+// `first`: a tip about what the player just opened goes to the front of the queue.
+function runTips(first = null) {
   if (tipsOff()) return closeTipCard();
   const due = dueTips();
-  if (due.length) showTip(due[0], due.length); else closeTipCard();
+  const pick = due.find((t) => t.id === first) || due[0];
+  if (pick) showTip(pick, due.length); else closeTipCard();
 }
+const TIP_ON_OPEN = { build: "market", policy: "carbon" };
 function markSeen(id) { store.set(tipsKey(), [...new Set([...store.get(tipsKey(), []), id])]); }
 function closeTipCard() { $("#tip").classList.add("hidden"); $("#tip").innerHTML = ""; clearGlow(); }
 function glow(sel) { clearGlow(); const e = $(sel); if (e) e.classList.add("tut-glow"); }
@@ -172,6 +186,7 @@ const SHOW = {
   world: () => actionWindow(MENU.world.title, MENU.world.actions, "finance_region", {}, "world"),
   event: () => actionWindow(MENU.world.title, MENU.world.actions, "pledge_to_event", {}, "world"),
   vote: () => { openRealm("vote"); glow("#world-stats"); },
+  talks: () => toast("Click any nation on the map, then Open talks.", 4500),
   ...Object.fromEntries(WAVES.map((w) => [`orders_${w.turn}`, () => actionWindow(w.title, w.types, null, {}, null)])),
 };
 
@@ -308,10 +323,11 @@ function renderTopbar() {
   const res = [
     ["Capital", money(left), spend > 0 ? `−${money(spend)} planned` : `+${money(total / 4)} / quarter`, capTip],
     ["Political cap.", num(r.political_capital, 0), "", pcTip],
-    ["Influence", num(r.influence, 0), "standing", ttTable("Influence", [["Your standing", pct(standingOf(r.influence))]],
-      "Never needed to trade. The more you have, the more nations offer you deals and the easier they are to persuade. Talks spend it; unused influence fades a little each quarter. Buy it under Treasury.")],
-    ["Domestic", `${(r.slots.domestic ?? 0) - (used.domestic || 0)}/${r.slots.domestic ?? 0}`, "slots left", slotTip("domestic")],
-    ["Diplomatic", `${(r.slots.diplomatic ?? 0) - (used.diplomatic || 0)}/${r.slots.diplomatic ?? 0}`, "slots left", slotTip("diplomatic")],
+    ...(orderOpen("buy_influence") || r.influence >= 0.5 ? [["Influence", num(r.influence, 0), "standing", ttTable("Influence", [["Your standing", pct(standingOf(r.influence))]],
+      "Never needed to trade. The more you have, the more nations offer you deals and the easier they are to persuade. Talks spend it; unused influence fades a little each quarter. Buy it under Treasury.")]] : []),
+    ["Orders left", `${(r.slots.domestic ?? 0) - (used.domestic || 0)} · ${(r.slots.diplomatic ?? 0) - (used.diplomatic || 0)}`, "home · abroad",
+      ttTable("Orders left this quarter", [["At home", `${(r.slots.domestic ?? 0) - (used.domestic || 0)} of ${r.slots.domestic ?? 0}`], ["Abroad", `${(r.slots.diplomatic ?? 0) - (used.diplomatic || 0)} of ${r.slots.diplomatic ?? 0}`]],
+        "3 at home and 2 abroad each quarter; unused ones carry over, up to 6 and 4.")],
   ];
   $("#resources").innerHTML = res.map(([k, v, d, t]) =>
     `<div class="res" ${tip(t)}><div class="k">${k}</div><div class="v">${v}</div><div class="d">${d}</div></div>`).join("");
@@ -336,7 +352,7 @@ function renderTopbar() {
       <div class="d">collapse at ${w.collapse_at} °C</div>
       <div class="bar"><div class="fill ${wy >= w.collapse_warning ? "hot" : ""}" style="width:${warmFrac * 100}%"></div><div class="tick" style="left:${warnFrac * 100}%"></div></div></div>
     <div class="res" ${tip(voteTip)}><div class="k">Next vote</div><div class="v ${vote != null && vote < 0.52 ? "bad" : vote != null && vote < 0.54 ? "warn" : ""}">${vote == null ? "—" : num(vote * 100, 1) + "%"}</div><div class="d">${el.next || "none"}</div></div>
-    <div class="res" ${tip(scoreTip)}><div class="k">Score</div><div class="v">${s ? num(sc.over ? s.score : s.score_if_ended_now, 0) : "—"}</div><div class="d">${s ? `rank ${s.rank} of 16` : ""}</div></div>`;
+    ${!s ? "" : `<div class="res" ${tip(scoreTip)}><div class="k">Score</div><div class="v">${s ? num(sc.over ? s.score : s.score_if_ended_now, 0) : "—"}</div><div class="d">${s ? `rank ${s.rank} of 16` : ""}</div></div>`}`;
   $("#date").textContent = sc.quarter.replace("Q", " · Q");
   $("#turn-of").textContent = `turn ${sc.turn + 1} of ${sc.turns}`;
 }
@@ -422,7 +438,7 @@ function renderOutliner() {
   const inbox = sc.deals.inbox.map((d) => `<div class="plan-item"><div class="what"><b>${d.id}</b> ${nice(d.type)} <span class="muted">${esc(nationName(d.financier))} → ${esc(nationName(d.host))}, ${esc(d.terms.source || "")}</span>${d.can_answer ? "" : `<div class="why muted">answer from next quarter</div>`}</div>${d.can_answer ? `<button class="btn small" data-deal="${d.id}">Answer</button>` : ""}</div>`).join("");
   const evs = sc.events.open.map((e) => `<div class="plan-item"><div class="what"><b>${e.id}</b> ${nice(e.type)} in ${esc(regionName(e.region))}<div class="why muted">${pct(e.pledged / e.target)} of ${money(e.target)} · until ${e.deadline}${e.you_pledged ? ` · you ${money(e.you_pledged)}` : ""}</div></div><button class="btn small" data-ev="${e.id}">Open</button></div>`).join("");
   const notes = (sc.notices || []).filter((n) => !n.startsWith("Score ")).slice(0, 8).map((n) => `<div class="plan-item"><div class="what" style="font-size:12.5px">${esc(n)}</div></div>`).join("");
-  $("#outliner").innerHTML = `
+  $("#outliner").innerHTML = `${goalsSection()}
     <div class="sec-head"><span>This quarter's orders</span><span class="muted" style="font-size:12px">${S.plan.length} planned</span></div>
     <div class="sec-body">${planRows}</div>
     ${standings()}
@@ -433,8 +449,66 @@ function renderOutliner() {
   $("#outliner").querySelectorAll("[data-deal]").forEach((b) => (b.onclick = () => dealWindow(b.dataset.deal)));
   $("#outliner").querySelectorAll("[data-ev]").forEach((b) => (b.onclick = () => eventWindow(sc.events.open.find((e) => e.id === b.dataset.ev))));
   $("#outliner").querySelectorAll("[data-board]").forEach((r) => (r.onclick = () => openNation(r.dataset.board)));
+  $("#outliner").querySelectorAll("[data-gshow]").forEach((b) => (b.onclick = () => (SHOW[b.dataset.gshow] || (() => {}))()));
+  const sug = $("#use-plan");
+  if (sug) sug.onclick = () => { const p = suggestedPlan(); S.plan.push(...p.orders); checkPlan(); toast("The suggested plan is in your orders. Change or remove anything."); };
+  const gf = $("#goals-fold");
+  if (gf) gf.onclick = () => { store.set("goals:folded", !store.get("goals:folded", false)); renderOutliner(); };
   const fold = $("#board-fold");
   if (fold) fold.onclick = () => { S.boardOpen = !boardOpen(); try { localStorage.setItem("board:open", S.boardOpen ? "1" : "0"); } catch { /* storage unavailable */ } renderOutliner(); };
+}
+
+// ---------- first-year goals and a suggested first move (web/static/goals.js) ----------
+
+const playedKey = () => `goals:played:${S.data.name}`;
+const isClean = (src) => ((S.data.world.sources || {})[src] || {}).category !== "fossil";
+function goalState() {
+  return { sc: S.data.screen, played: new Set(store.get(playedKey(), [])), seen: new Set(store.get(openedKey(), [])) };
+}
+// What last quarter's orders did, kept per save so goals stay ticked.
+function recordPlayed() {
+  const res = ((S.data.screen.last_quarter || {}).results || []).filter((r) => r.ok).map((r) => r.action);
+  if (!res.length) return;
+  const kinds = res.flatMap((a) => (a.type === "build_capacity" && isClean(a.source) ? [a.type, "build_capacity:clean"] : [a.type]));
+  const before = store.get(playedKey(), []);
+  const stageBefore = currentStage(goalState());
+  store.set(playedKey(), [...new Set([...before, ...kinds])]);
+  const now = currentStage(goalState());
+  if (stageBefore && (!now || now.index > stageBefore.index)) {
+    toast(now ? `Goals done: ${stageBefore.stage.title}. Next: ${now.stage.title}.` : "Every goal done. The game is yours.", 5000);
+  }
+}
+// The opening plan an advisor would suggest: solar sized to what you can afford, a modest carbon
+// price and half its revenue handed back. A suggestion only; every order can be changed.
+function suggestedPlan() {
+  const sc = S.data.screen, cap = Math.max(0, sc.resources.capital - plannedSpend());
+  const solar = (sc.energy.costs || {}).solar, demand = sc.energy.demand || 0;
+  const pct1 = solar ? solar.unit_cost * demand * 0.01 : Infinity;
+  const size = [2, 1, 0.5].find((p) => p * pct1 <= 0.75 * cap); // keep a quarter in hand
+  const orders = [], parts = [];
+  if (size) { orders.push({ type: "build_capacity", source: "solar", amount: (size / 100) * demand }); parts.push(`solar for ${size}% of your energy (${money(size * pct1)})`); }
+  const level = Math.max(10, Math.round((sc.energy.carbon_price || 0) + 10));
+  orders.push({ type: "set_carbon_price", level }, { type: "rebate", share: 0.5 });
+  parts.push(`a $${level} carbon price`, "half its revenue back to households");
+  return { orders, text: parts.join(", ") };
+}
+function goalsSection() {
+  const g = goalState(), cur = currentStage(g);
+  if (!cur) return "";
+  const folded = store.get("goals:folded", false);
+  const plannedAs = (goal) => goal.planned && S.plan.some((a) => goal.planned(a.type === "build_capacity" ? { ...a, clean: isClean(a.source) } : a));
+  const next = cur.stage.goals.find((x) => !isDone(x, g));
+  const rows = cur.stage.goals.map((x) => {
+    const done = isDone(x, g), planned = !done && plannedAs(x);
+    const state = done ? "done" : planned ? "planned" : x === next ? "next" : "";
+    return `<div class="goal ${state}"><span class="gbox">${done ? "✓" : planned ? "◐" : "○"}</span>
+      <div class="gtext"><b>${esc(x.t)}</b>${planned ? `<div class="why">In your orders: it happens when you end the quarter.</div>` : x === next && !done ? `<div class="why">${esc(x.why)}</div>` : ""}</div>
+      ${!done && !planned ? `<button class="link-btn" data-gshow="${x.show}">Show me</button>` : ""}</div>`;
+  }).join("");
+  const offer = cur.index === 0 && S.data.screen.turn === 0 && !S.plan.length
+    ? `<div class="suggest"><b>Not sure where to start?</b> Your advisors suggest ${esc(suggestedPlan().text)}.<button class="btn small primary" id="use-plan">Use this plan</button></div>` : "";
+  return `<div class="sec-head"><span>Goals · ${esc(cur.stage.title)}</span><span class="muted" style="font-size:12px">${cur.done} of ${cur.stage.goals.length} · <button class="link-btn" id="goals-fold">${folded ? "show" : "hide"}</button></span></div>
+    ${folded ? "" : `<div class="sec-body goals">${rows}${offer}</div>`}`;
 }
 
 // The public standings: every nation's rank, Impact (its climate contribution for its size) and
@@ -445,7 +519,7 @@ function boardOpen() {
 }
 function standings() {
   const sc = S.data.screen, nations = S.data.world.nations;
-  if (!sc.leaders.length) return `<div class="sec-head"><span>Standings</span></div><div class="sec-body muted" style="font-size:12.5px">Ranks appear after your first quarter.</div>`;
+  if (!sc.leaders.length) return ""; // ranks appear after the first quarter
   const open = boardOpen();
   const rows = sc.leaders.filter((l, i) => open || i < 3 || l.nation === sc.country).map((l) => {
     const n = nations[l.nation] || {}, me = l.nation === sc.country;
@@ -494,6 +568,9 @@ function addToPlan(act) {
 // ---------- map modes, menu, end turn ----------
 
 function renderModes() {
+  const first = S.data && S.data.screen.turn === 0; // a quieter first quarter: map modes come next
+  $("#mapmodes").classList.toggle("hidden", first);
+  document.querySelectorAll(".rail-sep").forEach((e) => e.classList.toggle("hidden", first));
   $("#mapmodes").innerHTML = Object.entries(MODES).map(([k, m]) =>
     `<button class="mode ${S.map.mode === k ? "active" : ""}" data-mode="${k}" ${tip(ttTable(m.name, [], m.tip))}>${m.icon}</button>`).join("");
   $("#mapmodes").querySelectorAll(".mode").forEach((b) => (b.onclick = () => { S.map.setMode(b.dataset.mode); renderModes(); }));
@@ -772,6 +849,7 @@ function newGameWindow() {
 // ---------- action windows ----------
 
 function openMenu(key) {
+  noteOpened(key);
   if (key === "ledger") return ledgerWindow();
   if (key === "advice") return adviceWindow();
   if (key === "research") return researchWindow();
@@ -1715,6 +1793,7 @@ function openRealm(tab = "overview") {
     const head = `${crest(me, true)}<div class="titles"><h2>${esc(nationName(me))}</h2><div class="sub">Your government · ${sc.quarter}</div></div>`;
     const tabs = [["overview", "Realm"], ["vote", "Elections"], ["energy", "Energy"], ["research", "Research"]];
     panelShell(head, tabs, current, realmTab(current));
+    if (current === "vote") setTimeout(() => noteOpened("vote")); // the "check your vote" goal
     $("#panel").querySelectorAll(".tab").forEach((b) => (b.onclick = () => { current = b.dataset.tab; draw(); }));
     $("#panel").querySelectorAll("[data-research]").forEach((b) => (b.onclick = () => researchWindow()));
   };

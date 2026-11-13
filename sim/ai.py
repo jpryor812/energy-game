@@ -553,6 +553,24 @@ def _value_deal_as_host(cfg, world, nid, deal, personality, ctx, w_em, income) -
     return value - bar
 
 
+def player_open_to_offers(cfg: Config, world: World) -> bool:
+    """Whether AI financiers may offer the player another deal now (onboarding, decided with the
+    user 2026-11-12): none in the first `ai.player_offer_grace` quarters; then at most one offer
+    waiting in the player's inbox during the first `ai.player_quiet_quarters`, and at most
+    `ai.player_max_offers` after that."""
+    if world.player is None:
+        return True
+    if world.t < _ai(cfg, "player_offer_grace"):
+        return False
+    waiting = sum(
+        1 for d in world.deals.values()
+        if d.status == deals.OPEN and d.host == world.player
+        and d.terms.get("proposer") != world.player
+    )  # fmt: skip
+    quiet = world.t < _ai(cfg, "player_quiet_quarters")
+    return waiting < (1 if quiet else _ai(cfg, "player_max_offers"))
+
+
 def _deal_offer(cfg, world, nid, personality, w_em, income) -> tuple[float, Action] | None:
     """One deal this AI would offer as financier this quarter, if any."""
     n = world.nations[nid]
@@ -575,6 +593,8 @@ def _deal_offer(cfg, world, nid, personality, w_em, income) -> tuple[float, Acti
     hosts = []
     for hid in ids:
         if hid == nid or hid in busy or deals.host_room(cfg, world, hid) <= 0:
+            continue
+        if hid == world.player and not player_open_to_offers(cfg, world):
             continue
         need = intensity[hid] / avg_i + _ai(cfg, "host_growth_weight") * growth[hid] / avg_g
         if need > 0:  # W4: a host's influence draws offers its way

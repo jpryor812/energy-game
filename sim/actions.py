@@ -447,6 +447,11 @@ def _deal_terms(cfg, act) -> dict:
 
 def _propose_check(cfg, world, n, act):
     _target(world, n, act)
+    if act["target"] == world.player and n.id != world.player:
+        from sim import ai  # the onboarding limit on offers to the player (sim.ai)
+
+        if not ai.player_open_to_offers(cfg, world):
+            raise Rejected("the player's inbox is full for now")
     terms = _deal_terms(cfg, act)
     draft = deals.Deal("draft", act["deal_type"], n.id, act["target"], terms, deals.OPEN, world.t)
     if act["deal_type"] == "factory_partnership":

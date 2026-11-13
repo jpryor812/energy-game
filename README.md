@@ -186,6 +186,10 @@ Each run leaves `notes.md`, `report.md` and `transcript.jsonl` in its folder. `-
   host.
 - **Influence as standing:** trades never need influence; holding it draws more deal offers your
   way and makes nations easier to persuade, and unused influence slowly fades.
+- **A gentler opening:** first-year goals in three stages instead of a run of tips, a suggested
+  first move added with one click, a quieter first-quarter screen, tips that appear when a menu
+  is first opened, and no deal offers in the first two quarters (then one at a time, at most
+  three waiting).
 - **M16 (fixes from playtest round 3):** tax cuts are mostly borrowed instead of emptying the
   energy budget, the screen shows where capital comes from, amounts a hair over a limit are
   trimmed rather than refused, forest payments wear off and earn less credit, and the playtest

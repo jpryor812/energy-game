@@ -40,7 +40,7 @@ export const TIPS = [
     body: (h) => `You lead <b>${h.nation}</b> from 2025 to 2049. Each turn is one quarter, 100 in all.
       Warming is <b>${h.sc.world.warming.toFixed(2)} °C</b> now. If it reaches <b>${h.sc.world.collapse_at} °C</b>, the game
       ends and every nation loses. Keep the world below it and the world wins; then the nation that did
-      the <b>most to cut emissions</b>, for its size, is Champion.`,
+      the <b>most to cut emissions</b>, for its size, is Champion. Your <b>goals</b> on the right show where to start.`,
     ask: [
       ["How is the score worked out?", "Mostly impact (three quarters): the CO2 you cut at home, or helped cut abroad, as a share of your own 2025 emissions. The rest is prosperity: growth, reliable energy, approval, prices and clean-tech industry against your own start. Harder countries get a multiplier."],
       ["How can I lose?", "Three ways, each ending the game with a score of 0: warming reaching 2 °C (averaged over a year), losing an election (every four years, the first in 2028 Q4), or your government falling when stability drops too low after blackouts and low approval."],
@@ -48,7 +48,7 @@ export const TIPS = [
     ],
   },
   {
-    id: "resources", who: "treasury", when: () => true, show: "resources",
+    id: "resources", who: "treasury", when: (h) => h.sc.turn >= 1, show: "resources",
     title: "What you have to spend",
     body: (h) => `Your resources run along the top. <b>💰 Capital</b> is ${h.money(h.sc.resources.capital)}, earning about
       ${h.money(h.income / 4)} a quarter: it pays for building, research and deals. An order you plan
@@ -62,7 +62,7 @@ export const TIPS = [
     ],
   },
   {
-    id: "market", who: "energy", when: () => true, show: "build",
+    id: "market", who: "energy", when: (h) => h.opened.has("build"), show: "build",
     title: "The market builds; you steer",
     body: (h) => `Private investors already build power every quarter to keep up with demand, choosing the cheapest
       source. Today <b>${h.pct(h.sc.energy.clean_share)}</b> of your supply is clean. Your own builds come on top.
@@ -75,7 +75,7 @@ export const TIPS = [
     ],
   },
   {
-    id: "carbon", who: "climate", when: () => true, show: "carbon",
+    id: "carbon", who: "climate", when: (h) => h.opened.has("policy"), show: "carbon",
     title: "Steer the market with a carbon price",
     body: (h) => `A carbon price makes fossil plants dearer, so the market builds clean ones, and it raises revenue.
       It also raises energy prices, which voters feel, and raising it costs political capital (1 for every $10).
@@ -87,7 +87,7 @@ export const TIPS = [
     ],
   },
   {
-    id: "endturn", who: "chief", when: () => true, show: "endturn",
+    id: "endturn", who: "chief", when: () => false, show: "endturn", // the first-year goals cover it
     title: "End the quarter",
     body: () => `Your orders wait in <b>This quarter's orders</b> on the right, and each is checked as you add it.
       When you are ready, press <b>End quarter</b>. Your orders happen in the listed order, then the world moves:

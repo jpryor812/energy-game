@@ -18,7 +18,7 @@ Seeds: [1, 2, 3, 4, 5, 6]. World difficulty: normal unless stated. 216 main runs
 
 ## 1. Determinism: PASS
 
-India, balanced, seed 1, run twice: `ae94dcb8ec591311` / `ae94dcb8ec591311`.
+India, balanced, seed 1, run twice: `66170464a9cd694f` / `66170464a9cd694f`.
 Byte-identical across machines is not tested here: the simulation uses only plain Python floats and SHA-256-seeded streams, so it should hold.
 
 ## 2. No dominant bot: PASS
@@ -29,10 +29,10 @@ Expected score by nation and bot (mean over seeds; a lost game scores 0):
 |---|---|---|---|---|---|---|---|
 | CHN | 91.3 | 0.0 | 48.2 | 90.9 | 92.7 | 0.0 | deal_maker |
 | EUU | 69.9 | 103.8 | 50.0 | 103.9 | 104.6 | 0.0 | deal_maker |
-| IND | 78.8 | 17.5 | 25.5 | 70.1 | 73.3 | 0.0 | deal_maker |
+| IND | 76.9 | 17.6 | 25.5 | 69.8 | 75.2 | 0.0 | deal_maker |
 | RUS | 0.0 | 93.5 | 17.7 | 74.3 | 75.4 | 0.0 | all_clean |
 | USA | 74.2 | 90.1 | 29.5 | 89.6 | 89.5 | 0.0 | all_clean |
-| VNM | 65.0 | 49.5 | 17.5 | 54.3 | 59.8 | 0.0 | deal_maker |
+| VNM | 65.1 | 49.3 | 17.5 | 54.0 | 61.8 | 0.0 | deal_maker |
 
 Games completed / mean score of completed games:
 
@@ -40,17 +40,17 @@ Games completed / mean score of completed games:
 |---|---|---|---|---|---|---|
 | CHN | 100% / 91.3 | 0% / - | 100% / 48.2 | 100% / 90.9 | 100% / 92.7 | 0% / - |
 | EUU | 67% / 104.8 | 100% / 103.8 | 100% / 50.0 | 100% / 103.9 | 100% / 104.6 | 0% / - |
-| IND | 83% / 94.5 | 17% / 105.2 | 83% / 30.6 | 83% / 84.1 | 83% / 88.0 | 0% / - |
+| IND | 83% / 92.3 | 17% / 105.5 | 83% / 30.6 | 83% / 83.8 | 83% / 90.3 | 0% / - |
 | RUS | 0% / - | 83% / 112.2 | 67% / 26.5 | 67% / 111.5 | 67% / 113.1 | 0% / - |
 | USA | 83% / 89.1 | 100% / 90.1 | 100% / 29.5 | 100% / 89.6 | 100% / 89.5 | 0% / - |
-| VNM | 67% / 97.4 | 50% / 99.0 | 83% / 21.1 | 83% / 65.2 | 83% / 71.8 | 0% / - |
+| VNM | 67% / 97.7 | 50% / 98.6 | 83% / 21.0 | 83% / 64.8 | 83% / 74.1 | 0% / - |
 
 
 ## 3. Viable strategies: TUNE
 
 - CHN: within 5% of best: balanced, deal_maker
 - EUU: within 5% of best: all_clean, balanced, deal_maker
-- IND: within 5% of best: balanced, deal_maker
+- IND: within 5% of best: deal_maker
 - RUS: within 5% of best: all_clean
 - USA: within 5% of best: all_clean, balanced, deal_maker
 - VNM: within 5% of best: deal_maker
@@ -61,8 +61,8 @@ Games completed / mean score of completed games:
 |---|---|---|---|
 | all_clean | 88.6 | 79.5 | ok |
 | all_fossil | 33.5 | 13.2 | ok |
-| balanced | 95.2 | 70.3 | ok |
-| deal_maker | 96.2 | 73.8 | ok |
+| balanced | 95.2 | 70.4 | ok |
+| deal_maker | 96.3 | 75.4 | ok |
 
 Final scores multiply Impact and Prosperity by country difficulty, so by design they reward harder nations' cuts; see the table under criterion 2. Lost games count here.
 
@@ -98,8 +98,8 @@ Balanced bot, seed 1, each playable nation.
 
 | Difficulty | Expected score | Completed | Mean warming at end | Disasters per run | Disruptions per run |
 |---|---|---|---|---|---|
-| easy | 89.4 | 100% | 1.68 | 20.2 | 11.5 |
-| normal | 72.7 | 83% | 1.66 | 109.2 | 27.2 |
+| easy | 89.4 | 100% | 1.68 | 20.2 | 11.3 |
+| normal | 72.6 | 83% | 1.66 | 109.2 | 26.8 |
 | hard | 46.9 | 50% | 1.64 | 190.7 | 32.3 |
 
 ## Other signals
@@ -107,4 +107,4 @@ Balanced bot, seed 1, each playable nation.
 - Climate Collapse (warming reached 2 degC), by bot: ai 0, all_clean 0, all_fossil 0, balanced 0, deal_maker 0, reckless 0; mean peak warming, by bot: ai 1.64, all_clean 1.61, all_fossil 1.71, balanced 1.67, deal_maker 1.67, reckless 1.47
 - Elections lost per run, by bot: ai 0.3, all_clean 0.4, all_fossil 0.1, balanced 0.1, deal_maker 0.1, reckless 1.0
 - Endings, by bot: ai: Shared Victory 24, Voted Out 12; all_clean: Shared Victory 21, Voted Out 15; all_fossil: Shared Victory 32, Voted Out 4; balanced: Shared Victory 32, Voted Out 4; deal_maker: Shared Victory 32, Voted Out 4; reckless: Voted Out 36
-- Rejected player actions across all runs: 505.
+- Rejected player actions across all runs: 511.

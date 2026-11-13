@@ -691,3 +691,17 @@ span.dip-verdict { font-weight: 600; font-size: 13px; }
 @media (max-width: 860px) {
   .trade-cols { grid-template-columns: 1fr; }
 }
+
+/* First-year goals (web/static/goals.js) */
+#outliner .goals { padding: 4px 10px 8px; max-height: none; }
+.goal { display: flex; gap: 8px; align-items: flex-start; padding: 5px 2px; font-size: 13px; border-bottom: 1px solid var(--panel-3); }
+.goal .gbox { width: 18px; text-align: center; color: var(--muted); flex: none; }
+.goal.done .gbox { color: var(--good); font-weight: 700; }
+.goal.done b { color: var(--muted); text-decoration: line-through; font-weight: 500; }
+.goal.planned .gbox { color: #e8a400; }
+.goal.next b { color: var(--text); }
+.goal .gtext { flex: 1; }
+.goal .why { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.suggest { margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: #f0fbf4; border: 1px solid #bfe8cc;
+  font-size: 12.5px; line-height: 1.4; display: flex; flex-direction: column; gap: 6px; }
+.suggest .btn { align-self: flex-start; }

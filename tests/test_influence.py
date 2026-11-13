@@ -70,3 +70,41 @@ def test_influence_draws_ai_offers(cfg):
     w.nations["AAA"].influence = 0.0
     _, act0 = ai._deal_offer(acfg, w, "BBB", personality, w_em, income)
     assert act0["target"] == "AAA"  # the only other nation; influence only changes the rank
+
+
+# --- onboarding: fewer early offers to the player ---------------------------------------------
+
+
+def _offer_to(world, financier):
+    from sim import deals
+
+    deals.propose(world, financier, world.player, "equipment_on_credit", {"amount": 0.01})
+
+
+def test_no_offers_to_the_player_at_first_then_one_at_a_time(cfg):
+    w = new_world(cfg, seed=1)
+    w.player = "AAA"
+    w.t = 0
+    assert not ai.player_open_to_offers(cfg, w)
+    w.t = int(cfg.tune("ai.player_offer_grace"))
+    assert ai.player_open_to_offers(cfg, w)
+    _offer_to(w, "BBB")
+    assert not ai.player_open_to_offers(cfg, w)  # one waiting is enough in the first year
+    w.t = int(cfg.tune("ai.player_quiet_quarters"))
+    assert ai.player_open_to_offers(cfg, w)  # later, up to ai.player_max_offers
+
+
+def test_an_ai_offer_to_a_full_inbox_is_turned_away(cfg):
+    w = new_world(cfg, seed=1)
+    w.player = "AAA"
+    w.t = 0
+    bbb = w.nations["BBB"]
+    bbb.capital, bbb.slots_banked = 5.0, {"domestic": 3, "diplomatic": 2}
+    offer = OFFER | {"target": "AAA", "rate": 0.08}
+    [r] = actions.resolve(cfg, w, "BBB", [offer])
+    assert not r["ok"] and "inbox" in r["reason"]
+
+
+def test_the_ai_world_has_no_player_limit(cfg):
+    w = new_world(cfg, seed=1)
+    assert w.player is None and ai.player_open_to_offers(cfg, w)

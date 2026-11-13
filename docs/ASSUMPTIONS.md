@@ -912,6 +912,25 @@ planning)").
      up to `ai.influence_accept_weight` utility (about a 17% tolerance on price). Unused
      influence fades `diplomacy.influence_fade` (5%) a quarter. AI nations hold no influence, so
      the AI-only world is unchanged; it affects players and the scripted deal-maker bot.
+216. **The opening is goals, not a lecture** (onboarding, decided with the user 2026-11-12, after
+     research on strategy-game onboarding: choice overload past about seven options hurts
+     newcomers most; objectives that say why beat explaining the interface; help should appear
+     when a thing is first met). Web only (web/static/goals.js): three stages of three goals
+     (first year: build clean power, price carbon, end the quarter; settle in: propose a trade,
+     fund research, check the vote; lead abroad: finance a region, join the carbon club, reach
+     Impact 55), ticked from what the player actually did. The five first-quarter tips became
+     one welcome; the market and carbon tips appear when Build or Policy is first opened, the
+     resources tip after the first quarter.
+217. **A suggested first move**: in the first quarter the goals offer an advisor's plan, solar
+     sized to fit three quarters of capital (2, 1 or ½% of energy), a carbon price $10 above the
+     current one and half its revenue back as a rebate, added with one click and fully editable.
+218. **A quieter first quarter**: influence shows once it can be bought or is held, the two order
+     counts are one box, and standings, the score and map modes appear from the second quarter.
+219. **Fewer offers to the player** (sim, `ai.player_offer_grace`, `player_quiet_quarters`,
+     `player_max_offers`): no AI offers the player a deal in its first two quarters, at most one
+     waits in its inbox during the first year, and at most three after (India once had ten
+     waiting). Enforced when the offer is placed, so several AIs deciding in one quarter cannot
+     all get through. AI-only worlds have no player and are unchanged.
 
 ## Open questions
 

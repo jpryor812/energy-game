@@ -95,6 +95,9 @@ shared fund with `pledge_to_event`; if the fund reaches its target by the deadli
 outcome is avoided and contributors gain trust and climate credit, and if not, every pledge is
 refunded. Other nations rarely fill a fund on their own.
 
+**Offers to you.** No nation offers you a deal in your first two quarters; during the first year
+at most one offer waits at a time, and after that at most three.
+
 **Influence.** Bought with capital. Talks spend it (5 each). While you hold it, it is your
 standing: more nations offer you deals and they accept terms a little steeper. It is never needed
 to propose a deal, and unused influence fades about 5% a quarter.
