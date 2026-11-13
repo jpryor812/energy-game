@@ -39,8 +39,12 @@ def test_read_file_is_limited(save):
     assert player.read_file("sim/scoring.py").startswith("error")
     first = hunter.read_file("sim/ai.py")  # longer than one read
     assert "continues: read again with offset" in first
-    offset = int(first.rsplit("offset ", 1)[1].rstrip("]"))
-    assert "def decide" in first + hunter.read_file("sim/ai.py", offset)
+    text, chunk = first, first
+    while "continues: read again with offset" in chunk:  # page through the whole file
+        offset = int(chunk.rsplit("offset ", 1)[1].rstrip("]"))
+        chunk = hunter.read_file("sim/ai.py", offset)
+        text += chunk
+    assert "def decide" in text
     for path in (".env", "../etc/passwd", "README.md"):
         assert hunter.read_file(path).startswith("error")
 

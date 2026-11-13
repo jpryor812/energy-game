@@ -95,6 +95,10 @@ shared fund with `pledge_to_event`; if the fund reaches its target by the deadli
 outcome is avoided and contributors gain trust and climate credit, and if not, every pledge is
 refunded. Other nations rarely fill a fund on their own.
 
+**Influence.** Bought with capital. Talks spend it (5 each). While you hold it, it is your
+standing: more nations offer you deals and they accept terms a little steeper. It is never needed
+to propose a deal, and unused influence fades about 5% a quarter.
+
 **Deals.** You can offer other nations clean-energy deals (loans, equipment on credit, energy as
 a service, equity) and answer offers in your inbox. Deals cut emissions abroad, earn returns and
 build trust; equity can be lost if the host becomes unreliable. A nation can host deal capacity

@@ -546,6 +546,8 @@ def _value_deal_as_host(cfg, world, nid, deal, personality, ctx, w_em, income) -
     bar = -_p(cfg, personality, "w_deals") * _p(cfg, personality, "deal_affinity")
     bar -= _ai(cfg, "trust_weight") * (diplomacy.trust(world, nid, deal.financier) - 0.5)
     bar += _ai(cfg, "overprice_weight") * overprice(cfg, world, deal)  # W4: haggling
+    standing = diplomacy.standing(cfg, world.nations[deal.financier])
+    bar -= _ai(cfg, "influence_accept_weight") * standing  # W4: influence eases the answer
     if deal.terms["currency"] == "hard" and not cfg.nat_spec(nid)["hard_currency_issuer"]:
         bar += _ai(cfg, "currency_risk_weight") * payment / max(n.fx_reserves, 1e-9)
     return value - bar
@@ -575,8 +577,11 @@ def _deal_offer(cfg, world, nid, personality, w_em, income) -> tuple[float, Acti
         if hid == nid or hid in busy or deals.host_room(cfg, world, hid) <= 0:
             continue
         need = intensity[hid] / avg_i + _ai(cfg, "host_growth_weight") * growth[hid] / avg_g
-        if need > 0:
-            hosts.append((diplomacy.trust(world, nid, hid) * need, hid))
+        if need > 0:  # W4: a host's influence draws offers its way
+            pull = 1 + _ai(cfg, "influence_offer_weight") * diplomacy.standing(
+                cfg, world.nations[hid]
+            )
+            hosts.append((diplomacy.trust(world, nid, hid) * need * pull, hid))
     if not hosts:
         return None
     _, hid = max(hosts)

@@ -130,7 +130,9 @@ def catalogue(cfg: Config) -> dict[str, dict[str, Any]]:
             "example": {"type": "invest_efficiency", "amount": 0.1},
         },
         "buy_influence": {
-            "summary": "Convert capital into influence (spent on talks).",
+            "summary": "Convert capital into influence: spent on talks, and while held it draws "
+            "more deal offers your way and makes nations easier to persuade (never needed to "
+            "trade); unused influence fades a little each quarter.",
             "params": {"amount": "T$, > 0"},
             "cost": "capital: amount",
             "example": {"type": "buy_influence", "amount": 0.02},

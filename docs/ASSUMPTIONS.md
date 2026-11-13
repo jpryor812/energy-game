@@ -905,6 +905,13 @@ planning)").
      nations' Impact (a $10 bn-a-year solar line projects about +12 Impact for Japan and +50 for
      Nigeria, whose 2025 emissions are small), as the existing build-factory order already does
      (an AI Nigeria ends near Impact 100 either way). Flagged for tuning.
+215. **Influence is standing, never a gate** (decided with the user 2026-11-12): standing =
+     influence / (influence + `diplomacy.influence_half`, 20). When an AI financier ranks hosts
+     for its yearly offer, a host's standing multiplies its rank by up to 1 +
+     `ai.influence_offer_weight`; when an AI host weighs an offer, the financier's standing adds
+     up to `ai.influence_accept_weight` utility (about a 17% tolerance on price). Unused
+     influence fades `diplomacy.influence_fade` (5%) a quarter. AI nations hold no influence, so
+     the AI-only world is unchanged; it affects players and the scripted deal-maker bot.
 
 ## Open questions
 

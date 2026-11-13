@@ -184,6 +184,8 @@ Each run leaves `notes.md`, `report.md` and `transcript.jsonl` in its folder. `-
   cash at a negotiated markup, or fund a clean-tech factory in another country with capital and
   cheap clean power for a share of its earnings, riskier the less you fund and the poorer the
   host.
+- **Influence as standing:** trades never need influence; holding it draws more deal offers your
+  way and makes nations easier to persuade, and unused influence slowly fades.
 - **M16 (fixes from playtest round 3):** tax cuts are mostly borrowed instead of emptying the
   energy budget, the screen shows where capital comes from, amounts a hair over a limit are
   trimmed rather than refused, forest payments wear off and earn less credit, and the playtest

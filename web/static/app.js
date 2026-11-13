@@ -269,6 +269,12 @@ function renderAll() {
 
 // Capital the planned orders will spend (each order's checked cost), so the top bar shows what is
 // left the moment an order is added, and gives it back when the order is removed.
+// Standing from influence (sim/diplomacy.py): influence / (influence + the half point).
+function standingOf(infl) {
+  const half = (S.meta.influence_half || 20);
+  return infl > 0 ? infl / (infl + half) : 0;
+}
+
 function plannedSpend() {
   return S.plan.reduce((a, _, i) => { const c = S.checks[i]; return a + (c && c.ok ? ((c.cost && c.cost.capital) || 0) + (c.reserve || 0) : 0); }, 0);
 }
@@ -302,7 +308,8 @@ function renderTopbar() {
   const res = [
     ["Capital", money(left), spend > 0 ? `−${money(spend)} planned` : `+${money(total / 4)} / quarter`, capTip],
     ["Political cap.", num(r.political_capital, 0), "", pcTip],
-    ["Influence", num(r.influence, 0), "for talks", ttTable("Influence", [], "Bought with capital; spent on diplomatic talks.")],
+    ["Influence", num(r.influence, 0), "standing", ttTable("Influence", [["Your standing", pct(standingOf(r.influence))]],
+      "Never needed to trade. The more you have, the more nations offer you deals and the easier they are to persuade. Talks spend it; unused influence fades a little each quarter. Buy it under Treasury.")],
     ["Domestic", `${(r.slots.domestic ?? 0) - (used.domestic || 0)}/${r.slots.domestic ?? 0}`, "slots left", slotTip("domestic")],
     ["Diplomatic", `${(r.slots.diplomatic ?? 0) - (used.diplomatic || 0)}/${r.slots.diplomatic ?? 0}`, "slots left", slotTip("diplomatic")],
   ];
@@ -1273,6 +1280,7 @@ function talksWindow(id, view = "talk", opt = {}) {
           <div><span>Their tariff on you</span><b>${pct(v.their_tariff)}</b></div>
           <div><span>Carbon club</span><b>${v.club ? "member" : "outside"}</b></div>
           <div><span>Rank</span><b>${v.rank ? `${v.rank} of 16` : "-"}</b></div>
+          <div title="From your influence: more offers come your way and answers come easier"><span>Your standing</span><b>${whole(standingOf(sc.resources.influence) * 100)}</b></div>
         </div>
       </div>
       <div class="dip-right" id="dip-right"></div></div>`,

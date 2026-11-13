@@ -112,6 +112,7 @@ def technology(world: World, cfg: Config, ctx: TurnContext) -> None:
 def diplomacy(world: World, cfg: Config, ctx: TurnContext) -> None:
     """Trust drifts back toward neutral, deals pay and earn credit, the credit market clears."""
     diplo.revert_trust(world, cfg, ctx.dt)
+    diplo.fade_influence(world, cfg, ctx.dt)
     ctx.logs["club_left"] = diplo.enforce_club(cfg, world)
     deals.service(cfg, world, ctx.dt)
     issued = credits.issue(cfg, world, ctx.dt)

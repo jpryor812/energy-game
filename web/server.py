@@ -102,6 +102,7 @@ class Server:
             "profiles": self.profiles(),
             "profile_order": list(self.profiles()),  # JSON keys are sorted, so the order goes here
             "catalogue": catalogue(cfg),
+            "influence_half": cfg.tune("diplomacy.influence_half"),
             "saves": self.list_saves(),
             "current": self.name,
         }

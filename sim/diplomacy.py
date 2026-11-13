@@ -59,6 +59,23 @@ def adjust_all(world: World, b: str, delta: float) -> None:
         adjust(world, a, b, delta)
 
 
+# --- influence as standing (W4, decided with the user 2026-11-12) ---------------------------------
+
+
+def standing(cfg: Config, n) -> float:
+    """How far a nation's influence carries, 0 to 1: influence / (influence + the half point).
+    It never gates a deal; it draws more offers and eases answers (sim.ai)."""
+    half = _d(cfg, "influence_half")
+    return n.influence / (n.influence + half) if n.influence > 0 else 0.0
+
+
+def fade_influence(world: World, cfg: Config, dt: int) -> None:
+    """Unused influence fades, so it reads as standing rather than a stockpile."""
+    keep = (1 - _d(cfg, "influence_fade")) ** dt
+    for n in world.nations.values():
+        n.influence *= keep
+
+
 def revert_trust(world: World, cfg: Config, dt: int) -> None:
     start = _d(cfg, "trust_start")
     pull = 1 - (1 - _d(cfg, "trust_reversion")) ** (dt / 4)

@@ -58,7 +58,7 @@ export const TIPS = [
       unused ones carry over, up to 6 and 4.`,
     ask: [
       ["Where does capital come from?", "Mostly an energy budget of 2% of GDP a year, plus fuel exports and carbon revenue, less tax cuts, tax credits and interest. Hover Capital in the top bar for the breakdown."],
-      ["What is influence?", "A third resource, bought with capital and spent on diplomatic talks."],
+      ["What is influence?", "Your standing abroad, bought with capital. You never need it to trade, but the more you hold, the more nations offer you deals and the easier they are to persuade. Talks spend it, and unused influence fades slowly."],
     ],
   },
   {
@@ -121,7 +121,7 @@ export const TIPS = [
     id: "diplomacy", who: "foreign", when: (h) => h.sc.turn >= 3, show: "diplomacy",
     title: "Trust opens doors",
     body: () => `Trust decides who deals with you. <b>Talks</b> raise a nation's trust (5 influence; buy influence
-      under Treasury). <b>Deals</b> build clean power abroad, earn returns and climate credit. The <b>carbon
+      under Treasury). Influence you hold also draws offers your way and makes nations easier to persuade. <b>Deals</b> build clean power abroad, earn returns and climate credit. The <b>carbon
       club</b> (a carbon price of $25/t or more) gives cheaper deal finance and lets members tariff laggards.`,
   },
   unlockTip(4),

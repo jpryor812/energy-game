@@ -38,7 +38,7 @@ export const ORDERS = {
   adaptation_spend: { icon: "🛡", line: "Protect against climate damage.", gives: ["safety"] },
   methane_abatement: { icon: "💨", line: "Plug methane leaks.", gives: ["warming"] },
   invest_research: { icon: "🔬", line: "Make an existing source cheaper for you.", gives: ["tech", "growth"] },
-  buy_influence: { icon: "🎖", line: "Turn capital into influence for talks.", gives: ["influence"] },
+  buy_influence: { icon: "🎖", line: "Turn capital into influence: more offers, easier talks.", gives: ["influence"] },
   // research
   fund_research: { icon: "⚗", line: "Fund a technology on the tree.", gives: ["tech"] },
   buy_license: { icon: "📄", line: "Buy a finished technology from another nation.", gives: ["tech"] },

@@ -734,6 +734,8 @@ ai:
   removal_energy_cap: {value: 0.25, status: placeholder, note: "An AI keeps carbon removal's energy use below this share of its economy's energy demand."}
   host_growth_weight: {value: 1.0, status: placeholder, note: "M8 - when choosing whom to offer a deal, an AI financier ranks hosts by trust x (emissions intensity relative to the 16-nation average + this x baseline growth relative to the average), so fast-growing clean nations still get offers."}
   equity_share_offer: {value: 0.5, status: placeholder, note: "Share of a plant's operating margin an AI equity investor asks for."}
+  influence_offer_weight: {value: 1.0, status: placeholder, note: "W4 (2026-11-12) - when an AI picks whom to offer a deal, a host's standing raises its rank by up to this share (x2 at full standing). Influence never gates a deal."}
+  influence_accept_weight: {value: 0.5, status: placeholder, note: "W4 - utility an AI host adds to an offer from a financier at full standing (about a 17% tolerance on price at overprice_weight 3)."}
   overprice_weight: {value: 3.0, status: placeholder, note: "W4 (2026-11-12) - utility an AI host loses per 100% that a deal's rate, equity share or price is above fair (what an AI financier would ask, or the plant's levelized cost for energy as a service), so terms can be haggled over. AI financiers ask exactly fair terms, so deals between AIs are unchanged."}
   climate_loan_discount: {value: 0.02, status: placeholder, note: "Interest a green-leader climate loan takes off the commercial rate (concessional)."}
 
@@ -750,6 +752,8 @@ trade:
 diplomacy:
   trust_start: {value: 0.5, status: placeholder, note: "Every pair starts neutral: a clean slate (decided 2026-11-08)."}
   trust_reversion: {value: 0.05, status: placeholder, note: "Share of the gap to neutral closed per year."}
+  influence_half: {value: 20.0, status: placeholder, note: "W4 (2026-11-12) - influence at which a nation's standing is half its most (standing = influence / (influence + this)); 20 influence costs $20 bn."}
+  influence_fade: {value: 0.05, status: placeholder, note: "W4 - share of unused influence that fades each quarter, so it reads as standing rather than a stockpile."}
   talks_influence_cost: {value: 5.0, status: placeholder, note: "Influence to open talks with one nation."}
   talks_trust_gain: {value: 0.05, status: placeholder, note: "Trust the target gains in you from talks."}
   tariff_trust_hit: {value: 0.5, status: placeholder, note: "Trust the target loses in you per unit of tariff raised."}
