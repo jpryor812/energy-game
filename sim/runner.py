@@ -39,7 +39,8 @@ def play(
     difficulty: str | None = None,
 ) -> World:
     """Play from `world` (or a fresh world) until quarter `until` (default: the last turn), or
-    until the player loses (government falls or an election is lost). With bot "ai" the AI plays
+    until the player loses (warming reaches the collapse line, the government falls or an election
+    is lost). With bot "ai" the AI plays
     the player's nation too; with `ai=False` the other nations take no actions (business as
     usual)."""
     if country not in cfg.playable_ids:
@@ -78,16 +79,15 @@ def summarize(cfg: Config, world: World, country: str, bot_name: str, dt: int) -
         "score_at_exit": result["score_at_exit"],
         "ending": result["ending"],
         "rank": result["rank"],
-        "nation_index": result["nation_index"],
-        "absolute_index": result["absolute_index"],
+        "impact": result["impact"],
+        "yearly_cut": result["yearly_cut"],
+        "prosperity": result["prosperity"],
         "difficulty_multiplier": result["difficulty_multiplier"],
-        "combined_index": result["combined_index"],
-        "absolute_components": result["absolute_components"],
         "difficulty": world.difficulty,
         "components": result["components"],
-        "world_multiplier": result["world_multiplier"],
         "warming": result["warming"],
-        "bonuses": result["bonuses"],
+        "peak_warming": max([h["warming"] for h in world.history], default=world.warming),
+        "honours": result["honours"],
         "all_nations": result["all_nations"],
         "actions_rejected": rejected,
         "elections": world.elections,
@@ -200,12 +200,11 @@ AGGREGATE_COLUMNS = [
     "seed",
     "turns_played",
     "score",
-    "nation_index",
-    "absolute_index",
-    "combined_index",
+    "impact",
+    "prosperity",
     "rank",
-    "world_multiplier",
     "warming",
+    "peak_warming",
     "ending",
     "actions_rejected",
     "state_hash",

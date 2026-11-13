@@ -163,24 +163,16 @@ def test_fossil_ban_stops_new_fossil_plants(cfg, world):
 # --- scoring -------------------------------------------------------------------------------------
 
 
-def test_absolute_and_relative_layers(cfg):
+def test_difficulty_multiplies_the_whole_score(cfg):
     w = runner.play(cfg, 1, "AAA", "noop", until=12)
     result = scoring.score(cfg, w, "AAA")
-    assert set(result["absolute_components"]) == {
-        "income", "clean_share", "emissions", "security", "approval",
-    }  # fmt: skip
-    assert 0 <= result["absolute_index"] <= 100
     hard = copy.deepcopy(cfg.countries)
     hard["nations"]["AAA"]["difficulty"] = "hard"
     hcfg = dataclasses.replace(cfg, countries=hard)
     harder = scoring.score(hcfg, w, "AAA")
     assert harder["difficulty_multiplier"] == cfg.tune("scoring.difficulty_hard")
-    assert harder["combined_index"] > result["combined_index"]  # same play, worth more
-
-
-def test_relative_bonuses_scale_with_difficulty(cfg):
-    assert "largest_reduction" in scoring.RELATIVE_BONUSES
-    assert "first_net_zero" not in scoring.RELATIVE_BONUSES
+    ratio = harder["difficulty_multiplier"] / result["difficulty_multiplier"]
+    assert harder["score"] == pytest.approx(result["score"] * ratio)  # same play, worth more
 
 
 # --- harness -------------------------------------------------------------------------------------

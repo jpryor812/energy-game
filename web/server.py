@@ -34,6 +34,16 @@ SAVES = ROOT / "games" / "web"
 NAME = re.compile(r"^[A-Za-z0-9_-]{1,40}$")
 
 
+def _growth_year(w: Any, nid: str) -> float:
+    """GDP growth over the last four quarters (this quarter's annual rate before a year has
+    passed), for the public standings: steadier than one quarter, which seasons and disasters
+    move."""
+    if len(w.history) < 5:
+        return w.nations[nid].growth
+    then = w.history[-5]["nations"][nid]["gdp"]
+    return w.nations[nid].gdp / then - 1 if then > 0 else 0.0
+
+
 class ApiError(Exception):
     def __init__(self, message: str, status: int = HTTPStatus.BAD_REQUEST):
         super().__init__(message)
@@ -127,6 +137,8 @@ class Server:
                 "clean_share": round(scoring.clean_share(cfg, n), 4),
                 "gdp": round(n.gdp, 3),
                 "growth": round(n.growth, 4),
+                "growth_year": round(_growth_year(w, nid), 4),
+                "gdp_vs_2025": round(n.gdp / n.base["gdp"] - 1, 4) if n.base.get("gdp") else 0.0,
                 "carbon_price": round(n.carbon_price, 1),
                 "club": nid in club,
                 "trust_in_you": round(diplomacy.trust(w, nid, me), 3) if nid != me else None,
@@ -134,6 +146,7 @@ class Server:
                 "your_tariff": round(w.nations[me].tariffs.get(nid, 0.0), 3),
                 "their_tariff": round(n.tariffs.get(me, 0.0), 3),
                 "score": round(scores[nid]["score"], 1) if nid in scores else None,
+                "impact": round(scores[nid]["impact"], 1) if nid in scores else None,
                 "rank": scores[nid]["rank"] if nid in scores else None,
                 "personality": cfg.nat_spec(nid)["personality"],
                 "techs": len(n.techs) + len(n.licensed),

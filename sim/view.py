@@ -239,7 +239,13 @@ def observe(game: Game) -> dict[str, Any]:
     result = scoring.score(cfg, w, me, lost=lost) if w.history else None
     leaders = (
         [
-            {"nation": nid, "score": _r(v["score"], 1), "rank": v["rank"]}
+            {
+                "nation": nid,
+                "score": _r(v["score"], 1),
+                "rank": v["rank"],
+                "impact": _r(v["impact"], 1),
+                "prosperity": _r(v["prosperity"], 1),
+            }
             for nid, v in sorted(result["all_nations"].items(), key=lambda kv: -kv[1]["score"])
         ]
         if result
@@ -322,9 +328,11 @@ def observe(game: Game) -> dict[str, Any]:
         "emissions": emissions,
         "world": {
             "warming": _r(w.warming),
-            "world_multiplier": _r(scoring.world_multiplier(cfg, w.warming)),
             "warming_5y_ago": _r(w.history[-21]["warming"]) if len(w.history) > 20 else None,
-            "champion_at": cfg.tune("scoring.good_world_warming"),
+            "warming_year": _r(scoring.year_warming(w)),
+            "collapse_at": cfg.tune("scoring.collapse_warming"),
+            "collapse_warning": cfg.tune("scoring.collapse_warning"),
+            "start_warming": cfg.tune("climate.warming_start"),
             "global_emissions": _r(w.global_emissions, 0) if w.history else None,
             "credit_price": _r(w.credit_price, 1),
             "club": list(club),
@@ -360,17 +368,16 @@ def observe(game: Game) -> dict[str, Any]:
                 "score": _r(result["score"], 1),
                 "score_if_ended_now": _r(result["score_at_exit"], 1),
                 "rank": result["rank"],
-                "nation_index": _r(result["nation_index"], 1),
-                "absolute_index": _r(result["absolute_index"], 1),
-                "combined_index": _r(result["combined_index"], 1),
+                "impact": _r(result["impact"], 1),
+                "yearly_cut": _r(result["yearly_cut"]),
+                "prosperity": _r(result["prosperity"], 1),
                 "difficulty_multiplier": result["difficulty_multiplier"],
                 "weights": [
-                    cfg.tune("scoring.weight_absolute"),
-                    cfg.tune("scoring.weight_relative"),
+                    cfg.tune("scoring.weight_impact"),
+                    cfg.tune("scoring.weight_prosperity"),
                 ],  # fmt: skip
-                "world_multiplier": _r(result["world_multiplier"]),
                 "components": {k: _r(v) for k, v in result["components"].items()},
-                "bonuses": result["bonuses"],
+                "honours": result["honours"],
                 "ending": result["ending"],
             }
             if result
@@ -602,8 +609,8 @@ def render(obs: dict[str, Any], brief: bool = False) -> str:
         ),
         f"WORLD: warming {wd['warming']:.3f} C"
         + (f" (5 years ago {wd['warming_5y_ago']:.3f})" if wd["warming_5y_ago"] is not None else "")
-        + f", multiplier {wd['world_multiplier']:.2f}; good world (Champion) at or below "
-        f"{wd['champion_at']:g} C and falling | "
+        + f"; year average {wd['warming_year']:.3f} C; at {wd['collapse_at']:g} C (year "
+        "average) the world collapses and every nation loses | "
         "global CO2 "
         + (f"{wd['global_emissions'] / 1000:.1f}" if wd["global_emissions"] is not None else "-")
         + f" Gt/yr | credit price {wd['credit_price']:.0f} $/t | club: "
@@ -661,25 +668,25 @@ def render(obs: dict[str, Any], brief: bool = False) -> str:
     else:
         head = "SCORE at exit" if o["over"] and o["lost"] else "SCORE now"
         lines.append(
-            f"{head} {s['score_if_ended_now']:.1f} (rank {s['rank']}/16, ranked on this score) = "
-            f"combined {s['combined_index']:.1f} x world {s['world_multiplier']:.2f} + bonuses; "
-            f"combined = {s['weights'][0]:g} x absolute {s['absolute_index']:.1f} + "
-            f"{s['weights'][1]:g} x nation index {s['nation_index']:.1f} x country "
-            f"{s['difficulty_multiplier']:g}"
+            f"{head} {s['score_if_ended_now']:.1f} (rank {s['rank']}/16; first place is Champion) "
+            f"= country {s['difficulty_multiplier']:g} x ({s['weights'][0]:g} x impact "
+            f"{s['impact']:.1f} + {s['weights'][1]:g} x prosperity {s['prosperity']:.1f}); impact "
+            f"= average credit-weighted cut of {s['yearly_cut']:.0%} from your 2025 emissions"
         )
         lines.append(
-            f"  nation index parts: {_kv(s['components'], '{:.2f}')}"
-            + (f" | bonuses {_kv(s['bonuses'])}" if s["bonuses"] else "")
+            f"  prosperity parts: {_kv(s['components'], '{:.2f}')}"
+            + (f" | honours {', '.join(s['honours'])}" if s["honours"] else "")
             + (" | clean = your share of world clean-tech equipment sales over the last year "
                "against your 2025 share of factory capacity")
         )  # fmt: skip
         top = o["leaders"][:5]
         mine = next((x for x in o["leaders"] if x["nation"] == o["country"]), None)
-        board = ", ".join(f"{x['nation']} {x['score']:.1f}" for x in top)
+        board = ", ".join(f"{x['nation']} {x['score']:.1f} (impact {x['impact']:.0f})" for x in top)
         if mine and mine not in top:
             board += f" ... you {mine['score']:.1f}"
         lines.append(f"  leaders (score now): {board}")
-        lines.append("  bonus races: " + "; ".join(_race(r, o["country"]) for r in o["races"]))
+        races = "; ".join(_race(r, o["country"]) for r in o["races"])
+        lines.append(f"  honours (unscored): {races}")
     return "\n".join(lines)
 
 

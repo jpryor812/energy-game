@@ -199,6 +199,22 @@ def notices(cfg: Config, before: World, after: World, me: str) -> list[str]:
     out: list[str] = []
     label = turn.quarter_label(before.t, cfg.tune("time.start_year"))
 
+    # The collapse line (2026-11-12): warn once warming passes the warning level, and say so
+    # plainly when it is reached.
+    line, warn = cfg.tune("scoring.collapse_warming"), cfg.tune("scoring.collapse_warning")
+    if scoring.collapsed(cfg, after):
+        out.append(
+            f"CLIMATE COLLAPSE: warming averaged {scoring.year_warming(after):.2f} degC over the "
+            f"year (the line is {line:g}). "
+            "The game is over and every nation has lost."
+        )
+    elif scoring.year_warming(before) < warn <= scoring.year_warming(after):
+        out.append(
+            f"WARNING: warming passed {warn:g} degC over the year "
+            f"({scoring.year_warming(after):.2f}). At {line:g} degC the world collapses and "
+            "every nation loses."
+        )
+
     # Deals: new offers, answers, payments, failures and endings.
     for did in sorted(after.deals):
         d = after.deals[did]
@@ -345,19 +361,18 @@ def notices(cfg: Config, before: World, after: World, me: str) -> list[str]:
         parts = ", ".join(f"{k} {v:+.2f}" for k, v in moved.items())
         out.append(
             f"Score {old_s['score_at_exit']:.1f} -> {new_s['score_at_exit']:.1f}"
-            + (f" (nation index parts: {parts})" if parts else "")
-            + (f"; world multiplier {new_s['world_multiplier']:.2f}"
-               if abs(new_s["world_multiplier"] - old_s["world_multiplier"]) >= 0.005 else "")
-            + "."
+            + f" (impact {old_s['impact']:.1f} -> {new_s['impact']:.1f}"
+            + (f"; prosperity parts: {parts}" if parts else "")
+            + ")."
         )  # fmt: skip
 
-    # Bonuses gained or lost.
+    # Honours gained or lost (unscored).
     if before.history:
-        old_b = scoring.bonuses(cfg, before)[me]
-        new_b = scoring.bonuses(cfg, after)[me]
-        for k in sorted(set(old_b) | set(new_b)):
+        old_b = set(scoring.honours(cfg, before)[me])
+        new_b = set(scoring.honours(cfg, after)[me])
+        for k in sorted(old_b | new_b):
             if k in new_b and k not in old_b:
-                out.append(f"Bonus gained: {k} (+{new_b[k]:g}).")
+                out.append(f"Honour gained: {k}.")
             elif k in old_b and k not in new_b:
-                out.append(f"Bonus lost: {k}.")
+                out.append(f"Honour lost: {k}.")
     return out

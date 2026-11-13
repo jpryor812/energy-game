@@ -7,6 +7,7 @@ import { PLAYABLE_COLOR, PERSONALITY, SOURCE_COLOR, nationTint, NATION_TINT_FAMI
 import { LEADERS, leaderPortrait, skyColor, portrait, skyOf } from "./leaders.js";
 import { ADVISORS, TIPS } from "./tutorial.js";
 import { ORDERS, FX, SOURCE_ICON, DEAL_ICON, DEAL_LINE } from "./orders.js";
+import { WAVES, isOpen, opensAt } from "./unlocks.js";
 
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -140,7 +141,7 @@ function tipHelpers() {
   const sc = S.data.screen, inc = sc.resources.income_per_year || {};
   const income = ["budget", "fossil_exports", "carbon", "tariffs", "tax", "tax_credits", "interest"].reduce((a, k) => a + (inc[k] || 0), 0);
   const solar = (sc.energy.costs || {}).solar;
-  return { sc, world: S.data.world, money, whole, pct, nation: nationName(sc.country), income, solar1: solar ? solar.unit_cost * (sc.energy.demand || 0) * 0.01 : 0 };
+  return { sc, world: S.data.world, money, whole, pct, nation: nationName(sc.country), income, allOrders: allOrders(), solar1: solar ? solar.unit_cost * (sc.energy.demand || 0) * 0.01 : 0 };
 }
 function dueTips() {
   if (!S.data || S.data.screen.over) return [];
@@ -171,7 +172,23 @@ const SHOW = {
   world: () => actionWindow(MENU.world.title, MENU.world.actions, "finance_region", {}, "world"),
   event: () => actionWindow(MENU.world.title, MENU.world.actions, "pledge_to_event", {}, "world"),
   vote: () => { openRealm("vote"); glow("#world-stats"); },
+  ...Object.fromEntries(WAVES.map((w) => [`orders_${w.turn}`, () => actionWindow(w.title, w.types, null, {}, null)])),
 };
+
+// ---------- orders that open over the first two years (web/static/unlocks.js) ----------
+
+const ordersKey = () => `orders:all:${S.data ? S.data.name : ""}`;
+function allOrders() { return !!store.get(ordersKey(), false); }
+const orderOpen = (t) => isOpen(t, S.data ? S.data.screen.turn : 0, allOrders());
+function quarterOf(turn) { return `${2025 + Math.floor(turn / 4)} Q${(turn % 4) + 1}`; }
+function lockedNote(types) {
+  if (!types.length) return "";
+  const by = {};
+  types.forEach((t) => (by[opensAt(t)] = [...(by[opensAt(t)] || []), t]));
+  return `<div class="locked-note"><div class="locked-head">🔒 More orders open as your government settles in</div>
+    ${Object.entries(by).map(([turn, ts]) => `<div class="locked-row"><b>${quarterOf(+turn)}</b> ${ts.map((t) => `<span class="locked-chip">${(ORDERS[t] || {}).icon || "◆"} ${esc(nice(t))}</span>`).join("")}</div>`).join("")}
+    <div class="muted" style="font-size:12px;margin-top:4px">Experienced? Open them all now under Advice.</div></div>`;
+}
 
 function showTip(t, count = 1, manual = false) {
   const a = ADVISORS[t.who];
@@ -224,8 +241,10 @@ function adviceWindow() {
         ${ts.map((t) => `<button class="advice-tip" data-tip-id="${t.id}"><span>${esc(t.title)}</span><span class="muted">${seen.has(t.id) ? "read" : due.has(t.id) ? "new" : "later"}</span></button>`).join("")}
       </div>`).join("")}</div>
       <div class="row" style="margin-top:12px;gap:14px"><label class="row" style="gap:6px"><input type="checkbox" id="tips-on" ${tipsOff() ? "" : "checked"}> Show tips as they come up</label>
-        <button class="btn small" id="tips-reset">Start the tips again</button></div>`,
+        <button class="btn small" id="tips-reset">Start the tips again</button>
+        <label class="row" style="gap:6px"><input type="checkbox" id="orders-all" ${allOrders() ? "checked" : ""}> Open every order now (orders otherwise open over the first two years)</label></div>`,
   });
+  $("#orders-all", win).onchange = (ev) => { store.set(ordersKey(), ev.target.checked); renderMenubar(); refreshDrawer(); };
   win.querySelectorAll("[data-tip-id]").forEach((b) => (b.onclick = () => {
     closeWindows();
     showTip(TIPS.find((t) => t.id === b.dataset.tipId), 1, true);
@@ -235,6 +254,7 @@ function adviceWindow() {
 }
 
 function renderAll() {
+  refreshDrawer();
   renderTopbar();
   renderAlerts();
   renderOutliner();
@@ -281,25 +301,26 @@ function renderTopbar() {
     `<div class="res" ${tip(t)}><div class="k">${k}</div><div class="v">${v}</div><div class="d">${d}</div></div>`).join("");
 
   const w = sc.world, s = sc.score, el = sc.election;
-  const warmFrac = Math.max(0, Math.min(1, (w.warming - 1.3) / (2.0 - 1.3)));
-  const champFrac = (w.champion_at - 1.3) / 0.7;
-  const warmTip = ttTable("Global warming", [["Now", `${num(w.warming, 2)} °C`], ["Five years ago", w.warming_5y_ago ? `${num(w.warming_5y_ago, 2)} °C` : "-"],
-    ["Champion needs", `≤ ${w.champion_at} °C and falling`], ["World multiplier", num(w.world_multiplier, 2)],
+  const wy = w.warming_year, lo = w.start_warming, warmFrac = Math.max(0, Math.min(1, (wy - lo) / (w.collapse_at - lo)));
+  const warnFrac = (w.collapse_warning - lo) / (w.collapse_at - lo);
+  const warmTip = ttTable("Global warming", [["Year average", `${num(wy, 2)} °C`], ["This quarter", `${num(w.warming, 2)} °C`], ["Five years ago", w.warming_5y_ago ? `${num(w.warming_5y_ago, 2)} °C` : "-"],
+    ["Collapse at", `${w.collapse_at} °C`], ["Room left", `${num(Math.max(0, w.collapse_at - wy), 2)} °C`],
     ["World CO2", w.global_emissions ? `${num(w.global_emissions / 1000, 1)} Gt/yr` : "-"]],
-  "Your score is multiplied by the World Multiplier: 1.0 at 1.5 °C, falling to 0.1 at 2.5 °C.");
-  const scoreTip = s ? ttTable("Score", [["Score now", num(s.score_if_ended_now, 1)], ["Rank", `${s.rank} of 16`],
-    ["Absolute index", num(s.absolute_index, 1)], ["Nation index", num(s.nation_index, 1)],
-    ["× country difficulty", s.difficulty_multiplier], ["× world multiplier", num(s.world_multiplier, 2)],
-    ...Object.entries(s.components).map(([k, v]) => [`  ${k}`, num(v, 2)])], `Ending if the game ended now: ${s.ending}`) : "";
+  `If warming, averaged over a year, reaches ${w.collapse_at} °C the game ends and every nation loses. Stay below it to 2049 and the world wins. Seasons move each quarter's figure up and down.`);
+  const scoreTip = s ? ttTable("Score", [["Score now", num(s.score_if_ended_now, 0)], ["Rank", `${s.rank} of 16`],
+    ["Impact", num(s.impact, 0)], ["  your CO2, on average", belowStart(s.yearly_cut)], ["Prosperity", num(s.prosperity, 0)],
+    ["× country difficulty", s.difficulty_multiplier]],
+  `Score = difficulty × (${s.weights[0] * 100}% impact + ${s.weights[1] * 100}% prosperity). First place at the end is Champion.`) : "";
   const vote = el.expected_vote;
   const voteTip = el.next ? ttTable(`Election ${el.next}`, [["Expected vote", vote == null ? "from next quarter" : num(vote, 3)],
     ["Needed", el.needed], ["Random swing", `± ${el.swing_range}`],
     ...Object.entries(el.parts || {}).map(([k, v]) => [nice(k), (v >= 0 ? "+" : "") + num(v, 3)])], "Aim for 0.54 or more: the swing can take away 0.04.") : "";
   $("#world-stats").innerHTML = `
-    <div class="res gauge" ${tip(warmTip)}><div class="k">Warming</div><div class="v ${w.warming > w.champion_at ? "bad" : ""}">${num(w.warming, 2)} °C</div>
-      <div class="bar"><div class="fill" style="width:${warmFrac * 100}%"></div><div class="tick" style="left:${champFrac * 100}%"></div></div></div>
+    <div class="res gauge" ${tip(warmTip)}><div class="k">Warming</div><div class="v ${wy >= w.collapse_warning ? "bad" : ""}">${num(wy, 2)} °C</div>
+      <div class="d">collapse at ${w.collapse_at} °C</div>
+      <div class="bar"><div class="fill ${wy >= w.collapse_warning ? "hot" : ""}" style="width:${warmFrac * 100}%"></div><div class="tick" style="left:${warnFrac * 100}%"></div></div></div>
     <div class="res" ${tip(voteTip)}><div class="k">Next vote</div><div class="v ${vote != null && vote < 0.52 ? "bad" : vote != null && vote < 0.54 ? "warn" : ""}">${vote == null ? "—" : num(vote * 100, 1) + "%"}</div><div class="d">${el.next || "none"}</div></div>
-    <div class="res" ${tip(scoreTip)}><div class="k">Score</div><div class="v">${s ? num(s.score_if_ended_now, 1) : "—"}</div><div class="d">${s ? `rank ${s.rank} of 16` : ""}</div></div>`;
+    <div class="res" ${tip(scoreTip)}><div class="k">Score</div><div class="v">${s ? num(sc.over ? s.score : s.score_if_ended_now, 0) : "—"}</div><div class="d">${s ? `rank ${s.rank} of 16` : ""}</div></div>`;
   $("#date").textContent = sc.quarter.replace("Q", " · Q");
   $("#turn-of").textContent = `turn ${sc.turn + 1} of ${sc.turns}`;
 }
@@ -317,6 +338,8 @@ function renderAlerts() {
   const left = (sc.resources.slots.domestic || 0) + (sc.resources.slots.diplomatic || 0) - Object.values(slotsUsed()).reduce((a, b) => a + b, 0);
   if (left >= 4) out.push({ ico: "⌛", cls: "", tip: ttTable("Unused action slots", [["Slots free this quarter", left]], "Slots bank only up to 6 domestic and 4 diplomatic."), go: () => openMenu("build") });
   if (sc.resources.political_capital >= 20) out.push({ ico: "✦", cls: "", tip: ttTable("Political capital is piling up", [["Unspent", num(sc.resources.political_capital, 0)]], "It pays for a higher carbon price, early closures, permitting reform, a fossil ban or tax rises."), go: () => openMenu("policy") });
+  const wd = sc.world;
+  if (!sc.over && wd.warming_year >= wd.collapse_warning) out.push({ ico: "🌡", cls: "danger", tip: ttTable("Warming is near the collapse line", [["Year average", `${num(wd.warming_year, 2)} °C`], ["Collapse at", `${wd.collapse_at} °C`]], "At the line the game ends and every nation loses. Cut, finance cuts abroad, and fill event funds."), go: () => ledgerWindow("chronicle") });
   if (sc.over) out.push({ ico: "♛", cls: "urgent", tip: ttTable("The game is over", [["Ending", sc.score ? sc.score.ending : "-"]]), go: () => gameOverWindow() });
   const box = $("#alerts");
   box.innerHTML = out.map((a, i) => `<button class="alert ${a.cls}" data-i="${i}" ${tip(a.tip)}>${a.ico}${a.n ? `<span class="count">${a.n}</span>` : ""}</button>`).join("");
@@ -376,12 +399,40 @@ function renderOutliner() {
   $("#outliner").innerHTML = `
     <div class="sec-head"><span>This quarter's orders</span><span class="muted" style="font-size:12px">${S.plan.length} planned</span></div>
     <div class="sec-body">${planRows}</div>
+    ${standings()}
     ${inbox ? `<div class="sec-head"><span>Offers to you</span></div><div class="sec-body">${inbox}</div>` : ""}
     ${evs ? `<div class="sec-head"><span>Event funds</span></div><div class="sec-body">${evs}</div>` : ""}
     ${notes ? `<div class="sec-head"><span>Dispatches</span></div><div class="sec-body">${notes}</div>` : ""}`;
   $("#outliner").querySelectorAll("[data-rm]").forEach((b) => (b.onclick = () => { S.plan.splice(+b.dataset.rm, 1); checkPlan(); }));
   $("#outliner").querySelectorAll("[data-deal]").forEach((b) => (b.onclick = () => dealWindow(b.dataset.deal)));
   $("#outliner").querySelectorAll("[data-ev]").forEach((b) => (b.onclick = () => eventWindow(sc.events.open.find((e) => e.id === b.dataset.ev))));
+  $("#outliner").querySelectorAll("[data-board]").forEach((r) => (r.onclick = () => openNation(r.dataset.board)));
+  const fold = $("#board-fold");
+  if (fold) fold.onclick = () => { S.boardOpen = !boardOpen(); try { localStorage.setItem("board:open", S.boardOpen ? "1" : "0"); } catch { /* storage unavailable */ } renderOutliner(); };
+}
+
+// The public standings: every nation's rank, Impact (its climate contribution for its size) and
+// its economy, which other governments can see. Folded, it keeps the top three and you.
+function boardOpen() {
+  if (S.boardOpen == null) { try { S.boardOpen = localStorage.getItem("board:open") !== "0"; } catch { S.boardOpen = true; } }
+  return S.boardOpen;
+}
+function standings() {
+  const sc = S.data.screen, nations = S.data.world.nations;
+  if (!sc.leaders.length) return `<div class="sec-head"><span>Standings</span></div><div class="sec-body muted" style="font-size:12.5px">Ranks appear after your first quarter.</div>`;
+  const open = boardOpen();
+  const rows = sc.leaders.filter((l, i) => open || i < 3 || l.nation === sc.country).map((l) => {
+    const n = nations[l.nation] || {}, me = l.nation === sc.country;
+    const g = n.growth_year ?? n.growth ?? 0;
+    const t = ttTable(nationName(l.nation), [["Rank", `${l.rank} of 16`], ["Score", num(l.score, 0)], ["Impact", num(l.impact, 0)], ["Prosperity", num(l.prosperity, 0)],
+      ["CO2 vs 2025", spct(n.emissions_change, 0)], ["Clean energy", pct(n.clean_share)], ["GDP", money(n.gdp)], ["GDP vs 2025", spct(n.gdp_vs_2025, 0)], ["Growth, last year", spct(g, 1)]],
+    "Impact: CO2 cut at home or helped cut abroad, for the nation's size. 50 = no change.");
+    return `<tr class="${me ? "me" : ""}" data-board="${l.nation}" ${tip(t)}><td class="r">${l.rank}</td><td class="nm">${crestMini(l.nation)}${esc(nationName(l.nation))}</td>
+      <td class="imp"><i style="width:${Math.max(0, Math.min(100, l.impact))}%"></i><span>${num(l.impact, 0)}</span></td>
+      <td class="num ${g < 0 ? "bad" : ""}">${spct(g, 1)}</td><td class="num">${money(n.gdp)}</td></tr>`;
+  }).join("");
+  return `<div class="sec-head"><span>Standings</span><button class="link-btn" id="board-fold">${open ? "Show top three" : "Show all 16"}</button></div>
+    <div class="sec-body board"><table><tr class="muted"><td></td><td>Nation</td><td>Impact</td><td class="num">Growth</td><td class="num">GDP</td></tr>${rows}</table></div>`;
 }
 
 let checkSeq = 0;
@@ -436,7 +487,7 @@ const MENU = {
 
 function renderMenubar() {
   $("#menubar").innerHTML = Object.entries(MENU).map(([k, m]) =>
-    `<button class="menu-btn ${S.menu === k ? "active" : ""}" data-menu="${k}"><span class="ico">${m.ico}</span><span class="lbl">${m.lbl}</span></button>`).join("");
+    `<button class="menu-btn ${S.menu === k ? "active" : ""} ${m.actions && S.data && !m.actions.some(orderOpen) ? "locked" : ""}" data-menu="${k}"><span class="ico">${m.ico}</span><span class="lbl">${m.lbl}</span></button>`).join("");
   $("#menubar").querySelectorAll(".menu-btn").forEach((b) => (b.onclick = () => openMenu(b.dataset.menu)));
 }
 
@@ -564,13 +615,33 @@ function eventWindow(e, done) {
   }));
 }
 
+// The impact measure in words: the average credit-weighted cut against 2025.
+function belowStart(cut) {
+  const v = Math.round(Math.abs(cut) * 100);
+  return v === 0 ? "the same as 2025" : `${v}% ${cut > 0 ? "below" : "above"} 2025`;
+}
+
+function endingText(s) {
+  const w = S.data.screen.world, first = S.data.screen.leaders[0];
+  const by = {
+    "Champion": `The world held warming below ${w.collapse_at} °C, and no nation did more for it than yours. You finish first.`,
+    "Shared Victory": `The world held warming below ${w.collapse_at} °C. ${first ? esc(nationName(first.nation)) : "Another nation"} did the most for it; you finish ${s ? s.rank : "-"} of 16.`,
+    "Climate Collapse": `Warming reached ${w.collapse_at} °C. Every nation has lost, whatever it built. The score is zero.`,
+    "Voted Out": "Your government lost the election and left office. The score is zero.",
+    "Fallen Government": "Unrest brought your government down. The score is zero.",
+  };
+  return s ? by[s.ending] || "" : "";
+}
+
 function gameOverWindow() {
   const s = S.data.screen.score;
   openWindow({
     doc: true, title: "The record of your government",
     body: `<div class="event-title">${esc(s ? s.ending : "The game is over")}</div>
-      <p class="event-text">Final score <b>${s ? num(s.score, 1) : "-"}</b>, rank ${s ? s.rank : "-"} of 16. World warming ${num(S.data.screen.world.warming, 2)} °C.</p>
-      <h3>Final standings</h3><ol class="report-list">${S.data.screen.leaders.map((l) => `<li>${esc(nationName(l.nation))} — ${num(l.score, 1)}</li>`).join("")}</ol>`,
+      <p class="event-text">${endingText(s)}</p>
+      <p class="event-text">Final score <b>${s ? num(s.score, 0) : "-"}</b>, rank ${s ? s.rank : "-"} of 16. World warming ${num(S.data.screen.world.warming_year, 2)} °C (year average).</p>
+      ${s && s.honours.length ? `<p class="event-text">Honours: ${s.honours.map((h) => esc(nice(h))).join(", ")}.</p>` : ""}
+      <h3>${s && s.ending === "Climate Collapse" ? "Standings when the world collapsed" : "Final standings"}</h3><ol class="report-list">${S.data.screen.leaders.map((l) => `<li>${esc(nationName(l.nation))}${l.nation === S.data.screen.country ? " (you)" : ""} — ${num(l.score, 0)} <span class="muted">· impact ${num(l.impact, 0)}</span></li>`).join("")}</ol>`,
     foot: `<button class="btn primary" id="ng">New game</button>`,
   });
   $("#ng").onclick = () => newGameWindow();
@@ -603,7 +674,7 @@ function newGameWindow() {
 
   hideTip();
   $("#windows").innerHTML = `<div class="window chrome ng">
-    <div class="win-head"><h2>Choose your nation</h2><span class="ng-goal">2025 to 2049 · your score is your nation's prosperity times how the world did on climate</span><button class="icon-btn" id="win-x" title="Close">✕</button></div>
+    <div class="win-head"><h2>Choose your nation</h2><span class="ng-goal">2025 to 2049 · keep the world below 2 °C, and be the nation that did the most to get there</span><button class="icon-btn" id="win-x" title="Close">✕</button></div>
     <div class="ng-body">
       <div class="ng-portrait" id="ng-portrait"></div>
       <div class="ng-list">
@@ -653,7 +724,9 @@ function newGameWindow() {
   win.querySelectorAll(".ng-row").forEach((b) => (b.onclick = () => show(b.dataset.c)));
   win.querySelectorAll(".ng-tabs .tab").forEach((b) => (b.onclick = () => setTab(b.dataset.tab)));
   win.querySelectorAll("[data-load]").forEach((b) => (b.onclick = async () => {
-    try { S.plan = []; setData(await api("/api/load", { name: b.dataset.load })); closeWindows(); } catch (e) { toast(e.message); }
+    try { S.plan = []; setData(await api("/api/load", { name: b.dataset.load })); closeWindows(); } catch (e) {
+      toast(/different data files/.test(e.message) ? "This save was made under older game rules, so it cannot be continued. Start a new game." : e.message, 5000);
+    }
   }));
   $("#ng-go").onclick = async () => {
     try {
@@ -685,10 +758,22 @@ function openMenu(key) {
 function actionWindow(title, types, first, preset, menu = null) {
   closeWindows();
   if (S.panel) closePanel();
-  S.drawer = { title, types, open: first, preset, menu };
+  const open = types.filter(orderOpen), locked = types.filter((t) => !orderOpen(t));
+  S.drawer = { title, types: open, locked, open: open.includes(first) ? first : null, preset, menu };
   S.menu = menu;
   renderMenubar();
   drawDrawer();
+}
+
+// After a turn (or the Advice switch), a menu drawer picks up orders that have just opened.
+function refreshDrawer() {
+  const d = S.drawer;
+  if (!d || !d.menu || !MENU[d.menu].actions) return;
+  const locked = MENU[d.menu].actions.filter((t) => !orderOpen(t));
+  if (locked.length === (d.locked || []).length) return;
+  d.types = MENU[d.menu].actions.filter(orderOpen);
+  d.locked = locked;
+  drawDrawer(); // redraw in place, leaving any open window (the dispatch) alone
 }
 
 function closeDrawer() {
@@ -704,14 +789,14 @@ function drawDrawer() {
   const d = S.drawer, cat = S.meta.catalogue, el = $("#drawer");
   const ico = d.menu ? MENU[d.menu].ico : "✎";
   el.classList.remove("hidden");
-  el.innerHTML = `<div class="panel-head"><span class="drawer-ico">${ico}</span><div class="titles"><h2>${esc(d.title)}</h2><div class="sub">${d.types.length} order${d.types.length > 1 ? "s" : ""} · choose one to open it</div></div><button class="icon-btn" id="d-x" title="Close">✕</button></div>
+  el.innerHTML = `<div class="panel-head"><span class="drawer-ico">${ico}</span><div class="titles"><h2>${esc(d.title)}</h2><div class="sub">${d.types.length ? `${d.types.length} order${d.types.length > 1 ? "s" : ""} · choose one to open it` : "Not open yet"}</div></div><button class="icon-btn" id="d-x" title="Close">✕</button></div>
     <div class="panel-body drawer-body">${d.types.map((t) => {
       const o = ORDERS[t] || {}, [pi, pl] = payWith(cat[t].cost);
       return `<div class="acc" data-t="${t}">
       <button class="acc-head"><span class="acc-ico">${o.icon || "◆"}</span><span class="acc-text"><span class="t">${esc(nice(t))}</span><span class="line">${esc(o.line || "")}</span>
         <span class="acc-tags"><span class="tag">${cat[t].slot === "domestic" ? "🏠 Home" : "🌐 Abroad"}</span><span class="tag">${pi} ${pl}</span></span></span><span class="chev">▸</span></button>
       <div class="acc-body"></div></div>`;
-    }).join("")}</div>`;
+    }).join("")}${lockedNote(d.locked || [])}</div>`;
   $("#d-x").onclick = closeDrawer;
   placeAlerts();
   el.querySelectorAll(".acc-head").forEach((b) => (b.onclick = () => {
@@ -1160,7 +1245,7 @@ function researchWindow() {
 function ledgerWindow(tab = "standings") {
   S.menu = "ledger"; renderMenubar();
   const sc = S.data.screen;
-  const rows = sc.leaders.map((l, i) => `<tr><td>${i + 1}</td><td>${crestMini(l.nation)} ${esc(nationName(l.nation))}${l.nation === sc.country ? " <span class='good'>(you)</span>" : ""}</td><td style="text-align:right">${num(l.score, 1)}</td><td style="text-align:right">${spct(S.data.world.nations[l.nation].emissions_change, 0)}</td><td style="text-align:right">${pct(S.data.world.nations[l.nation].clean_share)}</td></tr>`).join("");
+  const rows = sc.leaders.map((l, i) => `<tr><td>${i + 1}</td><td>${crestMini(l.nation)} ${esc(nationName(l.nation))}${l.nation === sc.country ? " <span class='good'>(you)</span>" : ""}</td><td style="text-align:right">${num(l.score, 0)}</td><td style="text-align:right">${num(l.impact, 0)}</td><td style="text-align:right">${num(l.prosperity, 0)}</td><td style="text-align:right">${spct(S.data.world.nations[l.nation].emissions_change, 0)}</td><td style="text-align:right">${pct(S.data.world.nations[l.nation].clean_share)}</td></tr>`).join("");
   const races = sc.races.map((r) => `<tr><td>${esc(nice(r.race))}</td><td>${r.leader ? esc(nationName(r.leader)) : "<span class='muted'>no one yet</span>"}</td><td class="muted">${esc(r.measure || "")}</td></tr>`).join("");
   const tabs = [["standings", "Standings"], ["chronicle", "Chronicle"]];
   const win = openWindow({
@@ -1170,9 +1255,10 @@ function ledgerWindow(tab = "standings") {
   const body = $("#ledger-body", win);
   if (tab === "chronicle") chronicle(body, S.data.world.history);
   else body.innerHTML = `<div style="display:grid;grid-template-columns:1.2fr 1fr;gap:18px">
-      <div><h3>Standings</h3><table style="width:100%;border-collapse:collapse;font-size:14px"><tr class="muted"><td>#</td><td>Nation</td><td style="text-align:right">Score</td><td style="text-align:right">CO2 vs 2025</td><td style="text-align:right">Clean</td></tr>${rows}</table></div>
-      <div><h3>Bonus races</h3><table style="width:100%;font-size:13px">${races}</table>
-      <h3>How the score works</h3><p class="summary-text">Score = (half your absolute standing + half your progress against your own 2025 start, times your country's difficulty) × the World Multiplier, plus bonuses. Top four with the world at or below 1.6 °C and cooling is Champion.</p></div></div>`;
+      <div><h3>Standings</h3><table style="width:100%;border-collapse:collapse;font-size:14px"><tr class="muted"><td>#</td><td>Nation</td><td style="text-align:right">Score</td><td style="text-align:right">Impact</td><td style="text-align:right">Prosperity</td><td style="text-align:right">CO2 vs 2025</td><td style="text-align:right">Clean</td></tr>${rows}</table></div>
+      <div><h3>How the game is won</h3><p class="summary-text">If warming, averaged over a year, reaches ${sc.world.collapse_at} °C, every nation loses. Stay below it to 2049 and the world wins; then the nation with the highest score is Champion.</p>
+      <h3>How the score works</h3><p class="summary-text">Score = your country's difficulty × (${sc.score ? sc.score.weights[0] * 100 : 75}% impact + ${sc.score ? sc.score.weights[1] * 100 : 25}% prosperity). <b>Impact</b> is the CO2 you cut, or helped cut abroad, as a share of your own 2025 emissions, so a small nation can beat a large one. <b>Prosperity</b> is growth, secure energy, approval, prices and clean-tech industry against your own start.</p>
+      <h3>Honours</h3><p class="muted" style="font-size:12.5px">Unscored firsts and bests.</p><table style="width:100%;font-size:13px">${races}</table></div></div>`;
   win.querySelectorAll("[data-tab]").forEach((b) => (b.onclick = () => ledgerWindow(b.dataset.tab)));
 }
 const crestMini = (id) => `<i class="swatch" style="background:${colorOf(id)}"></i>`;
@@ -1375,7 +1461,11 @@ function realmTab(tab) {
       <div class="stat"><span class="k">Credits held</span><span>${num(em.credit_balance, 0)} Mt</span></div>
       <div class="stat"><span class="k">Pledge</span><span>${em.pledge ? `${num(em.pledge.target, 0)} Mt by ${em.pledge.year}` : "none"}</span></div>
     </div>
-    ${s ? `<h3>Score ${num(s.score_if_ended_now, 1)} · rank ${s.rank}</h3>${comp}<p class="muted" style="font-size:12.5px">0.5 means no change from your 2025 start. Ending if the game ended now: ${esc(s.ending)}.</p>` : ""}`;
+    ${s ? `<h3>Score ${num(s.score_if_ended_now, 0)} · rank ${s.rank} of 16</h3>
+      <div class="vote-row"><span>Impact</span><div class="meter"><i style="width:${s.impact}%"></i></div><span style="text-align:right">${num(s.impact, 0)}</span></div>
+      <p class="muted" style="font-size:12.5px">Your CO2 has averaged ${belowStart(s.yearly_cut)} so far, counting cuts you helped make abroad at a discount. 50 means no change.</p>
+      <div class="vote-row"><span>Prosperity</span><div class="meter"><i style="width:${s.prosperity}%"></i></div><span style="text-align:right">${num(s.prosperity, 0)}</span></div>
+      ${comp}<p class="muted" style="font-size:12.5px">Impact counts ${s.weights[0] * 100}%, prosperity ${s.weights[1] * 100}%. 0.5 means no change from your 2025 start.</p>` : ""}`;
 }
 
 boot().catch((e) => { console.error(e); toast(`Could not start: ${e.message}`, 8000); });

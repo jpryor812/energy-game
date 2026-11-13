@@ -2,6 +2,9 @@
 // who gives it, when it applies, a few sentences with live whole numbers, optional questions
 // with answers, and a "Show me" that opens or highlights the right part of the screen.
 //
+import { WAVES } from "./unlocks.js";
+import { ORDERS } from "./orders.js";
+
 // Tips teach; they never decide. Everything they say is taken from docs/PLAYTEST.md and the
 // order catalogue; numbers come from the screen.
 
@@ -13,7 +16,19 @@ export const ADVISORS = {
   foreign: { name: "Foreign Advisor", look: { skin: "#d9a77c", hair: "#9a9690", style: "receding", suit: "#2a2f3d", neck: "tie", glasses: true, scene: "port" }, color: "#1c7ed6" },
 };
 
-// h: { sc (the screen), world, money, whole, pct, nation, income, solar1 }
+// h: { sc (the screen), world, money, whole, pct, nation, income, solar1, allOrders }
+
+// A wave of new orders (web/static/unlocks.js), announced by the advisor who knows them best.
+const niceName = (t) => t.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+function unlockTip(turn) {
+  const w = WAVES.find((x) => x.turn === turn);
+  return {
+    id: `unlock_${turn}`, who: w.who, show: `orders_${turn}`, title: w.title,
+    when: (h) => !h.allOrders && h.sc.turn >= turn,
+    body: () => `${w.line} Each is now in its menu on the left:
+      <div class="tip-orders">${w.types.map((t) => `<span class="locked-chip">${(ORDERS[t] || {}).icon || "◆"} ${niceName(t)}</span>`).join("")}</div>`,
+  };
+}
 
 // Quarters until the next election ("2028Q4" against the current "2025Q2").
 const qn = (label) => { const m = /(\d{4})\s*Q(\d)/.exec(label || ""); return m ? +m[1] * 4 + +m[2] : null; };
@@ -23,13 +38,13 @@ export const TIPS = [
     id: "welcome", who: "chief", when: () => true, show: "realm",
     title: "Welcome to office",
     body: (h) => `You lead <b>${h.nation}</b> from 2025 to 2049. Each turn is one quarter, 100 in all.
-      Your score is <b>how well your nation does × how the world does on climate</b>. Warming is
-      <b>${h.sc.world.warming.toFixed(2)} °C</b> now: if it ends at 1.5 °C your score counts in full, at 2.5 °C only a tenth of it.
-      You cannot win alone, so the world has to cut with you.`,
+      Warming is <b>${h.sc.world.warming.toFixed(2)} °C</b> now. If it reaches <b>${h.sc.world.collapse_at} °C</b>, the game
+      ends and every nation loses. Keep the world below it and the world wins; then the nation that did
+      the <b>most to cut emissions</b>, for its size, is Champion.`,
     ask: [
-      ["What counts as doing well?", "Income growth, reliable energy, approval and energy prices, a clean-tech industry, and the emissions you cut, mostly measured against your own 2025 start. Harder countries get a score multiplier."],
-      ["How can I lose?", "Two ways, and both end the game with a score of 0: losing an election (every four years, the first in 2028 Q4) or your government falling, when stability drops too low after blackouts and low approval."],
-      ["What is the best ending?", "Champion: finish in the top four nations with warming at or below 1.6 °C and still falling."],
+      ["How is the score worked out?", "Mostly impact (three quarters): the CO2 you cut at home, or helped cut abroad, as a share of your own 2025 emissions. The rest is prosperity: growth, reliable energy, approval, prices and clean-tech industry against your own start. Harder countries get a multiplier."],
+      ["How can I lose?", "Three ways, each ending the game with a score of 0: warming reaching 2 °C (averaged over a year), losing an election (every four years, the first in 2028 Q4), or your government falling when stability drops too low after blackouts and low approval."],
+      ["Why not just cut everything at once?", "Voters judge growth, jobs and prices. Cut too fast and you lose office, and the game. The winner cuts the most while staying in power."],
     ],
   },
   {
@@ -66,7 +81,7 @@ export const TIPS = [
       Your price is <b>$${h.whole(h.sc.energy.carbon_price)}/t</b>. Start modest; a <b>rebate</b> hands the revenue back
       to households and softens the price rise.`,
     ask: [
-      ["What else steers the market?", "Subsidies, tax credits and a ban on new fossil plants, all under Policy."],
+      ["What else steers the market?", "Subsidies now, under Policy. Tax credits and a ban on new fossil plants open later in your term."],
       ["Why $25 a tonne?", "It is the entry price of the carbon club, which gives cheaper deal finance among members."],
     ],
   },
@@ -93,6 +108,7 @@ export const TIPS = [
       right. Press Answer to see the terms, then accept, refuse or counter. Offers expire after a few quarters.`,
     ask: [["Is accepting a good idea?", "It adds clean power without spending your capital now, but you owe repayments or a share. A nation can host deals up to half its energy demand."]],
   },
+  unlockTip(2),
   {
     id: "research", who: "energy", when: (h) => h.sc.turn >= 2, show: "research",
     title: "Research the future",
@@ -107,6 +123,7 @@ export const TIPS = [
       under Treasury). <b>Deals</b> build clean power abroad, earn returns and climate credit. The <b>carbon
       club</b> (a carbon price of $25/t or more) gives cheaper deal finance and lets members tariff laggards.`,
   },
+  unlockTip(4),
   {
     id: "regions", who: "climate", when: (h) => h.sc.turn >= 4, show: "world",
     title: "The rest of the world",
@@ -114,6 +131,7 @@ export const TIPS = [
       slowly unless helped. <b>Finance region</b> lends cheaply for solar or wind there: it costs you a little,
       earns climate credit for the cut and wins the region's trust. Each region can take only so much a year.`,
   },
+  unlockTip(8),
   {
     id: "event", who: "climate", when: (h) => h.sc.events.open.length > 0, show: "event",
     title: "A country faces a choice",
@@ -138,6 +156,13 @@ export const TIPS = [
     body: (h) => `The election is ${toElection(h)} quarters away and your expected vote is <b>${h.whole(h.sc.election.expected_vote * 100)}%</b>.
       Below 50% you lose office and the game. Changes take quarters to show in the term average, so act now: a carbon rebate, retraining, a pause on
       closing plants or price rises, or a tax cut.`,
+  },
+  {
+    id: "warming_high", who: "climate", when: (h) => h.sc.world.warming_year >= h.sc.world.collapse_warning, show: "world",
+    title: "Close to the line",
+    body: (h) => `Warming has averaged <b>${h.sc.world.warming_year.toFixed(2)} °C</b> over the year. At <b>${h.sc.world.collapse_at} °C</b> the game ends and every
+      nation loses, including you. Your own cuts are not enough now: finance clean power in the regions, fill
+      event funds and push others with talks and the carbon club.`,
   },
   {
     id: "blackout", who: "energy", when: (h) => h.sc.energy.shortfall_share > 0, show: "build",

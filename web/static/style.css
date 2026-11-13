@@ -240,7 +240,7 @@ h3 { font-size: 11.5px; color: var(--brass-hi); margin: 14px 0 6px; letter-spaci
 
 #outliner {
   position: fixed; top: 74px; right: 12px; width: 300px; max-height: calc(100% - 250px);
-  overflow: hidden; z-index: 11; display: flex; flex-direction: column;
+  overflow-y: auto; z-index: 11; display: flex; flex-direction: column;
 }
 #outliner .sec-head { display: flex; justify-content: space-between; align-items: center;
   padding: 9px 12px; border-bottom: 1px solid var(--line); color: var(--brass-hi); font-size: 11px;
@@ -590,4 +590,43 @@ h3 { font-size: 11.5px; color: var(--brass-hi); margin: 14px 0 6px; letter-spaci
   .btn.small { font-size: 9px; padding: 4px 6px; }
   #legend { display: none; }
   .mode { width: 28px; height: 28px; font-size: 13px; }
+}
+
+/* Warming gauge past the warning line */
+.res.gauge .fill.hot { background: #e03131; }
+
+/* The public standings in the outliner */
+#outliner .board { max-height: 260px; padding: 2px 6px 6px; }
+.board table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.board td { padding: 3px 3px; white-space: nowrap; }
+.board tr[data-board] { cursor: pointer; }
+.board tr[data-board]:hover td { background: var(--panel-3); }
+.board tr.me td { font-weight: 700; background: #e6f6ec; }
+.board .r { color: var(--muted); width: 14px; text-align: right; }
+.board .nm { max-width: 96px; overflow: hidden; text-overflow: ellipsis; }
+.board .num { text-align: right; }
+.board .imp { position: relative; width: 52px; }
+.board .imp i { position: absolute; left: 3px; top: 5px; bottom: 5px; max-width: calc(100% - 6px);
+  background: #b7e4c7; border-radius: 3px; }
+.board .imp span { position: relative; padding-left: 4px; font-variant-numeric: tabular-nums; }
+.link-btn { background: none; border: none; color: var(--brass-hi); font: inherit; font-size: 11px;
+  cursor: pointer; padding: 0; text-transform: none; letter-spacing: 0; }
+.link-btn:hover { text-decoration: underline; }
+
+/* Orders that open later (web/static/unlocks.js) */
+.menu-btn.locked { opacity: 0.45; }
+.locked-note { margin: 10px 4px 4px; padding: 10px 12px; border: 1px dashed var(--line);
+  border-radius: 10px; background: var(--panel-2); font-size: 13px; }
+.locked-head { font-weight: 600; margin-bottom: 6px; }
+.locked-row { margin: 4px 0; line-height: 1.9; }
+.locked-row b { margin-right: 6px; }
+.locked-chip { display: inline-block; padding: 1px 8px; margin: 0 4px 3px 0; border-radius: 999px;
+  background: var(--panel-3); font-size: 12px; white-space: nowrap; }
+.tip-orders { margin-top: 6px; line-height: 1.9; }
+#outliner > * { flex-shrink: 0; } /* sections keep their height; the outliner scrolls */
+@media (max-width: 1120px) {
+  .board table { font-size: 11px; }
+  .board td { padding: 2px 2px; }
+  .board .nm { max-width: 62px; }
+  .board .imp { width: 38px; }
 }

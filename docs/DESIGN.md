@@ -153,11 +153,34 @@ Quarterly GDP growth g starts from baseline growth g0, adds investment (I), prod
 
 ## Cooperative competition: scoring and endings
 
-Your score is your Nation Index times a World Multiplier, so you can only win big if your country thrives and the world avoids the worst warming.
+**Scoring redesign (decided with the user 2026-11-12; replaces the World Multiplier).** The world
+wins or loses together, and nations compete on who did the most to win it.
 
-$$\text{Score} = N \times M(T)$$
+- **The world can lose.** Warming starts at 1.35 degC. If it reaches **2.0 degC** (averaged over
+  a year, since it swings with the seasons) the game ends in **Climate Collapse** and every
+  nation scores 0. There is no graded penalty for warming below the line.
+- **The world wins** by reaching the end of 2049 below the line: by then carbon removal should be
+  working and warming falling, and deep clean build-outs can turn it down even sooner.
+- **Nations are ranked** on
 
-N is the Nation Index at the end of the game. M(T) is the World Multiplier, set by final warming T: near 1.0 for a good outcome, falling steeply for a bad one. Both curves are placeholders to tune in the simulation.
+$$\text{Score} = D \times (0.75 \times \text{Impact} + 0.25 \times \text{Prosperity})$$
+
+  where D is country difficulty. **Impact** is the nation's climate contribution relative to its
+  own size: the credit-weighted CO2 it cut at home or helped cut abroad, averaged over the game,
+  as a share of its own 2025 emissions, so a small nation that halves its emissions outranks a
+  large one that cuts a third. **Prosperity** is the Nation Index below without its climate part.
+  The 75/25 split is a placeholder.
+- **Champion** is first place among the 16 nations in a world that won; every other nation that
+  finishes has a **Shared Victory**. There is no "top four".
+- Achievement bonuses are no longer points: they are shown as unscored **honours**, because they
+  measured the same cuts Impact already counts.
+
+The text below up to "Endings" is the original design, kept for reference; the Nation Index is
+now the Prosperity part of the score.
+
+*Original design:* your score is your Nation Index times a World Multiplier, so you can only win
+big if your country thrives and the world avoids the worst warming. N is the Nation Index at the
+end of the game; M(T) is the World Multiplier, set by final warming T.
 
 **Nation Index (N)** blends four things, each scaled to your starting point so a poor country is not judged against a rich one:
 
@@ -201,15 +224,18 @@ time is cut), but local opposition costs approval and enters the vote as its own
 the more is built and the stronger the nation's opposition (EU highest, then the US, China,
 and Russia, India and Vietnam lowest).
 
-**Endings**
+**Endings** (since 2026-11-12)
 
 | Ending | Condition |
 | --- | --- |
-| Champion | Top rank on N and a good world outcome (M9 build note: rank is on the final score, bonuses included, so it matches the leaderboard. M8 build note: a good world ends at or below 1.6 degC with warming falling over the last 5 years, decided with the user 2026-11-08, because 1.5 degC proved out of reach even with every nation going all out; the World Multiplier is still 1.0 only at 1.5 degC) |
-| Prosperous but Doomed | Top rank on N, bad world outcome |
-| Green but Poor | Good world outcome, low rank on N |
-| Shared Failure | Bad outcome for you and the world |
-| Fallen Government | Stability reaches zero: you are removed early |
+| Champion | The world stayed below 2.0 degC to the end, and you rank first of 16 on the score |
+| Shared Victory | The world stayed below 2.0 degC, and you finished below first |
+| Climate Collapse | Warming (year average) reached 2.0 degC: every nation loses, score 0 |
+| Voted Out | You lost an election (M7): score 0 |
+| Fallen Government | Stability fell too low: you are removed early, score 0 |
+
+The earlier endings (Champion as a top-four finish in a world at or below 1.6 degC and falling,
+Prosperous but Doomed, Green but Poor, Shared Failure) were retired with the World Multiplier.
 
 **Fair-share rule:** your fair share of the carbon budget is based on emissions, and it updates as emissions change during the game.
 

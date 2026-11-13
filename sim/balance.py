@@ -8,19 +8,19 @@ Criteria (docs/BUILD_SIM_V0.md, with the 2026-11-08 change to criterion 4):
 
 1. Determinism: the same seed gives the same state hash, run twice.
 2. No dominant bot: no scripted bot has the best expected score for every playable nation.
-   Since M7 a lost game (Voted Out or Fallen Government) scores `loss_score`, so expected
+   A lost game (Climate Collapse, Voted Out or Fallen Government) scores `loss_score`, so expected
    scores include the risk of losing; the report also shows completion rates.
 3. Viable strategies: for each playable nation at least two scripted bots finish within
    `TOLERANCE` of the best expected score.
-4. Difficulty ordering: with the same bot, the easy and medium nations' mean absolute index is
-   higher than the hard nations', for at least three of the four scripted bots (all_fossil can
-   invert it: when nobody cuts, per-person emissions dominate and big emitters look worst).
+4. Difficulty ordering: with the same bot, the easy and medium nations' mean Impact (before
+   the country difficulty multiplier) is higher than the hard nations', for at least three of
+   the four scripted bots: harder nations find it harder to cut. (Was the absolute index,
+   removed in the 2026-11-12 scoring redesign.)
 5. Free-rider tension: a nation that free-rides (all_fossil) gains on the economic components
-   of its relative index (income and welfare) by 2030 against a cooperative strategy
+   of its prosperity index (income and welfare) by 2030 against a cooperative strategy
    (balanced), but its final score falls when many nations free-ride (every nation plays
-   all_fossil). The economic components are used because the index now also scores climate
-   contribution (decided 2026-11-08), which free-riding loses by construction. Both final-score
-   worlds run the full game without elections.
+   all_fossil), through Climate Collapse or a lower score. Both final-score worlds run without
+   elections, until the end or the collapse.
 6. Sanity: no impossible values in any run.
 7. Game length and punishment for neglect: every run reaches the final turn unless the player
    loses; reckless play is removed from office more than any other strategy; steady play
@@ -58,7 +58,7 @@ def free_rider_world(cfg: Config, seed: int, country: str, everyone: bool) -> di
     from sim.scenario import new_world
 
     world = new_world(cfg, seed)
-    while world.t < cfg.tune("time.turns"):
+    while world.t < cfg.tune("time.turns") and not scoring.collapsed(cfg, world):
         who = world.nations if everyone else [country]
         acts = {nid: bots.all_fossil(cfg, world, nid) for nid in who}
         world = turn.step(world, cfg, actions=acts, ai=not everyone)
@@ -125,7 +125,7 @@ def report(cfg: Config, data: dict[str, Any]) -> str:
     for r in main:
         by.setdefault((r["country"], r["bot"]), []).append(r)
     score = {k: mean([r["score"] for r in v]) for k, v in by.items()}
-    absolute = {k: mean([r["absolute_index"] for r in v]) for k, v in by.items()}
+    raw_impact = {k: mean([r["impact"] for r in v]) for k, v in by.items()}
     lines = [
         "# Balance report",
         "",
@@ -203,7 +203,7 @@ def report(cfg: Config, data: dict[str, Any]) -> str:
     )
     results.append(("Viable strategies", verdict(viable_ok, tune=True), viable_rows))
 
-    # 4. Difficulty ordering on the absolute index
+    # 4. Difficulty ordering on Impact (before the country difficulty multiplier)
     hard_ids = [c for c in playable if cfg.nat_spec(c)["difficulty"] == "hard"]
     easy_ids = [c for c in playable if c not in hard_ids]
     rows = [
@@ -212,17 +212,17 @@ def report(cfg: Config, data: dict[str, Any]) -> str:
     ]
     in_order = 0
     for b in SCRIPTED:
-        easy = mean([absolute[(c, b)] for c in easy_ids])
-        hard = mean([absolute[(c, b)] for c in hard_ids])
+        easy = mean([raw_impact[(c, b)] for c in easy_ids])
+        hard = mean([raw_impact[(c, b)] for c in hard_ids])
         in_order += easy > hard
         rows.append(f"| {b} | {easy:.1f} | {hard:.1f} | {'ok' if easy > hard else 'inverted'} |")
     rows.append("")
     rows.append(
-        "Final scores, which multiply the relative index by country difficulty, by design "
-        "reward harder nations' improvements; see the table under criterion 2."
+        "Final scores multiply Impact and Prosperity by country difficulty, so by design they "
+        "reward harder nations' cuts; see the table under criterion 2. Lost games count here."
     )
     order_ok = bool(easy_ids and hard_ids) and in_order >= len(SCRIPTED) - 1
-    results.append(("Difficulty ordering (absolute index)", verdict(order_ok, tune=True), rows))
+    results.append(("Difficulty ordering (Impact)", verdict(order_ok, tune=True), rows))
 
     # 5. Free-rider tension
     rows = ["| Nation | Economic index 2030: balanced | all_fossil | Final score, all_fossil: "
@@ -240,13 +240,19 @@ def report(cfg: Config, data: dict[str, Any]) -> str:
         loss += fr["score"] < coop["score"]
         rows.append(
             f"| {c} | {s_bal:.1f} | {s_fos:.1f} | {coop['score']:.1f} | {fr['score']:.1f} | "
-            f"{coop['warming']:.2f} / {fr['warming']:.2f} |"
+            f"{coop['warming']:.2f} / {fr['warming']:.2f}"
+            + (
+                f" (collapse {fr['final_quarter']})"
+                if fr["ending"] == scoring.CLIMATE_COLLAPSE
+                else ""
+            )
+            + " |"
         )
     rows.append("")
     rows.append(
         f"Free-riding gains by 2030 for {gain}/{len(playable)} nations; the free-rider's "
         f"final score falls when everyone free-rides for {loss}/{len(playable)}. Both final-score "
-        "worlds run the full game without elections."
+        "worlds run without elections, to the end or the collapse."
     )
     results.append(
         (
@@ -286,7 +292,7 @@ def report(cfg: Config, data: dict[str, Any]) -> str:
     ) / max(1, len(reckless))
     rows = [
         f"- Runs ending early without a loss: {len(short_runs)}.",
-        "- Games completed (not voted out or fallen), by bot: "
+        "- Games completed (no collapse, not voted out or fallen), by bot: "
         + ", ".join(f"{b} {v:.0%}" for b, v in completion.items())
         + f". Steady play ({', '.join(STEADY)}) should complete at least "
         f"{STEADY_COMPLETION:.0%}.",
@@ -346,6 +352,18 @@ def report(cfg: Config, data: dict[str, Any]) -> str:
         )
     lines.append("")
     lines += ["## Other signals", ""]
+    lines.append(
+        "- Climate Collapse (warming reached "
+        f"{cfg.tune('scoring.collapse_warming'):g} degC), by bot: "
+        + ", ".join(
+            f"{b} {sum(r['ending'] == scoring.CLIMATE_COLLAPSE for r in main if r['bot'] == b)}"
+            for b in BOTS
+        )
+        + "; mean peak warming, by bot: "
+        + ", ".join(
+            f"{b} {mean([r['peak_warming'] for r in main if r['bot'] == b]):.2f}" for b in BOTS
+        )
+    )
     lines.append(
         "- Elections lost per run, by bot: "
         + ", ".join(

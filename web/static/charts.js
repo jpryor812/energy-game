@@ -8,7 +8,7 @@ const TEXT = "#587063";
 
 export const SERIES = [
   { key: "warming", title: "World warming", unit: "°C", fmt: (v) => v.toFixed(2),
-    refs: [[1.5, "1.5 °C: full world multiplier"], [1.6, "1.6 °C: Champion line"]] },
+    refs: [[1.5, "1.5 °C goal"], [2.0, "2.0 °C: collapse, every nation loses"]] },
   { key: "global_emissions", title: "World CO2", unit: "Gt/yr", fmt: (v) => (v / 1000).toFixed(1), scale: 1 / 1000,
     note: "quarterly rate; heating and cooling seasons make it swing" },
   { key: "emissions", title: "Your CO2", unit: "Mt/yr", fmt: (v) => Math.round(v).toLocaleString(),

@@ -1,17 +1,21 @@
-"""Nation Index, World Multiplier, bonuses and endings.
+"""Impact, prosperity, endings and honours (scoring redesign, decided with the user 2026-11-12).
 
-Score = (w_abs x A + w_rel x N x difficulty) x M(T) + absolute bonuses + relative bonuses x
-difficulty (decided 2026-11-08). A, the absolute index (0-100), compares where nations end up:
-income per person against the 16-nation average (a straight line in log income from
-`abs_income_low` to `abs_income_high` times the average, so a given percentage loss costs every
-nation the same; M6), clean share of energy, emissions per person
-against twice the 2025 average, energy security, and average approval. Wealthy, cleaner nations
-score higher on it. N, the relative index, is multiplied by the country's difficulty (easy 1.0,
-easy-to-medium 1.1, medium 1.15, hard 1.3) so the same improvement is worth more for a harder
-country.
+There is no World Multiplier. The world wins together or loses together: if warming, averaged
+over the last four quarters, reaches `collapse_warming` (2.0 degC), the game ends in Climate
+Collapse and every nation scores `loss_score`. A world that reaches the last quarter below that
+line has won, and nations are then ranked on
 
-N (0-100) blends five components, each in 0..1 and each measured against the nation's own
-starting point, so a poor country is not judged against a rich one:
+    score = country difficulty x (w_impact x Impact + w_prosperity x Prosperity)
+
+Impact (0-100) is the nation's climate contribution relative to its own size: credit-weighted
+tonnes cut over the game (real domestic cuts against the 2025 level at full weight, cuts financed
+abroad, made with exported equipment or through the forest fund at lower weights, purchased
+credits least; `credits.weight_*`), averaged per year and divided by the nation's 2025 emissions,
+through a logistic (50 = no change). So a small nation that halves its emissions outranks a
+large one that cuts a third.
+
+Prosperity (0-100) blends four components, each in 0..1 and each measured against the nation's
+own starting point, so a poor country is not judged against a rich one:
 
 - income: income per person vs. what baseline growth alone would have delivered
   (0.5 = on baseline), through a logistic on the log ratio.
@@ -19,25 +23,19 @@ starting point, so a poor country is not judged against a rich one:
   of `shortfall_zero`, and (b) change in fossil import dependence since 2025 (0.5 = unchanged).
 - welfare: mean of (a) average approval over the game and (b) the change in energy price since
   2025 (0.5 = unchanged, higher is worse).
-- clean: clean-tech competitiveness, the nation's share of world clean-tech factory capacity now
-  against 2025 (0.5 = held its share; changed in M5 from clean capacity built at home, which
-  double-counted the climate component).
-- climate: credit-weighted emissions cut per year, as a share of 2025 emissions (0.5 = no
-  change): real domestic cuts count 1.0, cuts financed abroad 0.75, cuts made with exported
-  equipment 0.6, purchased credits 0.25 (`credits.weight_*`; decided 2026-11-08).
+- clean: clean-tech competitiveness, the nation's share of world clean-tech equipment sales
+  against its 2025 share of factory capacity (0.5 = held its share).
 
-M(T) is 1 at or below `world_good` warming and falls in a straight line to `world_floor` at
-`world_bad` (M6; it was quadratic, which left 1.6-1.7 degC worlds almost unpenalised).
+Country difficulty (easy 1.0, easy-to-medium 1.1, medium 1.15, hard 1.3) multiplies the whole
+score, so the same achievement is worth more for a harder country.
 
-Bonuses (flat points). Absolute: first nation to reach net zero (emissions at or below
-`net_zero_share` of 2025), largest cut in tonnes, and the deal that cut the most emissions (both
-parties). Relative, x difficulty: largest percentage cut, largest gain in clean share.
+Endings, for the player: Climate Collapse (warming reached the line), Fallen Government
+(stability fell below the threshold) or Voted Out (lost an election) end the game early and score
+`loss_score`. Otherwise, at the end, Champion if the player ranks first of the 16 nations and
+Shared Victory if not.
 
-Endings, for the player: Fallen Government if stability fell below the threshold, or Voted Out
-if they lost an election; both end the game early and score `loss_score` (M7). Otherwise a
-top finish (rank on the combined index at or above `top_rank`) and a good world (final warming
-at or below `good_world_warming`) decide between Champion, Prosperous but Doomed, Green but Poor,
-and Shared Failure.
+Honours are unscored firsts and bests shown on screen: first to net zero, the largest cut in
+percent and in tonnes, the largest gain in clean share, and the deal that cut the most.
 """
 
 from __future__ import annotations
@@ -50,12 +48,11 @@ from sim.config import Config
 from sim.state import World
 
 CHAMPION = "Champion"
-PROSPEROUS_BUT_DOOMED = "Prosperous but Doomed"
-GREEN_BUT_POOR = "Green but Poor"
-SHARED_FAILURE = "Shared Failure"
+SHARED_VICTORY = "Shared Victory"
+CLIMATE_COLLAPSE = "Climate Collapse"
 FALLEN_GOVERNMENT = "Fallen Government"
 VOTED_OUT = "Voted Out"
-LOSSES = (FALLEN_GOVERNMENT, VOTED_OUT)
+LOSSES = (CLIMATE_COLLAPSE, FALLEN_GOVERNMENT, VOTED_OUT)
 
 
 def logistic(x: float) -> float:
@@ -102,7 +99,6 @@ def components(cfg: Config, world: World, nid: str) -> dict[str, float]:
         "security": security,
         "welfare": welfare,
         "clean": clean,
-        "climate": climate_component(cfg, world, nid),
     }
 
 
@@ -122,10 +118,22 @@ def climate_contribution(cfg: Config, world: World, nid: str) -> float:
 
 
 def climate_component(cfg: Config, world: World, nid: str) -> float:
+    """Impact as a share (0..1): the credit-weighted yearly cut as a share of 2025 emissions,
+    through a logistic (0.5 = no change)."""
+    return logistic(yearly_cut(cfg, world, nid) / _sc(cfg, "climate_scale"))
+
+
+def yearly_cut(cfg: Config, world: World, nid: str) -> float:
+    """Average credit-weighted cut so far as a share of the nation's 2025 emissions (MtCO2 cut
+    over the game divided by 2025 emissions x years played)."""
     n = world.nations[nid]
     years = max(world.t / 4, 0.25)
-    per_year = climate_contribution(cfg, world, nid) / (n.base["emissions"] * years)
-    return logistic(per_year / _sc(cfg, "climate_scale"))
+    return climate_contribution(cfg, world, nid) / (n.base["emissions"] * years)
+
+
+def impact(cfg: Config, world: World, nid: str) -> float:
+    """Impact index, 0-100."""
+    return 100.0 * climate_component(cfg, world, nid)
 
 
 def sales_share(world: World, nid: str) -> float | None:
@@ -167,15 +175,9 @@ def clean_competitiveness(cfg: Config, world: World, nid: str) -> float:
     return logistic(math.log(now / then) / _sc(cfg, "clean_scale"))
 
 
-def nation_index(cfg: Config, comps: dict[str, float]) -> float:
+def prosperity_index(cfg: Config, comps: dict[str, float]) -> float:
     weights = {k: _sc(cfg, f"weight_{k}") for k in comps}
     return 100.0 * sum(weights[k] * comps[k] for k in comps) / sum(weights.values())
-
-
-def world_multiplier(cfg: Config, warming: float) -> float:
-    good, bad, floor = _sc(cfg, "world_good"), _sc(cfg, "world_bad"), _sc(cfg, "world_floor")
-    x = min(1.0, max(0.0, (warming - good) / (bad - good)))
-    return 1.0 - (1.0 - floor) * x
 
 
 def annual_emissions(world: World, nid: str) -> float:
@@ -229,32 +231,30 @@ def race_metrics(cfg: Config, world: World) -> dict[str, dict[str, float]]:
     return out
 
 
-BONUS_KEYS = {
-    "largest_reduction": "bonus_largest_reduction",
-    "largest_cut_tonnes": "bonus_largest_cut",
-    "largest_clean_gain": "bonus_clean_gain",
-}
+HONOUR_RACES = ("largest_reduction", "largest_cut_tonnes", "largest_clean_gain")
 
 
-def bonuses(cfg: Config, world: World) -> dict[str, dict[str, float]]:
-    out: dict[str, dict[str, float]] = {nid: {} for nid in world.nations}
+def honours(cfg: Config, world: World) -> dict[str, list[str]]:
+    """Unscored honours each nation holds now: first to net zero, the lead in each race (when
+    positive), and both parties to the deal that cut the most."""
+    out: dict[str, list[str]] = {nid: [] for nid in world.nations}
     first = first_net_zero(cfg, world)
     if first:
-        out[first[0]]["first_net_zero"] = _sc(cfg, "bonus_first_net_zero")
+        out[first[0]].append("first_net_zero")
     metrics = race_metrics(cfg, world)
-    for race, key in BONUS_KEYS.items():
+    for race in HONOUR_RACES:
         vals = metrics[race]
         if vals:
             best = min(vals, key=lambda nid: (-vals[nid], nid))
             if vals[best] > 0:
-                out[best][race] = _sc(cfg, key)
+                out[best].append(race)
     credited = [(d.terms.get("credited", 0.0), d.id) for d in world.deals.values()]
     credited = [c for c in credited if c[0] > 0]
     if credited:
         _, did = sorted(credited, key=lambda c: (-c[0], c[1]))[0]
         deal = world.deals[did]
         for nid in (deal.financier, deal.host):
-            out[nid]["best_deal"] = _sc(cfg, "bonus_best_deal")
+            out[nid].append("best_deal")
     return out
 
 
@@ -295,9 +295,6 @@ def races(cfg: Config, world: World, me: str) -> list[dict[str, Any]]:
     return out
 
 
-RELATIVE_BONUSES = ("largest_reduction", "largest_clean_gain")  # x country difficulty
-
-
 def _clean(cfg: Config, supply: dict[str, float]) -> tuple[float, float]:
     return sum(v for s, v in supply.items() if cfg.category(s) != "fossil"), sum(supply.values())
 
@@ -320,39 +317,37 @@ def annual_clean_share(cfg: Config, world: World, nid: str) -> float:
     return sum(c for c, _ in parts) / delivered if delivered > 0 else 0.0
 
 
-def warming_falling(cfg: Config, world: World) -> bool | None:
-    """Whether warming is lower now than `falling_years` ago (None before that much history)."""
-    back = int(_sc(cfg, "falling_years") * 4)
-    if len(world.history) <= back:
-        return None
-    return world.warming < world.history[-1 - back]["warming"]
-
-
-def ending(
-    cfg: Config, rank: int, warming: float, loss: str | None = None, falling: bool | None = True
-) -> str:
-    """Endings. A good world (M8) ends at or below `good_world_warming` with warming falling
-    over the last `falling_years` (`falling` None = not enough history, counted as falling)."""
+def ending(cfg: Config, rank: int, loss: str | None = None) -> str:
+    """Endings: a loss if there was one, otherwise Champion for first place and Shared Victory
+    for the rest (the world stayed below the collapse line)."""
     if loss:
         return loss
-    top = rank <= _sc(cfg, "top_rank")
-    good = warming <= _sc(cfg, "good_world_warming") and falling is not False
-    if top and good:
-        return CHAMPION
-    if top:
-        return PROSPEROUS_BUT_DOOMED
-    if good:
-        return GREEN_BUT_POOR
-    return SHARED_FAILURE
+    return CHAMPION if rank == 1 else SHARED_VICTORY
 
 
 def is_fallen(cfg: Config, world: World, nid: str) -> bool:
     return world.nations[nid].stability < _sc(cfg, "fallen_stability")
 
 
+def year_warming(world: World) -> float:
+    """Warming averaged over the last four quarters (this quarter's before any is played).
+    Warming swings about 0.03 degC with the seasons, so the collapse line is judged on the
+    year, as clean share and net zero are (M8)."""
+    recs = [h["warming"] for h in world.history[-4:]]
+    return sum(recs) / len(recs) if recs else world.warming
+
+
+def collapsed(cfg: Config, world: World) -> bool:
+    """Whether warming, averaged over a year, has reached the collapse line, which ends the
+    game for every nation."""
+    return year_warming(world) >= _sc(cfg, "collapse_warming")
+
+
 def loss(cfg: Config, world: World, nid: str) -> str | None:
-    """How the player lost, if they did: their government fell, or they lost an election. Either
-    ends the game (M7)."""
+    """How the player lost, if they did: warming reached the collapse line, their government
+    fell, or they lost an election. Each ends the game (M7; collapse 2026-11-12)."""
+    if collapsed(cfg, world):
+        return CLIMATE_COLLAPSE
     if is_fallen(cfg, world, nid):
         return FALLEN_GOVERNMENT
     if world.player == nid and world.voted_out_at >= 0:
@@ -360,96 +355,49 @@ def loss(cfg: Config, world: World, nid: str) -> str | None:
     return None
 
 
-def absolute_components(cfg: Config, world: World, nid: str) -> dict[str, float]:
-    """Where the nation ends up, comparable across nations (each 0..1)."""
-    n = world.nations[nid]
-    nations = world.nations.values()
-    avg_income = sum(m.gdp for m in nations) / sum(m.population for m in nations)
-    low, high = math.log(_sc(cfg, "abs_income_low")), math.log(_sc(cfg, "abs_income_high"))
-    ratio = math.log(max(n.gdp / n.population, 1e-12) / avg_income)
-    income = min(1.0, max(0.0, (ratio - low) / (high - low)))
-    clean_share = annual_clean_share(cfg, world, nid)
-    avg_em_2025 = sum(m.base["emissions"] for m in nations) / sum(
-        m.base["population"] for m in nations
-    )
-    em_pc = n.emissions / n.population
-    emissions = min(1.0, max(0.0, 1 - em_pc / (2 * avg_em_2025)))
-    records = [h["nations"][nid] for h in world.history]
-    shortfall = sum(r["shortfall"] / r["demand"] for r in records) / max(1, len(records))
-    supply = max(0.0, 1.0 - shortfall / _sc(cfg, "shortfall_zero"))
-    security = (supply + (1 - min(1.0, n.import_dependence))) / 2
-    approval = sum(r["approval"] for r in records) / max(1, len(records))
-    return {
-        "income": income,
-        "clean_share": clean_share,
-        "emissions": emissions,
-        "security": security,
-        "approval": approval,
-    }
-
-
-def absolute_index(cfg: Config, comps: dict[str, float]) -> float:
-    weights = {k: _sc(cfg, f"abs_weight_{k}") for k in comps}
-    return 100.0 * sum(weights[k] * comps[k] for k in comps) / sum(weights.values())
-
-
 def difficulty_multiplier(cfg: Config, nid: str) -> float:
     """Country difficulty multiplier on the relative index and relative bonuses."""
     return _sc(cfg, f"difficulty_{cfg.nat_spec(nid)['difficulty']}")
 
 
-def combined_index(cfg: Config, absolute: float, relative: float, mult: float) -> float:
-    return _sc(cfg, "weight_absolute") * absolute + _sc(cfg, "weight_relative") * relative * mult
+def total(cfg: Config, impact_index: float, prosperity: float, mult: float) -> float:
+    """country difficulty x (w_impact x Impact + w_prosperity x Prosperity)."""
+    w_i, w_p = _sc(cfg, "weight_impact"), _sc(cfg, "weight_prosperity")
+    return mult * (w_i * impact_index + w_p * prosperity) / (w_i + w_p)
 
 
 def score(cfg: Config, world: World, player: str, lost: str | None = None) -> dict[str, Any]:
     """Final (or running) score for every nation, the player's rank and ending.
 
-    score = (w_abs x absolute index + w_rel x relative index x country difficulty) x World
-    Multiplier + absolute bonuses + relative bonuses x country difficulty. Rank (for endings) is
-    on that score, bonuses included (M9). A lost game (`lost` is Fallen Government
-    or Voted Out) scores `loss_score`; `score_at_exit` keeps what the formula gave.
+    A lost game (`lost` is one of LOSSES) scores `loss_score`; `score_at_exit` keeps what the
+    formula gave.
     """
     ids = sorted(world.nations)
-    rel_comps = {nid: components(cfg, world, nid) for nid in ids}
-    relative = {nid: nation_index(cfg, c) for nid, c in rel_comps.items()}
-    abs_comps = {nid: absolute_components(cfg, world, nid) for nid in ids}
-    absolute = {nid: absolute_index(cfg, c) for nid, c in abs_comps.items()}
+    comps = {nid: components(cfg, world, nid) for nid in ids}
+    prosperity = {nid: prosperity_index(cfg, c) for nid, c in comps.items()}
+    impacts = {nid: impact(cfg, world, nid) for nid in ids}
     mults = {nid: difficulty_multiplier(cfg, nid) for nid in ids}
-    combined = {nid: combined_index(cfg, absolute[nid], relative[nid], mults[nid]) for nid in ids}
-    world_mult = world_multiplier(cfg, world.warming)
-    bonus = bonuses(cfg, world)
-
-    def bonus_total(nid: str) -> float:
-        return sum(
-            v * (mults[nid] if k in RELATIVE_BONUSES else 1.0) for k, v in bonus[nid].items()
-        )
-
-    totals = {nid: combined[nid] * world_mult + bonus_total(nid) for nid in ids}
-    # M9: rank on the final score, bonuses included (it was the combined index before bonuses,
-    # so it contradicted the leaderboard)
+    totals = {nid: total(cfg, impacts[nid], prosperity[nid], mults[nid]) for nid in ids}
     order = sorted(ids, key=lambda nid: (-totals[nid], nid))
     ranks = {nid: i + 1 for i, nid in enumerate(order)}
     return {
         "player": player,
         "score": _sc(cfg, "loss_score") if lost else totals[player],
         "score_at_exit": totals[player],
-        "nation_index": relative[player],
-        "absolute_index": absolute[player],
+        "impact": impacts[player],
+        "yearly_cut": yearly_cut(cfg, world, player),
+        "prosperity": prosperity[player],
         "difficulty_multiplier": mults[player],
-        "combined_index": combined[player],
-        "components": rel_comps[player],
-        "absolute_components": abs_comps[player],
-        "world_multiplier": world_mult,
+        "components": comps[player],
         "warming": world.warming,
+        "collapse_at": _sc(cfg, "collapse_warming"),
         "rank": ranks[player],
-        "bonuses": bonus[player],
-        "ending": ending(cfg, ranks[player], world.warming, lost, warming_falling(cfg, world)),
+        "honours": honours(cfg, world)[player],
+        "ending": ending(cfg, ranks[player], lost),
         "all_nations": {
             nid: {
-                "nation_index": relative[nid],
-                "absolute_index": absolute[nid],
-                "combined_index": combined[nid],
+                "impact": impacts[nid],
+                "prosperity": prosperity[nid],
                 "rank": ranks[nid],
                 "score": totals[nid],
             }

@@ -1,8 +1,9 @@
 # energy-game
 
 A turn-based strategy game about national energy economies, 2025 to 2050, one turn per quarter
-(100 turns). You lead one country; your score is your nation's prosperity multiplied by how the
-world did on climate. No war: conflict runs through tariffs, export controls, sanctions, and deals.
+(100 turns). You lead one country. If warming reaches 2 degC the whole world loses; if it stays
+below, the nation that did the most to cut emissions, for its size, wins. No war: conflict runs
+through tariffs, export controls, sanctions, and deals.
 
 This repository currently holds the **headless simulation** (Python, no UI), used to prove the
 core tension and tune the numbers. See:
@@ -163,6 +164,14 @@ Each run leaves `notes.md`, `report.md` and `transcript.jsonl` in its folder. `-
   first quarter walks through the score, resources, the market, the carbon price and ending
   the turn; later tips cover offers, research, diplomacy, regions, events and elections, each
   with "Show me" and questions. Read any tip again under Advice on the left rail.
+- **Scoring redesign (the world wins or loses together):** warming starts at 1.35 degC and
+  reaching 2 degC (year average) ends the game for every nation (Climate Collapse). Nations are
+  ranked on country difficulty x (75% Impact + 25% Prosperity), where Impact is the CO2 cut at
+  home or abroad as a share of the nation's own 2025 emissions; first place is Champion. The
+  World Multiplier, the top-four rule and bonus points are gone; firsts are unscored honours.
+- **Standings and paced orders (web):** a public leaderboard on the right ranks every nation
+  with its Impact, GDP and growth; orders open in four waves over the first two years (8 at the
+  start), each announced by an advisor, with a switch under Advice to open them all.
 - **M16 (fixes from playtest round 3):** tax cuts are mostly borrowed instead of emptying the
   energy budget, the screen shows where capital comes from, amounts a hair over a limit are
   trimmed rather than refused, forest payments wear off and earn less credit, and the playtest

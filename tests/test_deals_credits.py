@@ -213,10 +213,10 @@ def test_climate_weights(cfg):
     )
 
 
-def test_best_deal_bonus_to_both_parties(cfg, world):
+def test_best_deal_honour_to_both_parties(cfg, world):
     deal = signed(cfg, world)
     deal.terms["credited"] = 10.0
-    b = scoring.bonuses(cfg, world)
+    b = scoring.honours(cfg, world)
     assert "best_deal" in b["AAA"] and "best_deal" in b["BBB"]
 
 

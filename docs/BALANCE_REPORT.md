@@ -11,14 +11,14 @@ Seeds: [1, 2, 3, 4, 5, 6]. World difficulty: normal unless stated. 216 main runs
 | 1 | Determinism | PASS |
 | 2 | No dominant bot | PASS |
 | 3 | Viable strategies | TUNE |
-| 4 | Difficulty ordering (absolute index) | PASS |
+| 4 | Difficulty ordering (Impact) | PASS |
 | 5 | Free-rider tension | PASS |
 | 6 | Sanity | PASS |
 | 7 | Game length and punishment for neglect | PASS |
 
 ## 1. Determinism: PASS
 
-India, balanced, seed 1, run twice: `dc3376f143717c3d` / `dc3376f143717c3d`.
+India, balanced, seed 1, run twice: `b3a41a51672ebd03` / `b3a41a51672ebd03`.
 Byte-identical across machines is not tested here: the simulation uses only plain Python floats and SHA-256-seeded streams, so it should hold.
 
 ## 2. No dominant bot: PASS
@@ -27,57 +27,57 @@ Expected score by nation and bot (mean over seeds; a lost game scores 0):
 
 | Nation | ai | all_clean | all_fossil | balanced | deal_maker | reckless | Best scripted |
 |---|---|---|---|---|---|---|---|
-| CHN | 56.1 | 0.0 | 34.6 | 55.5 | 56.5 | 0.0 | deal_maker |
-| EUU | 46.1 | 68.7 | 52.4 | 65.8 | 65.1 | 0.0 | all_clean |
-| IND | 47.1 | 8.8 | 37.1 | 45.1 | 46.5 | 0.0 | deal_maker |
-| RUS | 0.0 | 52.6 | 30.4 | 40.5 | 40.9 | 0.0 | all_clean |
-| USA | 53.1 | 65.5 | 46.5 | 63.7 | 64.2 | 0.0 | all_clean |
-| VNM | 35.3 | 26.5 | 38.0 | 43.3 | 45.6 | 0.0 | deal_maker |
+| CHN | 91.4 | 0.0 | 48.3 | 90.9 | 92.1 | 0.0 | deal_maker |
+| EUU | 69.9 | 103.6 | 50.4 | 103.7 | 104.2 | 0.0 | deal_maker |
+| IND | 77.9 | 17.5 | 25.5 | 70.1 | 75.0 | 0.0 | deal_maker |
+| RUS | 0.0 | 94.0 | 17.7 | 74.3 | 75.3 | 0.0 | all_clean |
+| USA | 74.3 | 90.0 | 29.6 | 89.5 | 89.6 | 0.0 | all_clean |
+| VNM | 65.3 | 49.5 | 17.6 | 54.2 | 58.8 | 0.0 | deal_maker |
 
 Games completed / mean score of completed games:
 
 | Nation | ai | all_clean | all_fossil | balanced | deal_maker | reckless |
 |---|---|---|---|---|---|---|
-| CHN | 100% / 56.1 | 0% / - | 83% / 41.5 | 100% / 55.5 | 100% / 56.5 | 0% / - |
-| EUU | 67% / 69.1 | 100% / 68.7 | 100% / 52.4 | 100% / 65.8 | 100% / 65.1 | 0% / - |
-| IND | 83% / 56.6 | 17% / 52.9 | 83% / 44.5 | 83% / 54.1 | 83% / 55.8 | 0% / - |
-| RUS | 0% / - | 83% / 63.1 | 67% / 45.6 | 67% / 60.8 | 67% / 61.4 | 0% / - |
-| USA | 83% / 63.7 | 100% / 65.5 | 100% / 46.5 | 100% / 63.7 | 100% / 64.2 | 0% / - |
-| VNM | 67% / 53.0 | 50% / 52.9 | 83% / 45.6 | 83% / 51.9 | 83% / 54.8 | 0% / - |
+| CHN | 100% / 91.4 | 0% / - | 100% / 48.3 | 100% / 90.9 | 100% / 92.1 | 0% / - |
+| EUU | 67% / 104.8 | 100% / 103.6 | 100% / 50.4 | 100% / 103.7 | 100% / 104.2 | 0% / - |
+| IND | 83% / 93.4 | 17% / 105.1 | 83% / 30.6 | 83% / 84.2 | 83% / 90.0 | 0% / - |
+| RUS | 0% / - | 83% / 112.8 | 67% / 26.6 | 67% / 111.5 | 67% / 112.9 | 0% / - |
+| USA | 83% / 89.2 | 100% / 90.0 | 100% / 29.6 | 100% / 89.5 | 100% / 89.6 | 0% / - |
+| VNM | 67% / 98.0 | 50% / 99.0 | 83% / 21.1 | 83% / 65.1 | 83% / 70.5 | 0% / - |
 
 
 ## 3. Viable strategies: TUNE
 
 - CHN: within 5% of best: balanced, deal_maker
-- EUU: within 5% of best: all_clean, balanced
-- IND: within 5% of best: balanced, deal_maker
+- EUU: within 5% of best: all_clean, balanced, deal_maker
+- IND: within 5% of best: deal_maker
 - RUS: within 5% of best: all_clean
 - USA: within 5% of best: all_clean, balanced, deal_maker
 - VNM: within 5% of best: deal_maker
 
-## 4. Difficulty ordering (absolute index): PASS
+## 4. Difficulty ordering (Impact): PASS
 
 | Bot | Easier (CHN, EUU, USA) | Hard (IND, RUS, VNM) | Order |
 |---|---|---|---|
-| all_clean | 74.6 | 58.6 | ok |
-| all_fossil | 65.2 | 53.7 | ok |
-| balanced | 77.6 | 60.3 | ok |
-| deal_maker | 77.9 | 61.0 | ok |
+| all_clean | 88.6 | 79.5 | ok |
+| all_fossil | 33.7 | 13.2 | ok |
+| balanced | 95.2 | 70.4 | ok |
+| deal_maker | 96.1 | 74.2 | ok |
 
-Final scores, which multiply the relative index by country difficulty, by design reward harder nations' improvements; see the table under criterion 2.
+Final scores multiply Impact and Prosperity by country difficulty, so by design they reward harder nations' cuts; see the table under criterion 2. Lost games count here.
 
 ## 5. Free-rider tension: PASS
 
 | Nation | Economic index 2030: balanced | all_fossil | Final score, all_fossil: cooperative world | free-rider world | Warming: coop / free-rider |
 |---|---|---|---|---|---|
-| CHN | 52.6 | 56.5 | 41.2 | 30.5 | 1.80 / 2.07 |
-| EUU | 55.9 | 59.3 | 56.4 | 36.2 | 1.70 / 2.07 |
-| IND | 54.0 | 56.9 | 45.6 | 28.7 | 1.73 / 2.07 |
-| RUS | 54.8 | 54.4 | 45.9 | 26.2 | 1.71 / 2.07 |
-| USA | 53.0 | 53.9 | 43.6 | 28.0 | 1.76 / 2.07 |
-| VNM | 52.7 | 56.2 | 44.2 | 29.9 | 1.70 / 2.07 |
+| CHN | 52.6 | 56.5 | 47.4 | 0.0 | 1.79 / 2.01 (collapse 2048Q3) |
+| EUU | 55.9 | 59.2 | 46.3 | 0.0 | 1.69 / 2.01 (collapse 2048Q3) |
+| IND | 54.0 | 56.8 | 31.6 | 0.0 | 1.71 / 2.01 (collapse 2048Q3) |
+| RUS | 54.8 | 54.4 | 25.2 | 0.0 | 1.70 / 2.01 (collapse 2048Q3) |
+| USA | 53.0 | 53.8 | 31.0 | 0.0 | 1.74 / 2.01 (collapse 2048Q3) |
+| VNM | 52.6 | 56.2 | 20.2 | 0.0 | 1.69 / 2.01 (collapse 2048Q3) |
 
-Free-riding gains by 2030 for 5/6 nations; the free-rider's final score falls when everyone free-rides for 6/6. Both final-score worlds run the full game without elections.
+Free-riding gains by 2030 for 5/6 nations; the free-rider's final score falls when everyone free-rides for 6/6. Both final-score worlds run without elections, to the end or the collapse.
 
 ## 6. Sanity: PASS
 
@@ -86,7 +86,7 @@ No issues in any run.
 ## 7. Game length and punishment for neglect: PASS
 
 - Runs ending early without a loss: 0.
-- Games completed (not voted out or fallen), by bot: ai 67%, all_clean 58%, all_fossil 86%, balanced 89%, deal_maker 89%, reckless 0%. Steady play (balanced, deal_maker) should complete at least 70%.
+- Games completed (no collapse, not voted out or fallen), by bot: ai 67%, all_clean 58%, all_fossil 89%, balanced 89%, deal_maker 89%, reckless 0%. Steady play (balanced, deal_maker) should complete at least 70%.
 - Reckless bot: Fallen Government in 0/36 runs (0%); loses 100% of the elections it contests; removed from office at least once in 100% of runs.
 - Other bots lose: all_clean 10%, all_fossil 2%, balanced 2%, deal_maker 2% of the elections they contest.
 - Other bots: Fallen Government in 0 runs.
@@ -98,12 +98,13 @@ Balanced bot, seed 1, each playable nation.
 
 | Difficulty | Expected score | Completed | Mean warming at end | Disasters per run | Disruptions per run |
 |---|---|---|---|---|---|
-| easy | 61.1 | 100% | 1.69 | 21.5 | 11.7 |
-| normal | 48.9 | 83% | 1.67 | 109.7 | 27.2 |
-| hard | 30.4 | 50% | 1.65 | 195.8 | 32.3 |
+| easy | 89.8 | 100% | 1.68 | 20.2 | 11.5 |
+| normal | 72.7 | 83% | 1.66 | 109.2 | 27.2 |
+| hard | 46.8 | 50% | 1.64 | 191.0 | 32.3 |
 
 ## Other signals
 
+- Climate Collapse (warming reached 2 degC), by bot: ai 0, all_clean 0, all_fossil 0, balanced 0, deal_maker 0, reckless 0; mean peak warming, by bot: ai 1.64, all_clean 1.61, all_fossil 1.71, balanced 1.67, deal_maker 1.67, reckless 1.47
 - Elections lost per run, by bot: ai 0.3, all_clean 0.4, all_fossil 0.1, balanced 0.1, deal_maker 0.1, reckless 1.0
-- Endings, by bot: ai: Prosperous but Doomed 7, Shared Failure 17, Voted Out 12; all_clean: Prosperous but Doomed 10, Shared Failure 11, Voted Out 15; all_fossil: Shared Failure 31, Voted Out 5; balanced: Prosperous but Doomed 10, Shared Failure 22, Voted Out 4; deal_maker: Prosperous but Doomed 10, Shared Failure 22, Voted Out 4; reckless: Voted Out 36
-- Rejected player actions across all runs: 472.
+- Endings, by bot: ai: Shared Victory 24, Voted Out 12; all_clean: Shared Victory 21, Voted Out 15; all_fossil: Shared Victory 32, Voted Out 4; balanced: Shared Victory 32, Voted Out 4; deal_maker: Shared Victory 32, Voted Out 4; reckless: Voted Out 36
+- Rejected player actions across all runs: 463.

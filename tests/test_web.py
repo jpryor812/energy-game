@@ -95,3 +95,17 @@ def test_profiles_on_the_real_data():
     assert any("workshop" in line for line in prof["CHN"]["pros"])
     assert any("Net fuel exporter" in line for line in prof["RUS"]["pros"])
     assert any("Coal-heavy" in line for line in prof["IND"]["cons"])
+
+
+def test_order_waves_cover_every_order_once(cfg):
+    """web/static/unlocks.js opens every order in the catalogue exactly once."""
+    import re
+    from pathlib import Path
+
+    from sim.catalogue import catalogue
+
+    text = (Path(__file__).parent.parent / "web" / "static" / "unlocks.js").read_text()
+    lists = re.findall(r"(?:ALWAYS = |types: )\[([^\]]*)\]", text)
+    named = [n for chunk in lists for n in re.findall(r'"([a-z_]+)"', chunk)]
+    assert sorted(named) == sorted(catalogue(cfg))
+    assert len(named) == len(set(named))

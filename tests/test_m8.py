@@ -17,7 +17,7 @@ def test_annual_clean_share_pools_the_last_four_quarters(cfg):
     assert scoring.annual_clean_share(cfg, w, "AAA") == pytest.approx(clean / total)
 
 
-def test_races_report_every_bonus_and_the_first_to_net_zero(cfg):
+def test_races_report_every_honour_and_the_first_to_net_zero(cfg):
     w = runner.play(cfg, 1, "AAA", "noop", until=4)
     races = {r["race"]: r for r in scoring.races(cfg, w, "AAA")}
     assert set(races) == {
@@ -34,7 +34,7 @@ def test_races_report_every_bonus_and_the_first_to_net_zero(cfg):
     for h in w.history[:4]:
         h["nations"]["BBB"]["emissions"] = 0.0
     assert scoring.first_net_zero(cfg, w) == ("BBB", w.history[3]["label"])
-    assert scoring.bonuses(cfg, w)["BBB"]["first_net_zero"] > 0
+    assert "first_net_zero" in scoring.honours(cfg, w)["BBB"]
     assert base > 0
 
 
@@ -155,15 +155,6 @@ def test_removal_cost_reports_its_floor(cfg):
     w.tech_state["carbon_removal"] = 1e6
     assert tech.at_floor(cfg, w, "carbon_removal")
     assert not tech.at_floor(cfg, w, "onshore_wind")  # no floor set
-
-
-def test_warming_must_be_falling_for_a_good_world(cfg):
-    w = runner.play(cfg, 1, "AAA", "noop", until=25)
-    assert scoring.warming_falling(cfg, w) is not None
-    w.warming = w.history[-21]["warming"] + 0.01
-    assert scoring.warming_falling(cfg, w) is False
-    w.warming = w.history[-21]["warming"] - 0.01
-    assert scoring.warming_falling(cfg, w) is True
 
 
 def test_turn_runs_with_capped_slots(cfg):

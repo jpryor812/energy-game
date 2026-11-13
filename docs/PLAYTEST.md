@@ -6,23 +6,29 @@ well, and to report honestly on what the game was like.
 
 ## Rules in brief
 
-**Score.** At the end, your score is roughly *how well your nation did* x *how the world did on
-climate*.
+**Winning.** The world wins or loses together. Warming starts at 1.35 degC; if it reaches
+2.0 degC (averaged over a year) the game ends in Climate Collapse and every nation scores 0. If the
+world reaches the end of 2049 below that line it has won, and the nation with the highest score
+is Champion: you want to be first.
 
-- *How your nation did* blends income growth, energy security, welfare (approval and energy
-  prices), clean-tech industry, and the emissions you cut, mostly measured against your own
-  2025 starting point. Harder countries get a multiplier.
-- *How the world did* is the World Multiplier: 1.0 if warming ends at or below 1.5 degC, falling
-  in a straight line to 0.1 at 2.5 degC. Warming starts at 1.36 degC. You cannot reach a good
-  score alone; the world has to cut too.
-- A few bonuses (2 points each): first to net zero, largest cut, the most effective deal, and
-  others.
+**Score.** Country difficulty x (75% Impact + 25% Prosperity).
 
-**Endings.** Champion (top-4 nation, and warming ends at or below 1.6 degC and lower than five
-years earlier), Prosperous but Doomed, Green but Poor, Shared Failure. The screen shows the
-bonus races and who leads each.
+- *Impact* is the CO2 you cut at home, or helped cut abroad (deals, exported equipment, the
+  forest fund and regional finance count at a discount, bought credits least), averaged over the
+  game as a share of your own 2025 emissions. 50 means no change. A small nation can beat a
+  large one.
+- *Prosperity* blends income growth, energy security, welfare (approval and energy prices) and
+  clean-tech industry, each against your own 2025 starting point.
+- Harder countries get a multiplier on the whole score.
+- Honours (unscored): first to net zero, largest cut, the most effective deal, and others.
 
-**Losing.** Two ways, and either ends the game with a score of 0:
+**Endings.** Champion (the world won and you are first), Shared Victory (the world won), or one of
+the losses below.
+
+**Losing.** Three ways, and each ends the game with a score of 0:
+
+- **Climate Collapse.** Warming, averaged over the last four quarters, reaches 2.0 degC. Every
+  nation loses. The screen warns you from 1.8 degC.
 
 - **Voted Out.** Elections are held every four years: 2028Q4, 2032Q4, 2036Q4, 2040Q4, 2044Q4 and
   2048Q4. You need 50% of the vote. The vote is purely economic: growth over the term against
@@ -92,7 +98,7 @@ refunded. Other nations rarely fill a fund on their own.
 **Deals.** You can offer other nations clean-energy deals (loans, equipment on credit, energy as
 a service, equity) and answer offers in your inbox. Deals cut emissions abroad, earn returns and
 build trust; equity can be lost if the host becomes unreliable. A nation can host deal capacity
-up to half its energy demand. Rank is on the final score, bonuses included.
+up to half its energy demand. Rank is on the final score.
 
 ## Commands
 
@@ -157,6 +163,6 @@ Finish with a report (in your notes file and in your final answer), under these 
 7. **Dull stretches.** Periods with nothing worth deciding.
 8. **Bugs.** Anything that looked wrong: impossible numbers, rejected actions you think were
    valid, results that contradict the screen.
-9. **Was Champion reachable?** Could you, or the world, get warming to 1.6 degC and falling?
-   What would it have taken?
+9. **Was Champion reachable?** Could you finish first on the score while staying in office? Did
+   the 2 degC line ever feel close? What would it have taken?
 10. **One change you would make.**

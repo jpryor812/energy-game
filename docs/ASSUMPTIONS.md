@@ -820,16 +820,51 @@ planning)").
      waste and a weak vote within 18 months of an election. Their wording comes from
      docs/PLAYTEST.md and the order catalogue, with live numbers from the screen. Which tips a
      player has read is kept in the browser per save.
+200. **Scoring redesign: the world wins or loses together** (decided with the user 2026-11-12;
+     sim/scoring.py). The World Multiplier, the absolute index and bonus points are gone. If
+     warming reaches `scoring.collapse_warming` (2.0 degC) the game ends in Climate Collapse and
+     every nation scores 0; a world below the line at the end has won. Nations are ranked on
+     country difficulty x (0.75 Impact + 0.25 Prosperity); first place is Champion, the rest
+     Shared Victory. The 75/25 split is the user's "a small part of the rank" for prosperity, a
+     placeholder to tune. Difficulty now multiplies the whole score, not only the relative part.
+201. **Impact is relative to the nation's own 2025 emissions** (user's choice over GDP): the
+     existing credit-weighted climate contribution (real cuts against 2025 at 1.0, financed
+     0.75, exported 0.6, forest 0.4, purchased 0.25), averaged over the game and divided by 2025
+     emissions, through the old logistic (`climate_scale` 0.2; 50 = no change). Cuts are against
+     2025, not a business-as-usual path, so fast-growing nations start below 50.
+202. **The collapse line is judged on the year-average warming**, the mean of the last four
+     quarters. Quarterly warming swings about 0.03 degC with the seasons, so a single-quarter
+     test would end games on a seasonal peak; clean share and net zero are already judged on four
+     quarters (M8). A warning appears from `scoring.collapse_warning` (1.8 degC).
+203. **Warming starts at 1.35 degC** (user's decision), against 1.36 degC human-induced warming
+     for 2024 in Forster et al. 2025; the 0.01 degC difference is inside that estimate's range.
+204. **Honours replace bonus points**: first to net zero, the largest cut in percent and in
+     tonnes, the largest clean-share gain and the deal that cut the most are still tracked and
+     shown, but they no longer add points, because Impact already counts the same cuts.
+205. **Public standings on the right** (web): every nation's rank, Impact, GDP and growth over
+     the last four quarters, on the grounds that rankings and economic statistics are public;
+     prosperity, CO2 and clean share are in each row's tooltip. Growth is over a year because a
+     single quarter's rate swings with seasons and disasters.
+206. **Orders open in four waves in the web interface** (web/static/unlocks.js; decided with the
+     user 2026-11-12 to ease first-quarter decision paralysis): 8 orders in 2025 Q1 (build, grid
+     and storage, carbon price, rebate, subsidy, efficiency, research, talks), 8 more in 2025 Q3
+     (retirement, taxes, electrification, retraining, deals, influence, the carbon club), 12 in
+     2026 Q1 (regions, pledges, credits, tariffs, licences, tax credits, methane, adaptation,
+     factories) and the last 8 in 2027 Q1 (fossil ban, permitting, carbon capture and removal,
+     forests, activity cap, domestic content, research programme). Answering offers, exiting
+     deals and pledging to events are always open. This paces the interface only: the
+     simulation, the AI and the text game allow every order from the start, and Advice can open
+     them all at once.
 
 ## Open questions
 
 - **AI overshoot.** Cheap clean energy leads several low-ambition nations to cut far past their
   target paths, and the US and China drop sharply in the late 2040s (docs/CALIBRATION.md, "AI
   world").
-- **A recession scores as a climate cut.** Lower GDP lowers emissions, which raises the climate
-  and emissions components and offsets part of the income loss. The M6 weights shrink the
-  effect but do not remove it; measuring cuts against a nation's own business-as-usual path
-  would.
+- **A recession scores as a climate cut.** Lower GDP lowers emissions, which raises Impact.
+  Since the 2026-11-12 redesign Impact is 75% of the score, so this matters more; elections and
+  the 25% prosperity weight push back. Measuring cuts against a nation's own business-as-usual
+  path would remove it.
 - **The score is weakly sensitive to GDP.** The relative income component is an S-curve on the
   log ratio to baseline (scale 0.1) and most bots sit in its lower half, so a further 20% GDP
   loss costs only about 3-5% of score. This also caps how much world difficulty can matter.
@@ -839,9 +874,9 @@ planning)").
   and India run, through coal job losses). Agent playtests are the better test now.
 - **Russia is hard to hold.** The balanced bot completes only half its Russian games: falling
   fossil export revenue drags growth below baseline at elections.
-- **No bot world reaches a good world.** Every balance run ends at about 1.62-1.76 degC, so
-  endings are almost all Shared Failure or Prosperous but Doomed even with Champion at 1.6 degC
-  (M8). Agent playtesting should probe whether players can pull the world under it.
+- **The collapse line may be far away.** Business as usual ends 2049 at about 1.95 degC and the
+  AI world at about 1.69 degC, so Climate Collapse mostly needs a world of free-riders; whether
+  2 degC should be a live threat in ordinary games is a tuning question (2026-11-12).
 - **Fallen Government is rare by design now.** It needs a sustained blackout or an approval
   collapse; neglect is punished mainly through lost elections.
 - **Wind and solar stop being built late.** Their LCOE rises to 11-17 $/GJ once curtailed
@@ -858,8 +893,8 @@ planning)").
   solar at home, outside the home clean ceiling, capped only by the regions' absorption.
   To watch in the next playtest.
 - **The AI uses few of the new technologies** it researches (item 165); players can.
-- **The late game and Champion** are untested since M9's extra slots; the next playtest round
-  should check them.
+- **The late game and Champion** are untested since the 2026-11-12 scoring redesign; the next
+  playtest round should check whether first place is reachable while staying in office.
 - **Resolved in M9:** climate-loan credit for plants never built, factory capacity scoring
   forever, pre-election price cuts, jobs swinging the vote quarter by quarter, unlimited
   inbound deals, club membership at 0 $/t, a rank that left out bonuses, first to net zero on
