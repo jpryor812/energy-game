@@ -8,12 +8,12 @@ export const ALWAYS = ["respond_deal", "exit_deal", "pledge_to_event"]; // answe
 export const WAVES = [
   {
     turn: 0, who: "chief", title: "Your first orders",
-    types: ["build_capacity", "build_grid_storage", "set_carbon_price", "rebate", "set_subsidy", "invest_efficiency", "fund_research", "open_talks"],
+    types: ["build_capacity", "build_grid_storage", "set_carbon_price", "rebate", "set_subsidy", "invest_efficiency", "fund_research", "propose_deal"],
   },
   {
     turn: 2, who: "treasury", title: "New orders: programmes and partners",
-    line: "Programmes that protect jobs and growth, and the first deals and clubs abroad.",
-    types: ["retire_capacity", "set_tax_rate", "electrification_program", "fund_retraining", "propose_deal", "buy_influence", "join_bloc", "leave_bloc"],
+    line: "Programmes that protect jobs and growth, influence and talks to win trust abroad, and the carbon club.",
+    types: ["retire_capacity", "set_tax_rate", "electrification_program", "fund_retraining", "open_talks", "buy_influence", "join_bloc", "leave_bloc"],
   },
   {
     turn: 4, who: "foreign", title: "New orders: the wider world",

@@ -1294,6 +1294,7 @@ function talksWindow(id, view = "talk", opt = {}) {
     else opts.push({ k: "tariff", t: "Your goods will face a tariff.", s: "Protects your industry; costs their trust", off: lockNote("set_tariff") || (club ? "carbon club members cannot tariff each other" : "") });
     opts.push({ k: "trade", t: "I have a proposal.", s: "Open the trade table", off: lockNote("propose_deal") });
     offers.forEach((d) => opts.push({ k: `offer:${d.id}`, t: `About your offer of ${nice(d.type).toLowerCase()}…`, s: `${SOURCE_ICON[d.terms.source] || ""} ${nice(d.terms.source || "")} · expires ${d.expires}`, off: d.can_answer ? "" : "you can answer from next quarter" }));
+    opts.sort((x, y) => (x.off ? 1 : 0) - (y.off ? 1 : 0)); // what you can do now comes first
     opts.push({ k: "bye", t: "Farewell.", s: "" });
     right.innerHTML = `${say(line)}<div class="dip-opts">${opts.map((o, i) => `<button class="dip-opt" data-k="${o.k}" ${o.off ? "disabled" : ""}><span class="n">${i + 1}</span><span><b>${esc(o.t)}</b>${o.s || o.off ? `<span class="s">${esc(o.off || o.s)}</span>` : ""}</span></button>`).join("")}</div>`;
     right.querySelectorAll(".dip-opt").forEach((b) => (b.onclick = () => {

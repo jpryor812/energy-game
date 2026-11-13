@@ -847,14 +847,16 @@ planning)").
      single quarter's rate swings with seasons and disasters.
 206. **Orders open in four waves in the web interface** (web/static/unlocks.js; decided with the
      user 2026-11-12 to ease first-quarter decision paralysis): 8 orders in 2025 Q1 (build, grid
-     and storage, carbon price, rebate, subsidy, efficiency, research, talks), 8 more in 2025 Q3
-     (retirement, taxes, electrification, retraining, deals, influence, the carbon club), 12 in
+     and storage, carbon price, rebate, subsidy, efficiency, research, trades), 8 more in 2025 Q3
+     (retirement, taxes, electrification, retraining, talks, influence, the carbon club), 12 in
      2026 Q1 (regions, pledges, credits, tariffs, licences, tax credits, methane, adaptation,
      factories) and the last 8 in 2027 Q1 (fossil ban, permitting, carbon capture and removal,
      forests, activity cap, domestic content, research programme). Answering offers, exiting
      deals and pledging to events are always open. This paces the interface only: the
      simulation, the AI and the text game allow every order from the start, and Advice can open
-     them all at once.
+     them all at once. Trades open in the first quarter and need no influence (the user,
+     2026-11-12: a first trade should not wait on influence); talks, which spend influence to
+     raise trust, open with buying influence in 2025 Q3.
 207. **Planned orders take capital at once in the web interface**: the top bar shows capital
      left after this quarter's planned orders, including the build cost a proposed deal would
      need if accepted (it comes back if they refuse); income and GDP are shown per quarter.
