@@ -51,7 +51,8 @@ export const TIPS = [
     id: "resources", who: "treasury", when: () => true, show: "resources",
     title: "What you have to spend",
     body: (h) => `Your resources run along the top. <b>💰 Capital</b> is ${h.money(h.sc.resources.capital)}, earning about
-      ${h.money(h.income)} a year: it pays for building, research and deals. <b>🏛 Political capital</b> is
+      ${h.money(h.income / 4)} a quarter: it pays for building, research and deals. An order you plan
+      takes its cost off at once, and gives it back if you remove it. <b>🏛 Political capital</b> is
       ${h.whole(h.sc.resources.political_capital)}, earning about 4 a year (more when approval is high): it pays for unpopular
       moves such as a carbon price or closing plants. Each quarter you can give <b>3 orders at home and 2 abroad</b>;
       unused ones carry over, up to 6 and 4.`,

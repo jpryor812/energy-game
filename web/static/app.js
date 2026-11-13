@@ -267,6 +267,12 @@ function renderAll() {
 
 // ---------- top bar ----------
 
+// Capital the planned orders will spend (each order's checked cost), so the top bar shows what is
+// left the moment an order is added, and gives it back when the order is removed.
+function plannedSpend() {
+  return S.plan.reduce((a, _, i) => { const c = S.checks[i]; return a + (c && c.ok && c.cost ? c.cost.capital || 0 : 0); }, 0);
+}
+
 function renderTopbar() {
   const sc = S.data.screen, me = sc.country, r = sc.resources;
   $("#realm-crest").outerHTML = `<div id="realm-crest">${crest(me)}</div>`;
@@ -277,21 +283,24 @@ function renderTopbar() {
 
   const used = slotsUsed();
   const inc = r.income_per_year || {};
+  const q = (v) => money((v || 0) / 4);
   const incRows = [
-    ["Energy budget (2% of GDP)", money(inc.budget)], ["Fossil exports", money(inc.fossil_exports)],
-    ["Carbon revenue", money(inc.carbon)], ["Tariffs", money(inc.tariffs)], ["Tax change", money(inc.tax)],
-    ["Tax credits", money(inc.tax_credits)], ["Interest on new debt", money(inc.interest)],
-  ].filter(([, v]) => v !== "$0.0 bn");
+    ["Energy budget (2% of GDP)", q(inc.budget)], ["Fossil exports", q(inc.fossil_exports)],
+    ["Carbon revenue", q(inc.carbon)], ["Tariffs", q(inc.tariffs)], ["Tax change", q(inc.tax)],
+    ["Tax credits", q(inc.tax_credits)], ["Interest on new debt", q(inc.interest)],
+  ].filter(([, v]) => !/^(\$0 bn|under \$1 bn)$/.test(v));
   const total = ["budget", "fossil_exports", "carbon", "tariffs", "tax", "tax_credits", "interest"]
     .reduce((a, k) => a + (inc[k] || 0), 0);
-  const capTip = ttTable("Capital", [...incRows, ["<b>Income a year</b>", `<b>${money(total)}</b>`]],
-    (inc.borrowed > 0 ? `Your tax cut also borrows ${money(inc.borrowed)} a year; new local debt so far ${money(r.local_debt_new)}. ` : "") +
-    "Capital pays for building, research, deals and most programmes.");
+  const spend = plannedSpend(), left = r.capital - spend;
+  const capTip = ttTable("Capital", [["In hand", money(r.capital)], ...(spend > 0 ? [["Planned orders", `−${money(spend)}`], ["Left to spend", `<b>${money(left)}</b>`]] : []),
+    ...incRows.map(([k, v]) => [k, v]), ["Income a quarter", `<b>${money(total / 4)}</b>`]],
+    (inc.borrowed > 0 ? `Your tax cut also borrows ${money(inc.borrowed / 4)} a quarter; new local debt so far ${money(r.local_debt_new)}. ` : "") +
+    "Capital pays for building, research, deals and most programmes. Orders you plan are taken off at once; remove one to get it back.");
   const pcTip = ttTable("Political capital", [], "Pays for unpopular moves: raising the carbon price, closing plants early, raising taxes, permitting reform, a fossil ban or an activity cap.");
   const slotTip = (k) => ttTable(`${nice(k)} actions`, [["Banked this quarter", r.slots[k] ?? 0], ["Planned", used[k] || 0]],
     k === "domestic" ? "3 a quarter, unused ones bank up to 6." : "2 a quarter, unused ones bank up to 4.");
   const res = [
-    ["Capital", money(r.capital), `${money(total)} / yr`, capTip],
+    ["Capital", money(left), spend > 0 ? `−${money(spend)} planned` : `+${money(total / 4)} / quarter`, capTip],
     ["Political cap.", num(r.political_capital, 0), "", pcTip],
     ["Influence", num(r.influence, 0), "for talks", ttTable("Influence", [], "Bought with capital; spent on diplomatic talks.")],
     ["Domestic", `${(r.slots.domestic ?? 0) - (used.domestic || 0)}/${r.slots.domestic ?? 0}`, "slots left", slotTip("domestic")],
@@ -425,14 +434,14 @@ function standings() {
     const n = nations[l.nation] || {}, me = l.nation === sc.country;
     const g = n.growth_year ?? n.growth ?? 0;
     const t = ttTable(nationName(l.nation), [["Rank", `${l.rank} of 16`], ["Score", num(l.score, 0)], ["Impact", num(l.impact, 0)], ["Prosperity", num(l.prosperity, 0)],
-      ["CO2 vs 2025", spct(n.emissions_change, 0)], ["Clean energy", pct(n.clean_share)], ["GDP", money(n.gdp)], ["GDP vs 2025", spct(n.gdp_vs_2025, 0)], ["Growth, last year", spct(g, 1)]],
+      ["CO2 vs 2025", spct(n.emissions_change, 0)], ["Clean energy", pct(n.clean_share)], ["GDP a quarter", money(n.gdp / 4)], ["GDP vs 2025", spct(n.gdp_vs_2025, 0)], ["Growth, last year", spct(g, 1)]],
     "Impact: CO2 cut at home or helped cut abroad, for the nation's size. 50 = no change.");
     return `<tr class="${me ? "me" : ""}" data-board="${l.nation}" ${tip(t)}><td class="r">${l.rank}</td><td class="nm">${crestMini(l.nation)}${esc(nationName(l.nation))}</td>
       <td class="imp"><i style="width:${Math.max(0, Math.min(100, l.impact))}%"></i><span>${num(l.impact, 0)}</span></td>
-      <td class="num ${g < 0 ? "bad" : ""}">${spct(g, 1)}</td><td class="num">${money(n.gdp)}</td></tr>`;
+      <td class="num ${g < 0 ? "bad" : ""}">${spct(g, 1)}</td><td class="num">${money(n.gdp / 4)}</td></tr>`;
   }).join("");
   return `<div class="sec-head"><span>Standings</span><button class="link-btn" id="board-fold">${open ? "Show top three" : "Show all 16"}</button></div>
-    <div class="sec-body board"><table><tr class="muted"><td></td><td>Nation</td><td>Impact</td><td class="num">Growth</td><td class="num">GDP</td></tr>${rows}</table></div>`;
+    <div class="sec-body board"><table><tr class="muted"><td></td><td>Nation</td><td>Impact</td><td class="num">Growth</td><td class="num" title="GDP a quarter">GDP/q</td></tr>${rows}</table></div>`;
 }
 
 let checkSeq = 0;
@@ -860,7 +869,7 @@ function unitOf(type, name, desc, form) {
     if (!e) return null;
     try { return JSON.parse(e.value || "null"); } catch { return e.value; }
   };
-  const cap = S.data.screen.resources.capital || 0;
+  const cap = Math.max(0, (S.data.screen.resources.capital || 0) - plannedSpend());
   const bnChips = () => [...new Set([0.1, 0.25, 0.5].map((f) => Math.round(cap * f * 1000)).filter((v) => v >= 1))];
   const d = String(desc);
   if (name === "amount" && SIZE_TYPES.includes(type)) return { unit: "% of your energy", scale: myDemand() / 100, chips: [0.5, 1, 2, 5], half: true };
@@ -1307,7 +1316,7 @@ function openNation(id, tab = "overview") {
     const forSale = sc.research.filter((r) => r.offers.some(([s]) => s === id));
     const body = `<p class="summary-text">${esc(pers[1])}</p>
       <div class="stat-grid">
-        <div class="stat"><span class="k">GDP</span><span>${money(v.gdp)}</span></div>
+        <div class="stat"><span class="k">GDP a quarter</span><span>${money(v.gdp / 4)}</span></div>
         <div class="stat"><span class="k">Growth</span><span>${spct(v.growth)}</span></div>
         <div class="stat"><span class="k">CO2</span><span>${num(v.emissions, 0)} Mt</span></div>
         <div class="stat"><span class="k">vs 2025</span><span class="${v.emissions_change < 0 ? "good" : "bad"}">${spct(v.emissions_change, 0)}</span></div>
@@ -1363,7 +1372,7 @@ function openRegion(id) {
         <div class="stat"><span class="k">vs 2025</span><span class="${v.emissions_change < 0 ? "good" : "bad"}">${spct(v.emissions_change, 0)}</span></div>
         <div class="stat"><span class="k">Clean energy</span><span>${pct(v.clean_share)}</span></div>
         <div class="stat"><span class="k">Clean share of new energy</span><span>${pct(reg.clean_of_new_energy)}</span></div>
-        <div class="stat"><span class="k">GDP</span><span>${money(v.gdp)}</span></div>
+        <div class="stat"><span class="k">GDP a quarter</span><span>${money(v.gdp / 4)}</span></div>
         <div class="stat"><span class="k">Growth</span><span>${spct(v.growth)}</span></div>
         <div class="stat"><span class="k">Trusts you</span><span>${num(v.trust_in_you, 2)}</span></div>
         <div class="stat"><span class="k">Most trusts</span><span>${reg.most_trusts ? esc(nationName(reg.most_trusts)) : "no one yet"}</span></div>
@@ -1445,7 +1454,7 @@ function realmTab(tab) {
   }
   const comp = s ? Object.entries(s.components).map(([k, v]) => `<div class="vote-row"><span>${nice(k)}</span><div class="meter"><i style="width:${v * 100}%"></i></div><span style="text-align:right">${num(v, 2)}</span></div>`).join("") : "";
   return `<div class="stat-grid">
-      <div class="stat"><span class="k">GDP</span><span>${money(ec.gdp)}</span></div>
+      <div class="stat"><span class="k">GDP a quarter</span><span>${money(ec.gdp / 4)}</span></div>
       <div class="stat"><span class="k">vs 2025</span><span>${spct(ec.gdp_vs_2025, 1)}</span></div>
       <div class="stat"><span class="k">Growth</span><span ${tip(ttTable("Growth", [], "This quarter at an annual rate; a disaster quarter shows its one-off loss."))}>${spct(ec.growth_annual, 2)}</span></div>
       <div class="stat"><span class="k">Tax change</span><span>${spct(ec.tax_change, 1)} of GDP</span></div>
